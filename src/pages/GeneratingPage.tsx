@@ -2,6 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Background from '../components/Background';
+import { useElderMode } from '@/contexts/ElderModeContext';
+import PageTransition from '@/components/PageTransition';
+import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
@@ -46,6 +49,7 @@ export default function GeneratingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { taskId, userId, mode, uploadedImages, selectedTemplate } = location.state || {};
+  const { isElderMode, voiceEnabled, speak } = useElderMode();
   
   const [progress, setProgress] = useState(0);
   const [currentStage, setCurrentStage] = useState('识别人脸');
@@ -56,6 +60,27 @@ export default function GeneratingPage() {
   
   const pollingIntervalRef = useRef<number | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
+
+  // 页面加载时播放语音引导
+  useEffect(() => {
+    if (voiceEnabled) {
+      speak('正在为您生成艺术照，请稍候');
+    }
+  }, [voiceEnabled, speak]);
+
+  // 生成完成时播放语音提示
+  useEffect(() => {
+    if (progress === 100 && voiceEnabled) {
+      speak('生成完成，即将为您展示结果');
+    }
+  }, [progress, voiceEnabled, speak]);
+
+  // 错误时播放语音提示
+  useEffect(() => {
+    if (error && voiceEnabled) {
+      speak('生成失败，请点击重试按钮');
+    }
+  }, [error, voiceEnabled, speak]);
 
   // 模拟进度增长
   useEffect(() => {
@@ -98,7 +123,7 @@ export default function GeneratingPage() {
 
     const pollTaskStatus = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/task-status/${taskId}`);
+        const response = await fetch(buildApiUrl(API_ENDPOINTS.TASK_STATUS(taskId)));
         
         if (!response.ok) {
           throw new Error('查询任务状态失败');
@@ -186,7 +211,7 @@ export default function GeneratingPage() {
 
     try {
       // 重新调用生成API
-      const response = await fetch(`${API_BASE_URL}/api/generate-art-photo`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.GENERATE_ART_PHOTO), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -195,7 +220,8 @@ export default function GeneratingPage() {
           prompt: '生成中国风全家福艺术照',
           imageUrls: uploadedImages,
           userId: userId,
-          templateUrl: selectedTemplate
+          templateUrl: selectedTemplate,
+          facePositions: null
         }),
       });
 
@@ -235,7 +261,8 @@ export default function GeneratingPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden px-4">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden px-4">
       <Background />
       
       <div className="z-10 w-full max-w-md">
@@ -324,8 +351,8 @@ export default function GeneratingPage() {
           )}
         </AnimatePresence>
 
-        {/* 查看案例按钮 */}
-        {!error && queuePosition !== null && (
+        {/* 查看案例按钮 - 老年模式下隐藏 */}
+        {!error && queuePosition !== null && !isElderMode && (
           <motion.button
             onClick={handleViewExamples}
             className="w-full mt-4 bg-white/60 backdrop-blur-sm text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-white/80 transition-all"
@@ -350,5 +377,6 @@ export default function GeneratingPage() {
         )}
       </div>
     </div>
+    </PageTransition>
   );
 }

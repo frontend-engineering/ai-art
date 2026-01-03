@@ -25,22 +25,22 @@ const packages: PackageOption[] = [
     type: 'free',
     name: '免费版',
     price: 0,
-    features: ['生成1张艺术照', '带水印', '标准清晰度'],
-    color: 'bg-gray-500'
+    features: ['标清带水印', '限2人合成'],
+    color: 'bg-white'
   },
   {
     type: 'basic',
-    name: '尝鲜包',
+    name: '9.9元尝鲜包',
     price: 9.9,
-    features: ['4选1生成', '无水印', '高清下载', '3次重生成'],
-    color: 'bg-blue-500'
+    features: ['高清无水印', '3-5人合成', '热门模板'],
+    color: 'bg-[#D4302B]'
   },
   {
     type: 'premium',
-    name: '尊享包',
+    name: '29.9元尊享包',
     price: 29.9,
-    features: ['4选1生成', '无水印', '高清下载', '无限重生成', '微动态生成', '实体产品优惠'],
-    color: 'bg-purple-500'
+    features: ['4K原图', '微动态', '贺卡', '全模板', '优先队列'],
+    color: 'bg-[#D4AF37]'
   }
 ];
 
@@ -216,49 +216,79 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
               <p className="text-gray-500">解锁更多功能，获得更好体验</p>
             </div>
             
-            {/* 套餐选项 */}
+            {/* 套餐选项 - 纵向排列 */}
             <div className="space-y-4 mb-6">
-              {packages.map((pkg) => (
-                <motion.div
-                  key={pkg.type}
-                  className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                    selectedPackage === pkg.type
-                      ? 'border-[#6B5CA5] bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleSelectPackage(pkg.type)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center">
-                      <div className={`w-3 h-3 rounded-full mr-3 ${
-                        selectedPackage === pkg.type ? 'bg-[#6B5CA5]' : 'bg-gray-300'
-                      }`} />
-                      <div>
-                        <h4 className="font-bold text-lg">{pkg.name}</h4>
-                        {pkg.type === 'premium' && (
-                          <span className="text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-0.5 rounded-full">
-                            推荐
-                          </span>
+              {packages.map((pkg) => {
+                const isSelected = selectedPackage === pkg.type;
+                const isFree = pkg.type === 'free';
+                const isBasic = pkg.type === 'basic';
+                const isPremium = pkg.type === 'premium';
+                
+                return (
+                  <motion.div
+                    key={pkg.type}
+                    className={`relative rounded-xl p-5 cursor-pointer transition-all ${
+                      isSelected
+                        ? 'border-[3px] border-[#D4AF37] shadow-xl'
+                        : 'border-2 border-gray-200'
+                    } ${
+                      isFree ? 'bg-white' : 
+                      isBasic ? 'bg-gradient-to-br from-[#D4302B] to-[#B82820] text-white' :
+                      'bg-gradient-to-br from-[#D4AF37] to-[#B8941F] text-white'
+                    }`}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleSelectPackage(pkg.type)}
+                  >
+                    {/* 85%用户选择标签 - 仅尊享包 */}
+                    {isPremium && (
+                      <div className="absolute -top-3 -right-3 bg-[#D4302B] text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg z-10 border-2 border-white">
+                        85%用户选择
+                      </div>
+                    )}
+                    
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <h4 className={`font-bold text-xl mb-1 ${isFree ? 'text-gray-800' : 'text-white'}`}>
+                          {pkg.name}
+                        </h4>
+                        {/* 原价划线 - 仅尝鲜包 */}
+                        {isBasic && (
+                          <div className="text-sm text-white/90 mt-1">
+                            <span className="line-through">原价 ¥19.9</span>
+                          </div>
                         )}
                       </div>
+                      <div className="text-right">
+                        <span className={`text-3xl font-bold ${isFree ? 'text-gray-800' : 'text-white'}`}>
+                          {pkg.price === 0 ? '¥0' : `¥${pkg.price}`}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-[#6B5CA5]">
-                        {pkg.price === 0 ? '免费' : `¥${pkg.price}`}
-                      </span>
+                    
+                    {/* 功能列表 */}
+                    <div className="space-y-2 mt-4">
+                      {pkg.features.map((feature, index) => (
+                        <div key={index} className={`text-sm flex items-center ${isFree ? 'text-gray-600' : 'text-white/95'}`}>
+                          <span className={`mr-2 text-base ${isFree ? 'text-green-500' : 'text-white'}`}>✓</span>
+                          <span>{feature}</span>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                  <ul className="space-y-1">
-                    {pkg.features.map((feature, index) => (
-                      <li key={index} className="text-sm text-gray-600 flex items-center">
-                        <span className="text-green-500 mr-2">✓</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </motion.div>
-              ))}
+                    
+                    {/* 选中指示器 - 金色边框反馈 */}
+                    {isSelected && (
+                      <motion.div 
+                        className="absolute -top-1 -right-1 w-7 h-7 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      >
+                        <span className="text-white text-base font-bold">✓</span>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                );
+              })}
             </div>
             
             {/* 错误提示 */}

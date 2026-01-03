@@ -84,11 +84,11 @@ def extract_faces(image_paths, output_dir=None, min_face_size=80, confidence_thr
             # 转换为灰度图
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             
-            # 检测人脸
+            # 检测人脸 (使用更宽松的参数)
             faces = face_cascade.detectMultiScale(
                 gray,
-                scaleFactor=1.1,
-                minNeighbors=5,
+                scaleFactor=1.05,
+                minNeighbors=3,
                 minSize=(min_face_size, min_face_size)
             )
             

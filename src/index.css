@@ -11,6 +11,32 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 统一色调系统 */
+  --color-festival-red: #D4302B;      /* 主色：中国红 */
+  --color-festival-gold: #D4AF37;     /* 辅色：金色 */
+  --color-festival-warm: #FFF8F0;     /* 背景：暖白 */
+  --color-festival-red-light: #E84A3D; /* 红色渐变辅助色 */
+  --color-festival-red-dark: #B82820;  /* 红色深色 */
+
+  /* 统一字体规范 */
+  --font-title: "HYShangWeiShouShuW", "PingFang SC", "Source Han Sans CN", sans-serif;
+  --font-body: "PingFang SC", "Source Han Sans CN", sans-serif;
+  
+  /* 字体大小 */
+  --font-size-title-lg: 28px;  /* 大标题 24-28px */
+  --font-size-title-md: 24px;  /* 中标题 */
+  --font-size-body: 18px;      /* 正文 */
+  --font-size-caption: 16px;   /* 说明文字，浅灰色 */
+
+  /* 统一圆角规范 */
+  --border-radius-festival: 8px;     /* 标准圆角：所有按钮/卡片 */
+  --border-radius-festival-lg: 12px; /* 大圆角：弹窗 */
+
+  /* 统一阴影规范 */
+  --shadow-festival: 0 2px 8px rgba(0, 0, 0, 0.08);          /* 默认阴影 */
+  --shadow-festival-hover: 0 4px 16px rgba(0, 0, 0, 0.12);   /* hover阴影 */
+  --shadow-festival-active: 0 1px 4px rgba(0, 0, 0, 0.1);    /* active阴影 */
 }
 
 /* 全局动画 */
@@ -36,6 +62,27 @@
   75% { transform: translateX(3px); }
 }
 
+/* 节日元素动画 */
+@keyframes lanternSwing {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes lanternSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes fireworkBurst {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+
+@keyframes ribbonWave {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-5px) rotate(2deg); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.3s ease-out forwards;
 }
@@ -50,6 +97,22 @@
 
 .animate-shake {
   animation: shake 0.3s ease-in-out;
+}
+
+.animate-lantern-swing {
+  animation: lanternSwing 3s ease-in-out infinite;
+}
+
+.animate-lantern-spin {
+  animation: lanternSpin 20s linear infinite;
+}
+
+.animate-firework-burst {
+  animation: fireworkBurst 1s ease-out forwards;
+}
+
+.animate-ribbon-wave {
+  animation: ribbonWave 2s ease-in-out infinite;
 }
 
 /* 全局样式重置 */
@@ -71,4 +134,622 @@ input[type="file"] {
 .fas, .fab {
   display: inline-block;
   font-style: normal;
+}
+
+/* 统一字体样式工具类 */
+.text-title {
+  font-family: var(--font-title);
+  font-size: var(--font-size-title-lg);
+  line-height: 1.3;
+}
+
+.text-subtitle {
+  font-family: var(--font-title);
+  font-size: var(--font-size-title-md);
+  line-height: 1.3;
+}
+
+.text-body {
+  font-family: var(--font-body);
+  font-size: var(--font-size-body);
+  line-height: 1.5;
+}
+
+.text-caption {
+  font-family: var(--font-body);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+  color: #9CA3AF; /* 浅灰色 */
+}
+
+/* 统一按钮样式 */
+.btn-festival {
+  border-radius: var(--border-radius-festival);
+  box-shadow: var(--shadow-festival);
+  transition: all 0.1s ease;
+  min-width: 48px;
+  min-height: 48px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-festival:hover {
+  box-shadow: var(--shadow-festival-hover);
+  transform: scale(1.02);
+}
+
+.btn-festival:active {
+  box-shadow: var(--shadow-festival-active);
+  transform: scale(0.9); /* 缩小10% */
+  filter: brightness(0.9); /* 背景色加深 */
+}
+
+/* 主要按钮：红色渐变背景，白色粗体字 */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-festival-red) 0%, var(--color-festival-red-light) 100%);
+  color: white;
+  font-weight: 700;
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-festival-red-dark) 0%, var(--color-festival-red) 100%);
+}
+
+.btn-primary:active {
+  background: linear-gradient(135deg, var(--color-festival-red-dark) 0%, var(--color-festival-red-dark) 100%);
+}
+
+/* 次要按钮：白色背景，红色边框+文字 */
+.btn-secondary {
+  background: white;
+  color: var(--color-festival-red);
+  font-weight: 600;
+  border: 2px solid var(--color-festival-red);
+}
+
+.btn-secondary:hover {
+  background: rgba(212, 48, 43, 0.05);
+}
+
+.btn-secondary:active {
+  background: rgba(212, 48, 43, 0.1);
+  border-color: var(--color-festival-red-dark);
+  color: var(--color-festival-red-dark);
+}
+
+/* 功能按钮：对应功能色，带直观图标 */
+.btn-function {
+  font-weight: 600;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* 金色功能按钮 */
+.btn-function-gold {
+  background: linear-gradient(135deg, var(--color-festival-gold) 0%, #F4CF47 100%);
+  color: white;
+}
+
+.btn-function-gold:hover {
+  background: linear-gradient(135deg, #B8941F 0%, var(--color-festival-gold) 100%);
+}
+
+/* 紫色功能按钮 */
+.btn-function-purple {
+  background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+  color: white;
+}
+
+.btn-function-purple:hover {
+  background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+}
+
+/* 灰色功能按钮 */
+.btn-function-gray {
+  background: linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%);
+  color: white;
+}
+
+.btn-function-gray:hover {
+  background: linear-gradient(135deg, #4B5563 0%, #6B7280 100%);
+}
+
+/* 禁用状态 */
+.btn-festival:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  filter: none !important;
+}
+
+.btn-festival:disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-festival);
+}
+
+/* 统一卡片样式 */
+.card-festival {
+  border-radius: var(--border-radius-festival);
+  box-shadow: var(--shadow-festival);
+  transition: all 0.3s ease;
+}
+
+.card-festival:hover {
+  box-shadow: var(--shadow-festival-hover);
+}
+
+/* 统一弹窗样式 */
+.modal-festival {
+  border-radius: var(--border-radius-festival-lg);
+  box-shadow: var(--shadow-festival-hover);
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 弹窗红色边框顶部装饰 */
+.modal-festival::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    var(--color-festival-red) 0%, 
+    var(--color-festival-red-light) 50%, 
+    var(--color-festival-red) 100%
+  );
+  z-index: 1;
+}
+
+/* 弹窗遮罩层 */
+.modal-festival-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* 弹窗动画 - 淡入淡出 0.3s */
+.modal-festival-enter {
+  animation: modalFadeIn 0.3s ease-out forwards;
+}
+
+.modal-festival-exit {
+  animation: modalFadeOut 0.3s ease-in forwards;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+}
+
+/* 弹窗内容区域 */
+.modal-festival-content {
+  padding: 1.5rem;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* 弹窗标题 */
+.modal-festival-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-festival-red);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+/* 弹窗关闭按钮 */
+.modal-festival-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.05);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  z-index: 2;
+}
+
+.modal-festival-close:hover {
+  background: rgba(0, 0, 0, 0.1);
+  transform: scale(1.1);
+}
+
+.modal-festival-close:active {
+  transform: scale(0.95);
+}
+
+/* 支持点击外部关闭（除付费弹窗） */
+.modal-festival-overlay.clickable {
+  cursor: pointer;
+}
+
+.modal-festival-overlay.clickable .modal-festival {
+  cursor: default;
+}
+
+/* 节日装饰元素 */
+.festival-decoration {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* 灯笼装饰 */
+.festival-lantern {
+  font-size: 3rem;
+  opacity: 0.6;
+  animation: lanternSwing 3s ease-in-out infinite;
+}
+
+/* 烟花装饰 */
+.festival-firework {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+/* 福字装饰 */
+.festival-fu {
+  font-size: 2.5rem;
+  color: var(--color-festival-red);
+  opacity: 0.7;
+}
+
+/* 红绸装饰 */
+.festival-ribbon {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--color-festival-red) 20%, 
+    var(--color-festival-gold) 50%, 
+    var(--color-festival-red) 80%, 
+    transparent 100%
+  );
+  opacity: 0.6;
+}
+
+/* 按钮红绸装饰 */
+.btn-festival-ribbon::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    var(--color-festival-gold) 50%, 
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+/* 老年模式样式 */
+.elder-mode {
+  /* 字体放大20% */
+  font-size: 120%;
+}
+
+.elder-mode .text-title {
+  font-size: calc(var(--font-size-title-lg) * 1.2);
+}
+
+.elder-mode .text-subtitle {
+  font-size: calc(var(--font-size-title-md) * 1.2);
+}
+
+.elder-mode .text-body {
+  font-size: calc(var(--font-size-body) * 1.2);
+}
+
+.elder-mode .text-caption {
+  font-size: calc(var(--font-size-caption) * 1.2);
+}
+
+.elder-mode button,
+.elder-mode .elder-mode-button {
+  /* 按钮放大15% */
+  transform: scale(1.15);
+  transform-origin: center;
+  margin: 0.5rem;
+}
+
+.elder-mode h1 {
+  font-size: 2.4rem;
+}
+
+.elder-mode h2 {
+  font-size: 2rem;
+}
+
+.elder-mode h3 {
+  font-size: 1.6rem;
+}
+
+.elder-mode p,
+.elder-mode span,
+.elder-mode div {
+  font-size: 1.1rem;
+}
+
+.elder-mode .text-sm {
+  font-size: 1rem;
+}
+
+.elder-mode .text-xs {
+  font-size: 0.9rem;
+}
+
+/* 老年模式下隐藏非核心元素 */
+.elder-mode .elder-mode-hide {
+  display: none !important;
+}
+
+/* ========================================
+   统一加载与提示设计
+   ======================================== */
+
+/* 加载动画：统一使用旋转灯笼动画(80×80px) */
+.loading-lantern {
+  width: 80px;
+  height: 80px;
+  font-size: 80px;
+  display: inline-block;
+  animation: lanternSpin 2s linear infinite;
+  user-select: none;
+}
+
+.loading-lantern::before {
+  content: '🏮';
+  display: block;
+}
+
+/* 加载容器 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.loading-text {
+  font-size: 1rem;
+  color: #6B7280;
+  font-weight: 500;
+}
+
+/* 成功提示：绿色"✓"+ 黑色文字 */
+.toast-success {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: var(--border-radius-festival);
+  box-shadow: var(--shadow-festival-hover);
+  border-left: 4px solid #10B981;
+}
+
+.toast-success-icon {
+  font-size: 1.5rem;
+  color: #10B981;
+  font-weight: bold;
+}
+
+.toast-success-icon::before {
+  content: '✓';
+}
+
+.toast-success-text {
+  color: #1F2937;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* 错误提示：红色"⚠️"+ 红色文字 */
+.toast-error {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: var(--border-radius-festival);
+  box-shadow: var(--shadow-festival-hover);
+  border-left: 4px solid #EF4444;
+}
+
+.toast-error-icon {
+  font-size: 1.5rem;
+  color: #EF4444;
+}
+
+.toast-error-icon::before {
+  content: '⚠️';
+}
+
+.toast-error-text {
+  color: #EF4444;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* 引导提示：蓝色"i"+ 黑色文字 */
+.toast-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: var(--border-radius-festival);
+  box-shadow: var(--shadow-festival-hover);
+  border-left: 4px solid #3B82F6;
+}
+
+.toast-info-icon {
+  font-size: 1.5rem;
+  color: #3B82F6;
+  font-weight: bold;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #3B82F6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: serif;
+}
+
+.toast-info-icon::before {
+  content: 'i';
+  font-style: italic;
+}
+
+.toast-info-text {
+  color: #1F2937;
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+/* Toast 动画 */
+.toast-enter {
+  animation: toastSlideIn 0.3s ease-out forwards;
+}
+
+.toast-exit {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+}
+
+/* Toast 容器 */
+.toast-container {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.toast-container > * {
+  pointer-events: auto;
+}
+
+/* 进度条样式 */
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #E5E7EB;
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, 
+    var(--color-festival-red) 0%, 
+    var(--color-festival-red-light) 50%, 
+    var(--color-festival-gold) 100%
+  );
+  border-radius: 9999px;
+  transition: width 0.3s ease-out;
+  position: relative;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%
+  );
+  animation: progressShine 1.5s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #6B7280;
+  margin-top: 0.25rem;
+  font-weight: 500;
 }

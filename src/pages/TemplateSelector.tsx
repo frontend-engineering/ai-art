@@ -3,7 +3,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Background from '../components/Background';
+import ElderModeToggle from '../components/ElderModeToggle';
 import { getTemplateImages } from '../lib/utils';
+import { useElderMode } from '@/contexts/ElderModeContext';
+import PageTransition from '@/components/PageTransition';
 
 // 模板数据类型
 interface Template {
@@ -16,6 +19,7 @@ export default function TemplateSelector() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, uploadedImages } = location.state || {};
+  const { isElderMode, voiceEnabled, speak } = useElderMode();
   
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -116,6 +120,13 @@ export default function TemplateSelector() {
     }
   }, [templates]);
   
+  // 页面加载时播放语音引导
+  useEffect(() => {
+    if (voiceEnabled && templates.length > 0) {
+      speak('请选择一个艺术风格模板');
+    }
+  }, [voiceEnabled, templates.length, speak]);
+  
   const handleBack = () => {
     navigate('/upload', { state: { mode } });
   };
@@ -162,7 +173,8 @@ export default function TemplateSelector() {
       const userId = localStorage.getItem('userId') || '';
       
       // 调用生成API
-      const response = await fetch('http://localhost:3001/api/generate-art-photo', {
+      const { buildApiUrl, API_ENDPOINTS } = await import('../lib/apiConfig');
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.GENERATE_ART_PHOTO), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +183,8 @@ export default function TemplateSelector() {
           prompt: '生成中国风全家福艺术照',
           imageUrls: uploadedImages,
           userId: userId,
-          templateUrl: selectedTemplate.url
+          templateUrl: selectedTemplate.url,
+          facePositions: null // 暂时为null，后续可以从上传页面传递
         }),
       });
       
@@ -206,7 +219,8 @@ export default function TemplateSelector() {
   };
   
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
       <Background />
       
       {/* 顶部导航栏 */}
@@ -220,22 +234,24 @@ export default function TemplateSelector() {
             <span>返回</span>
           </button>
           <h1 className="text-xl font-bold text-[#6B5CA5]">选择模板</h1>
-          <div className="w-16"></div> {/* 占位保持标题居中 */}
+          <ElderModeToggle />
         </div>
       </header>
 
       <main className="flex-1 px-4 py-6 z-10 flex flex-col">
         {/* 引导文案 */}
-        <motion.div
-          className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <p className="text-red-700 text-base font-medium text-center">
-            <i className="fas fa-palette mr-2"></i>
-            选择一个艺术风格模板，让AI为您生成专属全家福
-          </p>
-        </motion.div>
+        {voiceEnabled && (
+          <motion.div
+            className="mb-6 p-4 bg-red-50 rounded-lg border border-red-200"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <p className="text-red-700 text-base font-medium text-center">
+              <i className="fas fa-palette mr-2"></i>
+              选择一个艺术风格模板，让AI为您生成专属全家福
+            </p>
+          </motion.div>
+        )}
 
         {/* 当前选中模板预览 */}
         {selectedTemplate && (
@@ -387,7 +403,7 @@ export default function TemplateSelector() {
           </button>
           
           {selectedTemplate && (
-            <p className="text-gray-500 text-sm mt-2 text-center">
+            <p className={`text-gray-500 text-sm mt-2 text-center ${isElderMode ? 'elder-mode-hide' : ''}`}>
               点击生成后，AI将为您创作专属全家福
             </p>
           )}
@@ -441,5 +457,6 @@ export default function TemplateSelector() {
         }
       `}</style>
     </div>
+    </PageTransition>
   );
 }

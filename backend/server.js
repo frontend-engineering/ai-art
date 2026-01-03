@@ -16,6 +16,21 @@ const userService = require('./services/userService');
 const generationService = require('./services/generationService');
 // 导入清理服务
 const cleanupService = require('./services/cleanupService');
+// 导入API重试工具
+const { executeWithRetry, executeWithSmartRetry } = require('./utils/apiRetry');
+// 导入错误日志服务
+const errorLogService = require('./services/errorLogService');
+// 导入参数校验工具
+const {
+  validateRequest,
+  validateGenerateArtPhotoParams,
+  validateCreatePaymentParams,
+  validateWechatPaymentParams,
+  validateUploadImageParams,
+  validateExtractFacesParams,
+  validateCreateProductOrderParams,
+  validateGenerateVideoParams
+} = require('./utils/validation');
 
 // 中间件
 app.use(cors());
@@ -237,6 +252,24 @@ function sign(params) {
  * @returns 生成任务ID或流式响应
  */
 async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free') {
+  // 使用重试机制包装API调用
+  return executeWithRetry(
+    () => generateArtPhotoInternal(prompt, imageUrls, facePositions, useStreaming, paymentStatus),
+    {
+      maxRetries: 1,
+      timeout: 30000,
+      operationName: '生成艺术照',
+      onRetry: (attempt, error) => {
+        console.log(`[重试] 生成艺术照失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+      }
+    }
+  );
+}
+
+/**
+ * 内部函数：调用火山引擎API生成艺术照（不含重试逻辑）
+ */
+async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free') {
   return new Promise((resolve, reject) => {
     try {
       // 检查环境变量是否已设置
@@ -500,6 +533,24 @@ async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStre
  * @returns 任务状态和结果
  */
 async function getTaskStatus(taskId) {
+  // 使用重试机制包装API调用
+  return executeWithRetry(
+    () => getTaskStatusInternal(taskId),
+    {
+      maxRetries: 1,
+      timeout: 30000,
+      operationName: '查询任务状态',
+      onRetry: (attempt, error) => {
+        console.log(`[重试] 查询任务状态失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+      }
+    }
+  );
+}
+
+/**
+ * 内部函数：查询任务状态（不含重试逻辑）
+ */
+async function getTaskStatusInternal(taskId) {
   return new Promise((resolve, reject) => {
     try {
       // 检查环境变量是否已设置
@@ -699,15 +750,18 @@ async function extractFaces(imageUrls) {
       // Python脚本路径
       const scriptPath = path.join(__dirname, 'utils', 'extract_faces.py');
       
-      // 准备参数
+      // 使用虚拟环境的Python
+      const pythonPath = path.join(__dirname, 'venv', 'bin', 'python3');
+      
+      // 准备参数 (使用更宽松的阈值)
       const params = {
         image_paths: imageUrls,
-        min_face_size: 80,
-        confidence_threshold: 0.7
+        min_face_size: 50,  // 降低最小人脸尺寸
+        confidence_threshold: 0.3  // 降低置信度阈值
       };
       
       // 调用Python脚本
-      const pythonProcess = spawn('python3', [scriptPath, JSON.stringify(params)]);
+      const pythonProcess = spawn(pythonPath, [scriptPath, JSON.stringify(params)]);
       
       let stdout = '';
       let stderr = '';
@@ -911,6 +965,18 @@ app.post('/api/user/init', async (req, res) => {
     });
   } catch (error) {
     console.error('初始化用户失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'USER_INIT_FAILED',
+      error.message,
+      {
+        userId: req.body.userId,
+        endpoint: '/api/user/init',
+        method: 'POST'
+      }
+    );
+    
     res.status(500).json({ 
       error: '初始化用户失败', 
       message: error.message 
@@ -981,7 +1047,7 @@ app.put('/api/user/:userId/payment-status', async (req, res) => {
 });
 
 // 生成艺术照端点
-app.post('/api/generate-art-photo', async (req, res) => {
+app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoParams), async (req, res) => {
   try {
     const { prompt, imageUrls, facePositions, userId, templateUrl } = req.body;
     
@@ -1035,6 +1101,19 @@ app.post('/api/generate-art-photo', async (req, res) => {
     });
   } catch (error) {
     console.error('生成艺术照失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'ART_PHOTO_GENERATION_FAILED',
+      error.message,
+      {
+        userId: req.body.userId,
+        imageCount: req.body.imageUrls?.length,
+        endpoint: '/api/generate-art-photo',
+        method: 'POST'
+      }
+    );
+    
     res.status(500).json({ 
       error: '生成艺术照失败', 
       message: error.message 
@@ -1091,6 +1170,18 @@ app.get('/api/task-status/:taskId', async (req, res) => {
     });
   } catch (error) {
     console.error('查询任务状态失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'TASK_STATUS_QUERY_FAILED',
+      error.message,
+      {
+        taskId: req.params.taskId,
+        endpoint: '/api/task-status/:taskId',
+        method: 'GET'
+      }
+    );
+    
     res.status(500).json({ 
       error: '查询任务状态失败', 
       message: error.message 
@@ -1203,7 +1294,7 @@ app.get('/api/task-status-stream/:taskId', async (req, res) => {
 });
 
 // 上传图片到OSS端点
-app.post('/api/upload-image', async (req, res) => {
+app.post('/api/upload-image', validateRequest(validateUploadImageParams), async (req, res) => {
   try {
     const { image } = req.body;
     
@@ -1231,7 +1322,7 @@ app.post('/api/upload-image', async (req, res) => {
 });
 
 // 人脸提取端点
-app.post('/api/extract-faces', async (req, res) => {
+app.post('/api/extract-faces', validateRequest(validateExtractFacesParams), async (req, res) => {
   try {
     const { imageUrls } = req.body;
     
@@ -1537,7 +1628,7 @@ app.get('/api/history/task/:taskId', async (req, res) => {
 // 支付系统端点
 
 // 创建支付订单
-app.post('/api/payment/create', async (req, res) => {
+app.post('/api/payment/create', validateRequest(validateCreatePaymentParams), async (req, res) => {
   try {
     const { userId, generationId, packageType } = req.body;
     
@@ -1607,6 +1698,19 @@ app.post('/api/payment/create', async (req, res) => {
     }
   } catch (error) {
     console.error('创建支付订单失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'PAYMENT_ORDER_CREATE_FAILED',
+      error.message,
+      {
+        userId: req.body.userId,
+        packageType: req.body.packageType,
+        endpoint: '/api/payment/create',
+        method: 'POST'
+      }
+    );
+    
     res.status(500).json({ 
       error: '创建支付订单失败', 
       message: error.message 
@@ -1615,7 +1719,7 @@ app.post('/api/payment/create', async (req, res) => {
 });
 
 // 发起微信支付
-app.post('/api/payment/wechat/jsapi', async (req, res) => {
+app.post('/api/payment/wechat/jsapi', validateRequest(validateWechatPaymentParams), async (req, res) => {
   try {
     const { orderId, openid } = req.body;
     
@@ -1678,7 +1782,18 @@ app.post('/api/payment/wechat/jsapi', async (req, res) => {
       
       console.log('发起微信支付请求:', JSON.stringify(params, null, 2));
       
-      const result = await wechatPayment.transactions_jsapi(params);
+      // 使用重试机制调用微信支付API
+      const result = await executeWithRetry(
+        () => wechatPayment.transactions_jsapi(params),
+        {
+          maxRetries: 1,
+          timeout: 30000,
+          operationName: '微信支付JSAPI',
+          onRetry: (attempt, error) => {
+            console.log(`[重试] 微信支付失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+          }
+        }
+      );
       
       console.log('微信支付响应:', JSON.stringify(result, null, 2));
       
@@ -1691,6 +1806,18 @@ app.post('/api/payment/wechat/jsapi', async (req, res) => {
     }
   } catch (error) {
     console.error('发起微信支付失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'WECHAT_PAYMENT_FAILED',
+      error.message,
+      {
+        orderId: req.body.orderId,
+        endpoint: '/api/payment/wechat/jsapi',
+        method: 'POST'
+      }
+    );
+    
     res.status(500).json({ 
       error: '发起微信支付失败', 
       message: error.message 
@@ -1815,6 +1942,21 @@ app.post('/api/payment/callback', async (req, res) => {
     res.json({ code: 'SUCCESS', message: '成功' });
   } catch (error) {
     console.error('处理微信支付回调失败:', error);
+    
+    // 记录错误日志
+    await errorLogService.logError(
+      'WECHAT_CALLBACK_FAILED',
+      error.message,
+      {
+        endpoint: '/api/payment/callback',
+        method: 'POST',
+        headers: {
+          signature: req.headers['wechatpay-signature'],
+          timestamp: req.headers['wechatpay-timestamp']
+        }
+      }
+    );
+    
     res.status(500).json({ code: 'FAIL', message: error.message });
   }
 });
@@ -2040,7 +2182,18 @@ app.post('/api/payment/order/:orderId/retry', async (req, res) => {
       
       console.log('重试支付请求:', JSON.stringify(params, null, 2));
       
-      const result = await wechatPayment.transactions_jsapi(params);
+      // 使用重试机制调用微信支付API
+      const result = await executeWithRetry(
+        () => wechatPayment.transactions_jsapi(params),
+        {
+          maxRetries: 1,
+          timeout: 30000,
+          operationName: '重试微信支付',
+          onRetry: (attempt, error) => {
+            console.log(`[重试] 重试微信支付失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+          }
+        }
+      );
       
       console.log('重试支付响应:', JSON.stringify(result, null, 2));
       
@@ -2072,6 +2225,24 @@ app.post('/api/payment/order/:orderId/retry', async (req, res) => {
  * @returns 视频生成任务ID
  */
 async function generateVideo(imageUrl, motionBucketId = 10, fps = 10, videoLength = 5, dynamicType = 'festival') {
+  // 使用重试机制包装API调用
+  return executeWithRetry(
+    () => generateVideoInternal(imageUrl, motionBucketId, fps, videoLength, dynamicType),
+    {
+      maxRetries: 1,
+      timeout: 30000,
+      operationName: '生成微动态视频',
+      onRetry: (attempt, error) => {
+        console.log(`[重试] 生成微动态视频失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+      }
+    }
+  );
+}
+
+/**
+ * 内部函数：调用火山引擎视频生成API（不含重试逻辑）
+ */
+async function generateVideoInternal(imageUrl, motionBucketId = 10, fps = 10, videoLength = 5, dynamicType = 'festival') {
   return new Promise((resolve, reject) => {
     try {
       // 检查环境变量是否已设置
@@ -2214,6 +2385,24 @@ async function generateVideo(imageUrl, motionBucketId = 10, fps = 10, videoLengt
  * @returns 任务状态和结果
  */
 async function getVideoTaskStatus(taskId) {
+  // 使用重试机制包装API调用
+  return executeWithRetry(
+    () => getVideoTaskStatusInternal(taskId),
+    {
+      maxRetries: 1,
+      timeout: 30000,
+      operationName: '查询视频任务状态',
+      onRetry: (attempt, error) => {
+        console.log(`[重试] 查询视频任务状态失败，准备第 ${attempt + 1} 次重试。错误: ${error.message}`);
+      }
+    }
+  );
+}
+
+/**
+ * 内部函数：查询视频生成任务状态（不含重试逻辑）
+ */
+async function getVideoTaskStatusInternal(taskId) {
   return new Promise((resolve, reject) => {
     try {
       // 检查环境变量是否已设置
@@ -2565,7 +2754,7 @@ async function convertToLivePhoto(videoUrl, outputPath = null) {
 }
 
 // 生成微动态视频端点
-app.post('/api/generate-video', async (req, res) => {
+app.post('/api/generate-video', validateRequest(validateGenerateVideoParams), async (req, res) => {
   try {
     const { imageUrl, userId, motionBucketId, fps, videoLength, dynamicType } = req.body;
     
@@ -2686,7 +2875,7 @@ app.post('/api/admin/cleanup', async (req, res) => {
 // 实体产品订单端点
 
 // 创建产品订单
-app.post('/api/product-order/create', async (req, res) => {
+app.post('/api/product-order/create', validateRequest(validateCreateProductOrderParams), async (req, res) => {
   try {
     const { userId, generationId, productType, productPrice, shippingName, shippingPhone, shippingAddress, imageUrl } = req.body;
     
@@ -3153,34 +3342,517 @@ app.post('/api/product-order/export-excel', async (req, res) => {
   }
 });
 
+// 模板管理端点
+
+// 获取模板列表
+app.get('/api/templates', async (req, res) => {
+  try {
+    // 模板数据 - 可以从数据库或配置文件读取
+    const templates = [
+      {
+        id: 'template-1',
+        name: '新中式团圆',
+        url: 'https://wms.webinfra.cloud/art-photos/template1.jpeg',
+        category: 'chinese-style',
+        description: '传统中国风格，适合全家福',
+        isDefault: true
+      },
+      {
+        id: 'template-2',
+        name: '现代简约',
+        url: 'https://wms.webinfra.cloud/art-photos/template2.jpeg',
+        category: 'modern',
+        description: '现代简约风格，时尚大气',
+        isDefault: false
+      },
+      {
+        id: 'template-3',
+        name: '复古怀旧',
+        url: 'https://wms.webinfra.cloud/art-photos/template3.jpeg',
+        category: 'vintage',
+        description: '复古怀旧风格，温馨感人',
+        isDefault: false
+      },
+      {
+        id: 'template-4',
+        name: '浪漫唯美',
+        url: 'https://wms.webinfra.cloud/art-photos/template4.jpeg',
+        category: 'romantic',
+        description: '浪漫唯美风格，梦幻温馨',
+        isDefault: false
+      },
+      {
+        id: 'template-5',
+        name: '国潮风尚',
+        url: 'https://wms.webinfra.cloud/art-photos/template5.jpeg',
+        category: 'trendy',
+        description: '国潮风尚，年轻时尚',
+        isDefault: false
+      }
+    ];
+    
+    res.json({
+      success: true,
+      data: templates
+    });
+  } catch (error) {
+    console.error('获取模板列表失败:', error);
+    res.status(500).json({
+      error: '获取模板列表失败',
+      message: error.message
+    });
+  }
+});
+
+// 获取单个模板详情
+app.get('/api/templates/:templateId', async (req, res) => {
+  try {
+    const { templateId } = req.params;
+    
+    // 这里应该从数据库查询，暂时使用硬编码
+    const templates = {
+      'template-1': {
+        id: 'template-1',
+        name: '新中式团圆',
+        url: 'https://wms.webinfra.cloud/art-photos/template1.jpeg',
+        category: 'chinese-style',
+        description: '传统中国风格，适合全家福',
+        isDefault: true
+      }
+      // ... 其他模板
+    };
+    
+    const template = templates[templateId];
+    
+    if (!template) {
+      return res.status(404).json({
+        error: '模板不存在',
+        message: '未找到对应的模板'
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error('获取模板详情失败:', error);
+    res.status(500).json({
+      error: '获取模板详情失败',
+      message: error.message
+    });
+  }
+});
+
+// 贺卡管理端点
+
+// 创建贺卡
+app.post('/api/greeting-card/create', async (req, res) => {
+  try {
+    const { userId, imageUrl, greeting, templateStyle } = req.body;
+    
+    // 参数校验
+    if (!userId || !imageUrl || !greeting) {
+      return res.status(400).json({
+        error: '缺少必要参数',
+        message: '需要提供 userId, imageUrl 和 greeting 参数'
+      });
+    }
+    
+    // 生成贺卡ID
+    const { v4: uuidv4 } = require('uuid');
+    const cardId = uuidv4();
+    
+    // 保存贺卡记录到数据库
+    const db = require('./db/connection');
+    const connection = await db.pool.getConnection();
+    
+    try {
+      await connection.execute(
+        `INSERT INTO greeting_cards 
+        (id, user_id, image_url, greeting_text, template_style, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+        [cardId, userId, imageUrl, greeting, templateStyle || 'classic']
+      );
+      
+      console.log(`创建贺卡成功: ${cardId}, 用户: ${userId}`);
+      
+      res.json({
+        success: true,
+        data: {
+          cardId: cardId,
+          userId: userId,
+          imageUrl: imageUrl,
+          greeting: greeting,
+          templateStyle: templateStyle || 'classic',
+          message: '贺卡创建成功'
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('创建贺卡失败:', error);
+    res.status(500).json({
+      error: '创建贺卡失败',
+      message: error.message
+    });
+  }
+});
+
+// 获取贺卡详情
+app.get('/api/greeting-card/:cardId', async (req, res) => {
+  try {
+    const { cardId } = req.params;
+    
+    if (!cardId) {
+      return res.status(400).json({
+        error: '缺少必要参数',
+        message: '需要提供 cardId 参数'
+      });
+    }
+    
+    const db = require('./db/connection');
+    const connection = await db.pool.getConnection();
+    
+    try {
+      const [rows] = await connection.execute(
+        'SELECT * FROM greeting_cards WHERE id = ?',
+        [cardId]
+      );
+      
+      if (rows.length === 0) {
+        return res.status(404).json({
+          error: '贺卡不存在',
+          message: '未找到对应的贺卡'
+        });
+      }
+      
+      const card = rows[0];
+      
+      res.json({
+        success: true,
+        data: {
+          cardId: card.id,
+          userId: card.user_id,
+          imageUrl: card.image_url,
+          greeting: card.greeting_text,
+          templateStyle: card.template_style,
+          createdAt: card.created_at,
+          updatedAt: card.updated_at
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('获取贺卡详情失败:', error);
+    res.status(500).json({
+      error: '获取贺卡详情失败',
+      message: error.message
+    });
+  }
+});
+
+// 获取用户的所有贺卡
+app.get('/api/greeting-card/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit } = req.query;
+    
+    if (!userId) {
+      return res.status(400).json({
+        error: '缺少必要参数',
+        message: '需要提供 userId 参数'
+      });
+    }
+    
+    const db = require('./db/connection');
+    const connection = await db.pool.getConnection();
+    
+    try {
+      const limitValue = limit ? parseInt(limit) : 10;
+      const [rows] = await connection.execute(
+        `SELECT * FROM greeting_cards 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC 
+        LIMIT ?`,
+        [userId, limitValue]
+      );
+      
+      const cards = rows.map(row => ({
+        cardId: row.id,
+        userId: row.user_id,
+        imageUrl: row.image_url,
+        greeting: row.greeting_text,
+        templateStyle: row.template_style,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      }));
+      
+      res.json({
+        success: true,
+        data: cards
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('获取用户贺卡列表失败:', error);
+    res.status(500).json({
+      error: '获取用户贺卡列表失败',
+      message: error.message
+    });
+  }
+});
+
+// 历史记录更新端点
+app.put('/api/history/:recordId', async (req, res) => {
+  try {
+    const { recordId } = req.params;
+    const { selectedImageUrl, status } = req.body;
+    
+    if (!recordId) {
+      return res.status(400).json({
+        error: '缺少必要参数',
+        message: '需要提供 recordId 参数'
+      });
+    }
+    
+    const db = require('./db/connection');
+    const connection = await db.pool.getConnection();
+    
+    try {
+      // 构建更新语句
+      const updates = [];
+      const values = [];
+      
+      if (selectedImageUrl !== undefined) {
+        updates.push('selected_image_url = ?');
+        values.push(selectedImageUrl);
+      }
+      
+      if (status !== undefined) {
+        updates.push('status = ?');
+        values.push(status);
+      }
+      
+      if (updates.length === 0) {
+        return res.status(400).json({
+          error: '缺少更新参数',
+          message: '需要提供至少一个更新字段'
+        });
+      }
+      
+      updates.push('updated_at = NOW()');
+      values.push(recordId);
+      
+      const [result] = await connection.execute(
+        `UPDATE generation_history SET ${updates.join(', ')} WHERE id = ?`,
+        values
+      );
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: '记录不存在',
+          message: '未找到对应的历史记录'
+        });
+      }
+      
+      console.log(`历史记录 ${recordId} 已更新`);
+      
+      res.json({
+        success: true,
+        message: '历史记录更新成功',
+        data: {
+          recordId: recordId
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('更新历史记录失败:', error);
+    res.status(500).json({
+      error: '更新历史记录失败',
+      message: error.message
+    });
+  }
+});
+
+// 错误日志管理端点
+
+// 查询错误日志
+app.get('/api/error-logs', async (req, res) => {
+  try {
+    const { level, errorCode, startDate, endDate, limit } = req.query;
+    
+    const filters = {};
+    
+    if (level) {
+      filters.level = level;
+    }
+    
+    if (errorCode) {
+      filters.errorCode = errorCode;
+    }
+    
+    if (startDate) {
+      filters.startDate = new Date(startDate);
+    }
+    
+    if (endDate) {
+      filters.endDate = new Date(endDate);
+    }
+    
+    if (limit) {
+      filters.limit = parseInt(limit);
+    } else {
+      filters.limit = 100; // 默认返回100条
+    }
+    
+    const logs = await errorLogService.queryLogs(filters);
+    
+    res.json({
+      success: true,
+      data: {
+        logs: logs,
+        count: logs.length
+      }
+    });
+  } catch (error) {
+    console.error('查询错误日志失败:', error);
+    res.status(500).json({
+      error: '查询错误日志失败',
+      message: error.message
+    });
+  }
+});
+
+// 清理旧错误日志 (管理员使用)
+app.post('/api/admin/error-logs/cleanup', async (req, res) => {
+  try {
+    const { daysToKeep } = req.body;
+    
+    const days = daysToKeep ? parseInt(daysToKeep) : 30;
+    
+    // 清理数据库日志
+    const dbDeletedCount = await errorLogService.cleanupOldLogs(days);
+    
+    // 清理文件日志
+    const fileDeletedCount = errorLogService.cleanupOldLogFiles(days);
+    
+    res.json({
+      success: true,
+      message: `清理完成`,
+      data: {
+        databaseRecordsDeleted: dbDeletedCount,
+        logFilesDeleted: fileDeletedCount,
+        daysKept: days
+      }
+    });
+  } catch (error) {
+    console.error('清理错误日志失败:', error);
+    
+    await errorLogService.logError(
+      'ERROR_LOG_CLEANUP_FAILED',
+      error.message,
+      {
+        endpoint: '/api/admin/error-logs/cleanup',
+        method: 'POST'
+      }
+    );
+    
+    res.status(500).json({
+      error: '清理错误日志失败',
+      message: error.message
+    });
+  }
+});
+
+// 手动记录错误日志 (用于测试或特殊情况)
+app.post('/api/admin/error-logs/log', async (req, res) => {
+  try {
+    const { errorCode, errorMessage, context } = req.body;
+    
+    if (!errorCode || !errorMessage) {
+      return res.status(400).json({
+        error: '缺少必要参数',
+        message: '需要提供 errorCode 和 errorMessage 参数'
+      });
+    }
+    
+    const logEntry = await errorLogService.logError(
+      errorCode,
+      errorMessage,
+      context || {}
+    );
+    
+    res.json({
+      success: true,
+      message: '错误日志已记录',
+      data: logEntry
+    });
+  } catch (error) {
+    console.error('记录错误日志失败:', error);
+    res.status(500).json({
+      error: '记录错误日志失败',
+      message: error.message
+    });
+  }
+});
+
 // 启动服务器
 app.listen(PORT, () => {
-  console.log(`火山引擎API代理服务器运行在端口 ${PORT}`);
-  console.log(`健康检查端点: http://localhost:${PORT}/health`);
-  console.log(`用户初始化端点: http://localhost:${PORT}/api/user/init`);
-  console.log(`获取用户信息端点: http://localhost:${PORT}/api/user/:userId`);
-  console.log(`更新用户付费状态端点: http://localhost:${PORT}/api/user/:userId/payment-status`);
-  console.log(`生成艺术照端点: http://localhost:${PORT}/api/generate-art-photo`);
-  console.log(`查询任务状态端点: http://localhost:${PORT}/api/task-status/:taskId`);
-  console.log(`上传图片端点: http://localhost:${PORT}/api/upload-image`);
-  console.log(`获取用户历史记录端点: http://localhost:${PORT}/api/history/user/:userId`);
-  console.log(`根据记录ID获取历史记录端点: http://localhost:${PORT}/api/history/:recordId`);
-  console.log(`根据任务ID获取历史记录端点: http://localhost:${PORT}/api/history/task/:taskId`);
-  console.log(`创建支付订单端点: http://localhost:${PORT}/api/payment/create`);
-  console.log(`发起微信支付端点: http://localhost:${PORT}/api/payment/wechat/jsapi`);
-  console.log(`微信支付回调端点: http://localhost:${PORT}/api/payment/callback`);
-  console.log(`查询支付订单端点: http://localhost:${PORT}/api/payment/order/:orderId`);
-  console.log(`更新支付订单状态端点: http://localhost:${PORT}/api/payment/order/:orderId/status`);
-  console.log(`重试支付订单端点: http://localhost:${PORT}/api/payment/order/:orderId/retry`);
-  console.log(`生成微动态视频端点: http://localhost:${PORT}/api/generate-video`);
-  console.log(`查询视频任务状态端点: http://localhost:${PORT}/api/video-task-status/:taskId`);
-  console.log(`转换Live Photo格式端点: http://localhost:${PORT}/api/convert-to-live-photo`);
-  console.log(`手动清理端点: http://localhost:${PORT}/api/admin/cleanup`);
-  console.log(`创建产品订单端点: http://localhost:${PORT}/api/product-order/create`);
-  console.log(`查询产品订单端点: http://localhost:${PORT}/api/product-order/:orderId`);
-  console.log(`查询用户产品订单端点: http://localhost:${PORT}/api/product-order/user/:userId`);
-  console.log(`更新产品订单状态端点: http://localhost:${PORT}/api/product-order/:orderId/status`);
-  console.log(`导出产品订单Excel端点: http://localhost:${PORT}/api/product-order/export-excel`);
+  console.log(`\n========================================`);
+  console.log(`🚀 AI全家福服务器运行在端口 ${PORT}`);
+  console.log(`========================================\n`);
+  
+  console.log(`📋 核心功能端点:`);
+  console.log(`  - 健康检查: http://localhost:${PORT}/health`);
+  console.log(`  - 生成艺术照: POST /api/generate-art-photo`);
+  console.log(`  - 查询任务状态: GET /api/task-status/:taskId`);
+  console.log(`  - 上传图片: POST /api/upload-image\n`);
+  
+  console.log(`👤 用户管理:`);
+  console.log(`  - 初始化用户: POST /api/user/init`);
+  console.log(`  - 获取用户信息: GET /api/user/:userId`);
+  console.log(`  - 更新付费状态: PUT /api/user/:userId/payment-status\n`);
+  
+  console.log(`🎨 模板管理:`);
+  console.log(`  - 获取模板列表: GET /api/templates`);
+  console.log(`  - 获取模板详情: GET /api/templates/:templateId\n`);
+  
+  console.log(`💳 支付系统:`);
+  console.log(`  - 创建订单: POST /api/payment/create`);
+  console.log(`  - 微信支付: POST /api/payment/wechat/jsapi`);
+  console.log(`  - 查询订单: GET /api/payment/order/:orderId\n`);
+  
+  console.log(`🎁 贺卡管理:`);
+  console.log(`  - 创建贺卡: POST /api/greeting-card/create`);
+  console.log(`  - 获取贺卡: GET /api/greeting-card/:cardId`);
+  console.log(`  - 用户贺卡列表: GET /api/greeting-card/user/:userId\n`);
+  
+  console.log(`📦 产品订单:`);
+  console.log(`  - 创建订单: POST /api/product-order/create`);
+  console.log(`  - 查询订单: GET /api/product-order/:orderId`);
+  console.log(`  - 导出Excel: POST /api/product-order/export-excel\n`);
+  
+  console.log(`🎬 微动态视频:`);
+  console.log(`  - 生成视频: POST /api/generate-video`);
+  console.log(`  - 查询状态: GET /api/video-task-status/:taskId`);
+  console.log(`  - Live Photo转换: POST /api/convert-to-live-photo\n`);
+  
+  console.log(`📚 历史记录:`);
+  console.log(`  - 用户历史: GET /api/history/user/:userId`);
+  console.log(`  - 更新记录: PUT /api/history/:recordId\n`);
+  
+  console.log(`📝 错误日志:`);
+  console.log(`  - 查询日志: GET /api/error-logs`);
+  console.log(`  - 清理旧日志: POST /api/admin/error-logs/cleanup`);
+  console.log(`  - 手动记录: POST /api/admin/error-logs/log\n`);
+  
+  console.log(`========================================\n`);
   
   // 启动定时清理任务
   cleanupService.startCleanupSchedule();

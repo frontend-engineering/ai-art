@@ -29,3 +29,6 @@ dist-ssr
 *.sw?
 
 db/
+
+# Python virtual environment
+backend/venv/

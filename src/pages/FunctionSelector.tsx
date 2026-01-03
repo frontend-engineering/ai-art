@@ -2,10 +2,14 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useUser } from '@/contexts/UserContext';
+import { useElderMode } from '@/contexts/ElderModeContext';
+import ElderModeToggle from '@/components/ElderModeToggle';
+import PageTransition from '@/components/PageTransition';
 
 export default function FunctionSelector() {
   const navigate = useNavigate();
   const { user, loading } = useUser();
+  const { isElderMode } = useElderMode();
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -15,6 +19,10 @@ export default function FunctionSelector() {
       return;
     }
     navigate('/upload', { state: { mode: functionType } });
+  };
+
+  const handleBack = () => {
+    navigate('/');
   };
 
   const handleShowTutorial = () => {
@@ -38,7 +46,22 @@ export default function FunctionSelector() {
   }
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FFF8F0] p-6">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#FFF8F0] p-6">
+      {/* 返回按钮 - 左上角 */}
+      <button 
+        onClick={handleBack} 
+        className="absolute top-4 left-4 z-20 flex items-center text-[#D4302B] font-medium hover:text-[#B8251F] transition-colors"
+      >
+        <i className="fas fa-arrow-left mr-1"></i>
+        <span>返回</span>
+      </button>
+      
+      {/* 老年模式切换按钮 - 右上角 */}
+      <div className="absolute top-4 right-4 z-20">
+        <ElderModeToggle />
+      </div>
+      
       {/* 功能卡片容器 - 上下两个大卡片各占50%屏幕高度 */}
       <div className="w-full max-w-md flex flex-col gap-4 h-[calc(100vh-200px)]">
         {/* 卡片A - 时空拼图 */}
@@ -120,13 +143,15 @@ export default function FunctionSelector() {
         </motion.div>
       </div>
 
-      {/* 教程链接 - 底部灰色文字链 */}
+      {/* 教程链接 - 底部灰色文字链 - 老年模式下隐藏 */}
       <motion.button
         onClick={handleShowTutorial}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="mt-6 text-gray-500 hover:text-gray-700 transition-colors text-base"
+        className={`mt-6 text-gray-500 hover:text-gray-700 transition-colors text-base ${
+          isElderMode ? 'elder-mode-hide' : ''
+        }`}
       >
         有疑问？查看30秒教程
       </motion.button>
@@ -207,9 +232,10 @@ export default function FunctionSelector() {
         )}
       </AnimatePresence>
 
-      {/* 装饰元素 */}
-      <div className="fixed top-6 left-6 text-4xl opacity-60 animate-pulse">🏮</div>
-      <div className="fixed top-6 right-6 text-4xl opacity-60 animate-pulse" style={{ animationDelay: '0.5s' }}>🏮</div>
+      {/* 装饰元素 - 老年模式下隐藏 */}
+      <div className={`fixed top-6 left-6 text-4xl opacity-60 animate-pulse ${isElderMode ? 'elder-mode-hide' : ''}`}>🏮</div>
+      <div className={`fixed top-6 right-6 text-4xl opacity-60 animate-pulse ${isElderMode ? 'elder-mode-hide' : ''}`} style={{ animationDelay: '0.5s' }}>🏮</div>
     </div>
+    </PageTransition>
   );
 }

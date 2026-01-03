@@ -10,11 +10,14 @@ import ImagePreviewModal from '../components/ImagePreviewModal';
 import CanvasPositioning from '../components/CanvasPositioning';
 import FourGridSelector from '../components/FourGridSelector';
 import ProductRecommendation from '../components/ProductRecommendation';
-import { formatDateTime, uploadImageToOSS, getTemplateImages } from '../lib/utils';
+import FireworksAnimation from '../components/FireworksAnimation';
+import FestivalGreeting from '../components/FestivalGreeting';
+import { formatDateTime, uploadImageToOSS, getTemplateImages, showFriendlyError } from '../lib/utils';
 import { generateArtPhoto, getTaskStatusStream } from '../lib/volcengineAPI';
 import { faceAPI, type FaceData } from '../lib/api';
 import { useUser } from '../contexts/UserContext';
 import { getUserId } from '../lib/auth';
+import PageTransition from '@/components/PageTransition';
 
 // 定义历史记录项类型
 interface HistoryItemType {
@@ -75,6 +78,7 @@ export default function GeneratorPage() {
     scale: number;
     rotation: number;
   }> | null>(null); // 人脸位置信息
+  const [showFireworks, setShowFireworks] = useState(false); // 是否显示烟花动画
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -277,6 +281,9 @@ export default function GeneratorPage() {
           setGeneratedImages(images);
           setGenerationProgress(100);
           
+          // 显示烟花动画
+          setShowFireworks(true);
+          
           // 保存到历史记录
           const newHistoryItem: HistoryItemType = {
             id: Date.now().toString(),
@@ -308,7 +315,7 @@ export default function GeneratorPage() {
         // 错误回调
         (error) => {
           console.error('生成失败:', error);
-          toast.error(error || '生成失败,请重试');
+          showFriendlyError(error || '生成失败');
           setIsGenerating(false);
           setGenerationProgress(0);
         }
@@ -484,7 +491,7 @@ export default function GeneratorPage() {
         // 错误回调
         (error) => {
           console.error('重生成失败:', error);
-          toast.error(error || '重生成失败,请重试');
+          showFriendlyError(error || '重生成失败');
           setRegenerateCount(prev => prev + 1); // 恢复重生成次数
           setIsGenerating(false);
           setGenerationProgress(0);
@@ -558,7 +565,7 @@ export default function GeneratorPage() {
       setShowProductRecommendation(false);
     } catch (error) {
       console.error('创建产品订单失败:', error);
-      toast.error(error instanceof Error ? error.message : '创建订单失败，请重试');
+      showFriendlyError(error instanceof Error ? error : '创建订单失败');
       throw error;
     }
   };
@@ -628,7 +635,7 @@ export default function GeneratorPage() {
       const result = await faceAPI.extractFaces(imageUrls);
       
       if (!result.success || result.faces.length === 0) {
-        toast(result.message || '未检测到人脸');
+        showFriendlyError(result.message || '未检测到人脸');
         return;
       }
       
@@ -636,7 +643,7 @@ export default function GeneratorPage() {
       setShowCanvasPositioning(true);
       toast(`成功提取 ${result.faces.length} 张人脸`);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '人脸提取失败');
+      showFriendlyError(error instanceof Error ? error : '人脸提取失败');
     }
   };
   
@@ -658,8 +665,12 @@ export default function GeneratorPage() {
   };
   
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-hidden pb-20">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden pb-20">
       <Background />
+      
+      {/* 节气文案 */}
+      <FestivalGreeting />
       
       {/* 顶部导航栏 */}
       <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-white/70 shadow-sm px-4 py-3">
@@ -1044,6 +1055,13 @@ export default function GeneratorPage() {
           onOrderProduct={handleOrderProduct}
         />
       )}
+      
+      {/* 烟花动画 */}
+      <FireworksAnimation
+        isVisible={showFireworks}
+        onComplete={() => setShowFireworks(false)}
+      />
     </div>
+    </PageTransition>
   );
 }

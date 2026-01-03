@@ -9,10 +9,16 @@
     "prestart": "node scripts/check-dependencies.js",
     "check-deps": "node scripts/check-dependencies.js",
     "install-ffmpeg": "bash scripts/install-ffmpeg.sh",
+    "db:init": "node scripts/init-database.js",
+    "db:verify": "node scripts/verify-database.js",
     "db:migrate": "node db/migrate.js up",
+    "db:migrate:new": "node scripts/run-migrations.js",
     "db:rollback": "node db/migrate.js down",
     "db:test": "node -e \"require('./db/connection').testConnection().then(() => process.exit(0)).catch(() => process.exit(1))\"",
-    "db:test-full": "node db/test-connection.js"
+    "db:test-full": "node db/test-connection.js",
+    "test:api": "node scripts/test-apis.js",
+    "test:e2e": "node test-e2e.js",
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "@volcengine/openapi": "^1.32.0",
@@ -27,6 +33,8 @@
     "wechatpay-node-v3": "^2.2.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.0.1"
   }
 }

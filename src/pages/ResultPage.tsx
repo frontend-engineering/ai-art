@@ -5,7 +5,10 @@ import { toast } from 'sonner';
 import Background from '../components/Background';
 import PaymentModal from '../components/PaymentModal';
 import ProductRecommendation from '../components/ProductRecommendation';
+import FestivalGreeting from '../components/FestivalGreeting';
 import { useUser } from '../contexts/UserContext';
+import PageTransition from '@/components/PageTransition';
+import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
 
 export default function ResultPage() {
   const navigate = useNavigate();
@@ -80,7 +83,7 @@ export default function ResultPage() {
       }
       
       // 调用API创建产品订单
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/product-order/create`, {
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.PRODUCT_ORDER_CREATE), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -162,8 +165,12 @@ export default function ResultPage() {
   };
   
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
       <Background />
+      
+      {/* 节气文案 */}
+      <FestivalGreeting />
       
       {/* 顶部导航栏 */}
       <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-white/70 shadow-sm px-4 py-3">
@@ -366,5 +373,6 @@ export default function ResultPage() {
         />
       )}
     </div>
+    </PageTransition>
   );
 }

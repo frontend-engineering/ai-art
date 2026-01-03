@@ -3,6 +3,9 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import Background from '../components/Background';
+import PageTransition from '@/components/PageTransition';
+import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
+import { useUser } from '@/contexts/UserContext';
 
 // 预设祝福语
 const PRESET_GREETINGS = [
@@ -26,6 +29,7 @@ export default function CardEditor() {
   const navigate = useNavigate();
   const location = useLocation();
   const { selectedImage } = location.state || {};
+  const { user } = useUser();
   
   const [customGreeting, setCustomGreeting] = useState('新春快乐，阖家欢乐！');
   const [selectedTemplate, setSelectedTemplate] = useState(CARD_TEMPLATES[0]);
@@ -45,20 +49,39 @@ export default function CardEditor() {
   };
   
   const handleSave = async () => {
+    if (!user?.id) {
+      toast.error('请先登录');
+      return;
+    }
+    
     setIsSaving(true);
     
     try {
-      // TODO: 实现贺卡保存逻辑
-      // 1. 将贺卡渲染为图片
-      // 2. 保存到本地或上传到服务器
+      // 调用贺卡创建API
+      const response = await fetch(buildApiUrl(API_ENDPOINTS.GREETING_CARD_CREATE), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          imageUrl: selectedImage,
+          greeting: customGreeting,
+          templateStyle: selectedTemplate.id
+        }),
+      });
       
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || '保存贺卡失败');
+      }
       
       toast.success('贺卡已保存');
       navigate(-1);
     } catch (error) {
       console.error('保存贺卡失败:', error);
-      toast.error('保存失败，请重试');
+      toast.error(error instanceof Error ? error.message : '保存失败，请重试');
     } finally {
       setIsSaving(false);
     }
@@ -87,7 +110,8 @@ export default function CardEditor() {
   };
   
   return (
-    <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
       <Background />
       
       {/* 顶部导航栏 */}
@@ -260,5 +284,6 @@ export default function CardEditor() {
         </div>
       </main>
     </div>
+    </PageTransition>
   );
 }

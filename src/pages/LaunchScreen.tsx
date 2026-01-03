@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useElderMode } from '@/contexts/ElderModeContext';
+import { useUser } from '@/contexts/UserContext';
+import FestivalGreeting from '@/components/FestivalGreeting';
+import PageTransition from '@/components/PageTransition';
 
 // 情感图片 - 3张轮播图
 const emotionalImages = [
@@ -20,9 +24,24 @@ const emotionalImages = [
 
 export default function LaunchScreen() {
   const navigate = useNavigate();
+  const { isElderMode } = useElderMode();
+  const { user, loading } = useUser();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [userCount] = useState(12345); // 动态数字，实际应从后端获取
   const [autoRedirect, setAutoRedirect] = useState(true);
+
+  // 检查是否首次访问
+  useEffect(() => {
+    const hasVisited = localStorage.getItem('hasVisitedLaunchScreen');
+    if (hasVisited) {
+      // 如果已经访问过，可以选择直接跳过或显示但不自动跳转
+      // 这里我们选择显示但允许用户手动跳过
+      // setAutoRedirect(false); // 取消注释此行可禁用自动跳转
+    }
+    
+    // 标记已访问
+    localStorage.setItem('hasVisitedLaunchScreen', 'true');
+  }, []);
 
   // 自动轮播图片
   useEffect(() => {
@@ -33,16 +52,16 @@ export default function LaunchScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // 3秒后自动跳转
+  // 3秒后自动跳转（确保用户已初始化）
   useEffect(() => {
-    if (autoRedirect) {
+    if (autoRedirect && !loading && user) {
       const timer = setTimeout(() => {
         navigate('/function-selector');
       }, 3000);
 
       return () => clearTimeout(timer);
     }
-  }, [autoRedirect, navigate]);
+  }, [autoRedirect, loading, user, navigate]);
 
   const handleSkip = () => {
     setAutoRedirect(false);
@@ -54,7 +73,13 @@ export default function LaunchScreen() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-[#FFF8F0]">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden bg-[#FFF8F0]">
+      {/* 节气文案 */}
+      <div className="absolute top-0 left-0 right-0 z-20">
+        <FestivalGreeting />
+      </div>
+      
       {/* 轮播图片背景 */}
       <div className="absolute inset-0 z-0">
         <AnimatePresence mode="wait">
@@ -76,13 +101,15 @@ export default function LaunchScreen() {
         </AnimatePresence>
       </div>
 
-      {/* 跳过按钮 */}
-      <button
-        onClick={handleSkip}
-        className="absolute top-6 right-6 z-20 text-gray-500 hover:text-gray-700 transition-colors text-base"
-      >
-        跳过
-      </button>
+      {/* 跳过按钮 - 老年模式下隐藏 */}
+      {!isElderMode && (
+        <button
+          onClick={handleSkip}
+          className="absolute top-6 right-6 z-20 text-gray-500 hover:text-gray-700 transition-colors text-base"
+        >
+          跳过
+        </button>
+      )}
 
       {/* 内容区域 */}
       <div className="relative z-10 flex flex-col items-center justify-center px-6 text-center">
@@ -107,21 +134,23 @@ export default function LaunchScreen() {
           3步生成惊艳全家的AI全家福
         </motion.p>
 
-        {/* 动态数字 */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.6, duration: 0.6 }}
-          className="mb-12"
-        >
-          <p className="text-base text-gray-600">
-            已帮助{' '}
-            <span className="text-2xl font-bold text-[#D4AF37]">
-              {userCount.toLocaleString()}
-            </span>{' '}
-            个家庭团圆
-          </p>
-        </motion.div>
+        {/* 动态数字 - 老年模式下隐藏 */}
+        {!isElderMode && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="mb-12"
+          >
+            <p className="text-base text-gray-600">
+              已帮助{' '}
+              <span className="text-2xl font-bold text-[#D4AF37]">
+                {userCount.toLocaleString()}
+              </span>{' '}
+              个家庭团圆
+            </p>
+          </motion.div>
+        )}
 
         {/* 立即制作按钮 */}
         <motion.button
@@ -136,23 +165,28 @@ export default function LaunchScreen() {
         </motion.button>
       </div>
 
-      {/* 装饰元素 - 灯笼 */}
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 0.6, y: 0 }}
-        transition={{ delay: 1, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
-        className="absolute top-10 left-10 text-6xl"
-      >
-        🏮
-      </motion.div>
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 0.6, y: 0 }}
-        transition={{ delay: 1.2, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
-        className="absolute top-10 right-10 text-6xl"
-      >
-        🏮
-      </motion.div>
+      {/* 装饰元素 - 灯笼 - 老年模式下隐藏 */}
+      {!isElderMode && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 0.6, y: 0 }}
+            transition={{ delay: 1, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
+            className="absolute top-10 left-10 text-6xl"
+          >
+            🏮
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 0.6, y: 0 }}
+            transition={{ delay: 1.2, duration: 1, repeat: Infinity, repeatType: 'reverse' }}
+            className="absolute top-10 right-10 text-6xl"
+          >
+            🏮
+          </motion.div>
+        </>
+      )}
     </div>
+    </PageTransition>
   );
 }

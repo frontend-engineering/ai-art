@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Background from '../components/Background';
+import ElderModeToggle from '../components/ElderModeToggle';
+import { useElderMode } from '@/contexts/ElderModeContext';
+import PageTransition from '@/components/PageTransition';
 
 // 艺术照风格示例图片（使用常量URL）
 const styleSampleImages = [
@@ -40,8 +43,14 @@ export default function LandingPage() {
   };
   
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden pb-20">
+    <PageTransition>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden pb-20">
       <Background />
+      
+      {/* 老年模式切换按钮 - 右上角 */}
+      <div className="absolute top-4 right-4 z-20">
+        <ElderModeToggle />
+      </div>
       
       <div className="container mx-auto px-6 flex flex-col items-center justify-center z-10">
         {/* 主标题 */}
@@ -112,5 +121,6 @@ export default function LandingPage() {
         </motion.button>
       </div>
     </div>
+    </PageTransition>
   );
 }

@@ -1,8 +1,43 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { toast } from "sonner"
+import { getFriendlyError, type FriendlyError } from "./errorMessages"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+// 显示友好的错误提示（使用 Sonner Toast）
+export function showFriendlyError(error: string | Error) {
+  const friendlyError = getFriendlyError(error);
+  
+  // 使用 Sonner 的自定义 toast 显示友好错误
+  toast.error(
+    `${friendlyError.emoji} ${friendlyError.title}`,
+    {
+      description: `${friendlyError.message}\n\n💡 ${friendlyError.solution}`,
+      duration: 6000,
+      style: {
+        background: 'white',
+        border: '2px solid #FEE2E2',
+        borderRadius: '12px',
+        padding: '16px',
+      },
+    }
+  );
+  
+  return friendlyError;
+}
+
+// 显示友好的错误提示（使用模态框）
+export function showFriendlyErrorModal(
+  error: string | Error
+): FriendlyError {
+  const friendlyError = getFriendlyError(error);
+  
+  // 这个函数返回错误对象，由调用方决定如何显示
+  // 通常配合 FriendlyErrorToast 组件使用
+  return friendlyError;
 }
 
 // 格式化日期时间
