@@ -5,15 +5,26 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "prestart": "node scripts/check-dependencies.js",
+    "check-deps": "node scripts/check-dependencies.js",
+    "install-ffmpeg": "bash scripts/install-ffmpeg.sh",
+    "db:migrate": "node db/migrate.js up",
+    "db:rollback": "node db/migrate.js down",
+    "db:test": "node -e \"require('./db/connection').testConnection().then(() => process.exit(0)).catch(() => process.exit(1))\"",
+    "db:test-full": "node db/test-connection.js"
   },
   "dependencies": {
     "@volcengine/openapi": "^1.32.0",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "cos-nodejs-sdk-v5": "^2.11.19",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mysql2": "^3.15.3"
+    "mysql2": "^3.15.3",
+    "node-cron": "^4.2.1",
+    "uuid": "^9.0.0",
+    "wechatpay-node-v3": "^2.2.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

@@ -7,8 +7,14 @@ import HistoryItem from '../components/HistoryItem';
 import PaymentModal from '../components/PaymentModal';
 import HelpModal from '../components/HelpModal';
 import ImagePreviewModal from '../components/ImagePreviewModal';
+import CanvasPositioning from '../components/CanvasPositioning';
+import FourGridSelector from '../components/FourGridSelector';
+import ProductRecommendation from '../components/ProductRecommendation';
 import { formatDateTime, uploadImageToOSS, getTemplateImages } from '../lib/utils';
-import { generateArtPhoto, getTaskStatus } from '../lib/volcengineAPI';
+import { generateArtPhoto, getTaskStatusStream } from '../lib/volcengineAPI';
+import { faceAPI, type FaceData } from '../lib/api';
+import { useUser } from '../contexts/UserContext';
+import { getUserId } from '../lib/auth';
 
 // 定义历史记录项类型
 interface HistoryItemType {
@@ -43,8 +49,10 @@ const PROMPT_TEXT = `我提供了至少两张参考图，分工:​
 
 export default function GeneratorPage() {
   const navigate = useNavigate();
+  const { user } = useUser(); // 获取用户信息
   const [selectedImages, setSelectedImages] = useState<string[]>([]); // 改为数组以支持多张照片
-  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]); // 改为数组以支持4张生成结果
+  const [selectedGeneratedImage, setSelectedGeneratedImage] = useState<string | null>(null); // 用户选中的生成结果
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState(0); // 添加生成进度状态
   const [regenerateCount, setRegenerateCount] = useState(3);
@@ -52,12 +60,21 @@ export default function GeneratorPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showImagePreviewModal, setShowImagePreviewModal] = useState(false);
+  const [showProductRecommendation, setShowProductRecommendation] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [currentHistoryItem, setCurrentHistoryItem] = useState<HistoryItemType | null>(null);
   const [uploadedImageUrls, setUploadedImageUrls] = useState<Record<string, string>>({}); // 用于缓存已上传图片的URL
   const [templateImages, setTemplateImages] = useState<string[]>([]); // 模板图片列表
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null); // 选中的模板
   const [showTemplateSelector, setShowTemplateSelector] = useState(false); // 是否显示模板选择器
+  const [showCanvasPositioning, setShowCanvasPositioning] = useState(false); // 是否显示画布定位
+  const [extractedFaces, setExtractedFaces] = useState<FaceData[]>([]); // 提取的人脸数据
+  const [facePositions, setFacePositions] = useState<Array<{
+    x: number;
+    y: number;
+    scale: number;
+    rotation: number;
+  }> | null>(null); // 人脸位置信息
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -169,7 +186,7 @@ export default function GeneratorPage() {
             // 当所有文件都处理完后更新状态
             if (processedCount === filesToProcess.length) {
               setSelectedImages(prev => [...prev, ...newImages]);
-              setGeneratedImage(null); // 重置生成的图片
+              setGeneratedImages([]); // 重置生成的图片
             }
           }
         };
@@ -201,15 +218,19 @@ export default function GeneratorPage() {
       return;
     }
     
+    // 如果有多张照片且未进行画布定位,提示用户
+    if (selectedImages.length > 1 && !facePositions) {
+      toast('检测到多张照片,建议先进行画布定位以获得更好效果');
+      // 可以选择自动打开画布定位,或者让用户手动选择
+      // 这里我们继续生成,但不使用定位信息
+    }
+    
     setIsGenerating(true);
     setGenerationProgress(0); // 重置进度
+    setGeneratedImages([]); // 清空之前的生成结果
+    setSelectedGeneratedImage(null); // 清空选中状态
     
     try {
-      // 设置30秒超时
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('生成超时,请重试')), 30000)
-      );
-      
       // 更新进度
       setGenerationProgress(20);
       
@@ -230,78 +251,148 @@ export default function GeneratorPage() {
       // 更新进度
       setGenerationProgress(40);
       
-      // 调用火山引擎API生成艺术照，传入所有上传的照片和选中的模板
-      const taskId = await Promise.race([
-        generateArtPhoto(PROMPT_TEXT, [imageUrls[0], selectedTemplate, ...imageUrls.slice(1)]),
-        timeoutPromise
-      ]);
+      // 调用火山引擎API生成艺术照,传入所有上传的照片、选中的模板和人脸位置信息
+      const taskId = await generateArtPhoto(
+        PROMPT_TEXT, 
+        [imageUrls[0], selectedTemplate, ...imageUrls.slice(1)],
+        facePositions || undefined,
+        getUserId() // 传递用户ID
+      );
       
       if (!taskId || typeof taskId !== 'string') {
         throw new Error('生成任务ID获取失败');
       }
       
-      // 更新进度
-      setGenerationProgress(60);
-      
-      // 模拟轮询获取结果(实际实现中需要根据API文档调整)
-      let artPhotoUrl = '';
-      const maxAttempts = 30;
-      let attempts = 0;
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        // 等待2秒再查询
-        await new Promise(resolve => setTimeout(resolve, 6000));
-        
-        const statusResponse = await getTaskStatus(taskId);
-        // 检查火山引擎API返回的状态
-        if (statusResponse?.Result?.data?.status === 'done') {
-          // 优先使用上传到OSS的图片URL,如果没有则使用原始图片
-          artPhotoUrl = statusResponse?.Result?.data?.uploaded_image_urls?.[0] || selectedImages[0] || '';
-          break;
-        } else if (statusResponse?.Result?.data?.status === 'failed') {
-          throw new Error('艺术照生成失败');
+      // 使用流式查询获取生成进度和结果
+      const cancelStream = getTaskStatusStream(
+        taskId,
+        // 进度回调
+        (progress, status) => {
+          setGenerationProgress(Math.max(progress, 40)); // 确保进度不低于40%
+          console.log(`生成进度: ${progress}%, 状态: ${status}`);
+        },
+        // 完成回调
+        (images) => {
+          console.log('生成完成，收到图片:', images);
+          setGeneratedImages(images);
+          setGenerationProgress(100);
+          
+          // 保存到历史记录
+          const newHistoryItem: HistoryItemType = {
+            id: Date.now().toString(),
+            originalImages: selectedImages,
+            generatedImage: images[0] || '', // 默认选择第一张
+            createdAt: formatDateTime(new Date()),
+            isPaid: false,
+            regenerateCount: 3
+          };
+          
+          // 添加新记录并保持历史记录数量限制
+          setHistoryItems(prev => {
+            const updatedHistory = [newHistoryItem, ...prev];
+            // 限制最多保存10条记录
+            return updatedHistory.slice(0, 10);
+          });
+          setCurrentHistoryItem(newHistoryItem);
+          
+          // 清除人脸位置信息,下次生成需要重新定位
+          setFacePositions(null);
+          
+          setIsGenerating(false);
+          
+          // 2秒后重置进度
+          setTimeout(() => setGenerationProgress(0), 2000);
+          
+          toast.success('生成完成！请选择您最满意的一张');
+        },
+        // 错误回调
+        (error) => {
+          console.error('生成失败:', error);
+          toast.error(error || '生成失败,请重试');
+          setIsGenerating(false);
+          setGenerationProgress(0);
         }
-        // 如果还在处理中,继续轮询
-      }
+      );
       
-      // 更新进度
-      setGenerationProgress(80);
-      
-      if (!artPhotoUrl) {
-        throw new Error('艺术照生成超时');
-      }
-      
-      // 设置生成的图片
-      setGeneratedImage(artPhotoUrl);
-      
-      // 更新进度
-      setGenerationProgress(100);
-      
-       // 保存到历史记录
-      const newHistoryItem: HistoryItemType = {
-        id: Date.now().toString(),
-        originalImages: selectedImages, // 保存所有原始图片
-        generatedImage: artPhotoUrl,
-        createdAt: formatDateTime(new Date()),
-        isPaid: false,
-        regenerateCount: 3
-      };
-      
-      // 添加新记录并保持历史记录数量限制
-      setHistoryItems(prev => {
-        const updatedHistory = [newHistoryItem, ...prev];
-        // 限制最多保存10条记录
-        return updatedHistory.slice(0, 10);
-      });
-      setCurrentHistoryItem(newHistoryItem);
+      // 保存取消函数以便需要时取消
+      // 这里可以添加一个取消按钮来调用 cancelStream()
       
     } catch (error) {
       toast(error instanceof Error ? error.message : '生成失败,请重试');
-    } finally {
       setIsGenerating(false);
-      // 2秒后重置进度
-      setTimeout(() => setGenerationProgress(0), 2000);
+      setGenerationProgress(0);
+    }
+  };
+  
+  // 处理4宫格图片选择
+  const handleSelectGeneratedImage = (imageUrl: string) => {
+    setSelectedGeneratedImage(imageUrl);
+    toast.success('已选中，您可以保存或重新生成');
+  };
+  
+  // 处理确认选择逻辑
+  const handleConfirmSelection = async () => {
+    if (!selectedGeneratedImage) {
+      toast.error('请先选择一张图片');
+      return;
+    }
+    
+    try {
+      // 更新历史记录中的选中图片
+      if (currentHistoryItem) {
+        const updatedItem = {
+          ...currentHistoryItem,
+          generatedImage: selectedGeneratedImage,
+          selectedImageUrl: selectedGeneratedImage
+        };
+        
+        // 更新本地历史记录
+        setHistoryItems(prev => 
+          prev.map(item => 
+            item.id === currentHistoryItem.id 
+              ? { ...item, generatedImage: selectedGeneratedImage }
+              : item
+          )
+        );
+        
+        setCurrentHistoryItem(updatedItem);
+        
+        // 如果有后端记录ID，也更新后端
+        // 注意：当前实现使用localStorage，如果需要同步到后端，可以在这里调用API
+        
+        toast.success('选择已确认！');
+        
+        // 跳转到成果页
+        navigate('/result', {
+          state: {
+            selectedImage: selectedGeneratedImage,
+            historyItem: updatedItem
+          }
+        });
+      } else {
+        // 如果没有历史记录项，创建一个临时的
+        const tempHistoryItem = {
+          id: Date.now().toString(),
+          originalImages: selectedImages,
+          generatedImage: selectedGeneratedImage,
+          createdAt: formatDateTime(new Date()),
+          isPaid: false,
+          regenerateCount: 3
+        };
+        
+        toast.success('选择已确认！');
+        
+        // 跳转到成果页
+        navigate('/result', {
+          state: {
+            selectedImage: selectedGeneratedImage,
+            historyItem: tempHistoryItem
+          }
+        });
+      }
+    } catch (error) {
+      console.error('确认选择失败:', error);
+      toast.error('确认选择失败，请重试');
     }
   };
   
@@ -324,13 +415,10 @@ export default function GeneratorPage() {
     setIsGenerating(true);
     setGenerationProgress(0); // 重置进度
     setRegenerateCount(prev => prev - 1);
+    setGeneratedImages([]); // 清空之前的生成结果
+    setSelectedGeneratedImage(null); // 清空选中状态
     
     try {
-      // 设置30秒超时
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('生成超时,请重试')), 30000)
-      );
-      
       // 更新进度
       setGenerationProgress(20);
       
@@ -352,68 +440,62 @@ export default function GeneratorPage() {
       setGenerationProgress(40);
       
       // 调用火山引擎API重新生成艺术照
-      const taskId = await Promise.race([
-        generateArtPhoto(PROMPT_TEXT, [imageUrls[0], selectedTemplate, ...imageUrls.slice(1)]),
-        timeoutPromise
-      ]);
+      const taskId = await generateArtPhoto(
+        PROMPT_TEXT, 
+        [imageUrls[0], selectedTemplate, ...imageUrls.slice(1)],
+        facePositions || undefined,
+        getUserId() // 传递用户ID
+      );
       
       if (!taskId || typeof taskId !== 'string') {
         throw new Error('生成任务ID获取失败');
       }
       
-      // 更新进度
-      setGenerationProgress(60);
-
-      // 模拟轮询获取结果(实际实现中需要根据API文档调整)
-      let artPhotoUrl = '';
-      const maxAttempts = 30;
-      let attempts = 0;
-      
-      while (attempts < maxAttempts) {
-        attempts++;
-        // 等待2秒再查询
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const statusResponse = await getTaskStatus(taskId);
-        // 检查火山引擎API返回的状态
-        if (statusResponse?.Result?.data?.status === 'done') {
-          artPhotoUrl = statusResponse?.Result?.data?.uploaded_image_urls?.[0] || selectedImages[0] || '';
-          break;
-        } else if (statusResponse?.Result?.data?.status === 'failed') {
-          throw new Error('艺术照生成失败');
+      // 使用流式查询获取生成进度和结果
+      const cancelStream = getTaskStatusStream(
+        taskId,
+        // 进度回调
+        (progress, status) => {
+          setGenerationProgress(Math.max(progress, 40));
+          console.log(`重生成进度: ${progress}%, 状态: ${status}`);
+        },
+        // 完成回调
+        (images) => {
+          console.log('重生成完成，收到图片:', images);
+          setGeneratedImages(images);
+          setGenerationProgress(100);
+          
+          // 更新当前历史记录项的重生成次数和生成结果
+          if (currentHistoryItem) {
+            setHistoryItems(historyItems.map(item => 
+              item.id === currentHistoryItem.id 
+                ? { ...item, regenerateCount: item.regenerateCount - 1, generatedImage: images[0] || '' } 
+                : item
+            ));
+          }
+          
+          setIsGenerating(false);
+          
+          // 2秒后重置进度
+          setTimeout(() => setGenerationProgress(0), 2000);
+          
+          toast.success('重生成完成！请选择您最满意的一张');
+        },
+        // 错误回调
+        (error) => {
+          console.error('重生成失败:', error);
+          toast.error(error || '重生成失败,请重试');
+          setRegenerateCount(prev => prev + 1); // 恢复重生成次数
+          setIsGenerating(false);
+          setGenerationProgress(0);
         }
-        // 如果还在处理中,继续轮询
-      }
-      
-      // 更新进度
-      setGenerationProgress(80);
-      
-      if (!artPhotoUrl) {
-        throw new Error('艺术照生成超时');
-      }
-      
-      // 设置生成的图片
-      setGeneratedImage(artPhotoUrl);
-      
-      // 更新进度
-      setGenerationProgress(100);
-      
-      // 更新当前历史记录项的重生成次数
-      if (currentHistoryItem) {
-        setHistoryItems(historyItems.map(item => 
-          item.id === currentHistoryItem.id 
-            ? { ...item, regenerateCount: item.regenerateCount - 1, generatedImage: artPhotoUrl || selectedImages[0] || '' } 
-            : item
-        ));
-      }
+      );
       
     } catch (error) {
       toast('重生成失败,请重试');
       setRegenerateCount(prev => prev + 1); // 恢复重生成次数
-    } finally {
       setIsGenerating(false);
-      // 2秒后重置进度
-      setTimeout(() => setGenerationProgress(0), 2000);
+      setGenerationProgress(0);
     }
   };
   
@@ -433,6 +515,52 @@ export default function GeneratorPage() {
           : item
       ));
     }
+    
+    // 支付成功后显示产品推荐
+    setShowProductRecommendation(true);
+  };
+  
+  const handleOrderProduct = async (
+    productType: 'crystal' | 'scroll',
+    shippingInfo: { name: string; phone: string; address: string }
+  ) => {
+    try {
+      if (!user?.id || !selectedGeneratedImage || !currentHistoryItem) {
+        toast('订单信息不完整');
+        return;
+      }
+      
+      // 调用API创建产品订单
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'}/api/product-order/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          generationId: currentHistoryItem.id,
+          productType: productType,
+          productPrice: productType === 'crystal' ? 199 : 149,
+          shippingName: shippingInfo.name,
+          shippingPhone: shippingInfo.phone,
+          shippingAddress: shippingInfo.address,
+          imageUrl: selectedGeneratedImage
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || '创建订单失败');
+      }
+      
+      toast.success('订单提交成功！我们将在1-2个工作日内与您联系');
+      setShowProductRecommendation(false);
+    } catch (error) {
+      console.error('创建产品订单失败:', error);
+      toast.error(error instanceof Error ? error.message : '创建订单失败，请重试');
+      throw error;
+    }
   };
   
   const handleHistoryItemClick = (item: HistoryItemType) => {
@@ -442,7 +570,9 @@ export default function GeneratorPage() {
     setRegenerateCount(item.regenerateCount);
     // 恢复所有原始图片
     setSelectedImages(item.originalImages);
-    setGeneratedImage(item.generatedImage);
+    // 如果历史记录中有生成的图片，显示为单张（历史记录只保存选中的那张）
+    setGeneratedImages([item.generatedImage]);
+    setSelectedGeneratedImage(item.generatedImage);
   };
   
   const handleContinuePayment = (item: HistoryItemType) => {
@@ -466,6 +596,65 @@ export default function GeneratorPage() {
   const handleTemplateSelect = (templateUrl: string) => {
     setSelectedTemplate(templateUrl);
     setShowTemplateSelector(false);
+  };
+  
+  // 打开画布定位
+  const handleOpenCanvasPositioning = async () => {
+    if (selectedImages.length === 0) {
+      toast('请先上传照片');
+      return;
+    }
+    
+    if (!selectedTemplate) {
+      toast('请先选择模板');
+      return;
+    }
+    
+    try {
+      toast('正在提取人脸...');
+      
+      // 上传所有图片到OSS
+      const imageUrls: string[] = [];
+      for (const image of selectedImages) {
+        let imageUrl = uploadedImageUrls[image];
+        if (!imageUrl) {
+          imageUrl = await uploadImageToOSS(image);
+          setUploadedImageUrls(prev => ({ ...prev, [image]: imageUrl }));
+        }
+        imageUrls.push(imageUrl);
+      }
+      
+      // 调用人脸提取API
+      const result = await faceAPI.extractFaces(imageUrls);
+      
+      if (!result.success || result.faces.length === 0) {
+        toast(result.message || '未检测到人脸');
+        return;
+      }
+      
+      setExtractedFaces(result.faces);
+      setShowCanvasPositioning(true);
+      toast(`成功提取 ${result.faces.length} 张人脸`);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '人脸提取失败');
+    }
+  };
+  
+  // 完成画布定位
+  const handleCanvasPositioningComplete = (positions: Array<{
+    x: number;
+    y: number;
+    scale: number;
+    rotation: number;
+  }>) => {
+    setFacePositions(positions);
+    setShowCanvasPositioning(false);
+    toast('人脸定位完成,可以开始生成了');
+  };
+  
+  // 取消画布定位
+  const handleCanvasPositioningCancel = () => {
+    setShowCanvasPositioning(false);
   };
   
   return (
@@ -644,6 +833,31 @@ export default function GeneratorPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
           >
+            {/* 画布定位按钮(仅在有多张照片时显示) */}
+            {selectedImages.length > 1 && selectedTemplate && (
+              <div className="mb-4">
+                <button
+                  onClick={handleOpenCanvasPositioning}
+                  disabled={isGenerating}
+                  className={`w-full py-3 rounded-lg font-medium flex items-center justify-center ${
+                    isGenerating
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : facePositions
+                      ? 'bg-green-500 text-white hover:bg-green-600'
+                      : 'bg-[#8A7DB0] text-white hover:bg-[#7A6CA0]'
+                  }`}
+                >
+                  <i className={`fas fa-${facePositions ? 'check' : 'th'} mr-2`}></i>
+                  {facePositions ? '已完成画布定位' : '画布定位(推荐)'}
+                </button>
+                <p className="text-gray-500 text-xs mt-2 text-center">
+                  {facePositions
+                    ? '已设置人脸位置,生成时将使用定位信息'
+                    : '多张照片建议先进行画布定位,可获得更好的合成效果'}
+                </p>
+              </div>
+            )}
+            
             <button
               onClick={handleGenerate}
               disabled={isGenerating || selectedImages.length === 0}
@@ -716,7 +930,7 @@ export default function GeneratorPage() {
           </motion.div>
 
           {/* 生成结果展示 */}
-          {generatedImage && (
+          {generatedImages.length > 0 && (
             <motion.div 
               className="bg-white/80 rounded-xl p-6 shadow-md"
               initial={{ opacity: 0, y: 20 }}
@@ -724,32 +938,38 @@ export default function GeneratorPage() {
               transition={{ duration: 0.5, delay: 0.3 }}
             >
               <h2 className="text-lg font-semibold text-gray-800 mb-4">生成结果</h2>
-              <div className="flex flex-col items-center">
-                <img 
-                  src={generatedImage} 
-                  alt="Generated Art Photo" 
-                  className="w-full max-w-md rounded-lg border-2 border-[#6B5CA5]"
-                />
-                <div className="mt-4 flex space-x-4">
+              
+              {/* 4宫格选择器 */}
+              <FourGridSelector
+                images={generatedImages}
+                selectedImage={selectedGeneratedImage}
+                onSelect={handleSelectGeneratedImage}
+                onConfirm={handleConfirmSelection}
+                isLoading={isGenerating}
+              />
+              
+              {/* 操作按钮 */}
+              {selectedGeneratedImage && (
+                <div className="mt-6 flex justify-center space-x-4">
                   <button
                     onClick={() => {
-                      setPreviewImage(generatedImage);
+                      setPreviewImage(selectedGeneratedImage);
                       setShowImagePreviewModal(true);
                     }}
-                    className="px-4 py-2 bg-[#6B5CA5] text-white rounded-lg flex items-center"
+                    className="px-6 py-3 bg-[#6B5CA5] text-white rounded-lg flex items-center hover:bg-[#5A4B8C] transition-colors"
                   >
                     <i className="fas fa-eye mr-2"></i>
                     预览
                   </button>
                   <button
                     onClick={handlePay}
-                    className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg flex items-center"
+                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg flex items-center hover:from-green-600 hover:to-emerald-700 transition-colors"
                   >
                     <i className="fas fa-download mr-2"></i>
                     保存图片
                   </button>
                 </div>
-              </div>
+              )}
             </motion.div>
           )}
 
@@ -798,6 +1018,30 @@ export default function GeneratorPage() {
           isOpen={showImagePreviewModal}
           imageUrl={previewImage} 
           onClose={() => setShowImagePreviewModal(false)} 
+        />
+      )}
+      
+      {/* 画布定位组件 */}
+      {showCanvasPositioning && selectedTemplate && extractedFaces.length > 0 && (
+        <CanvasPositioning
+          backgroundUrl={selectedTemplate}
+          faceImages={extractedFaces.map(face => ({
+            imageBase64: face.image_base64,
+            bbox: face.bbox,
+            sourceImage: face.source_image
+          }))}
+          onComplete={handleCanvasPositioningComplete}
+          onCancel={handleCanvasPositioningCancel}
+        />
+      )}
+      
+      {/* 产品推荐弹窗 */}
+      {showProductRecommendation && selectedGeneratedImage && (
+        <ProductRecommendation
+          isOpen={showProductRecommendation}
+          selectedImage={selectedGeneratedImage}
+          onClose={() => setShowProductRecommendation(false)}
+          onOrderProduct={handleOrderProduct}
         />
       )}
     </div>
