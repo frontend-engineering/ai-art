@@ -278,6 +278,160 @@ async function cleanupExpiredTasks() {
 // 每小时清理一次过期任务
 setInterval(cleanupExpiredTasks, 60 * 60 * 1000);
 
+/**
+ * 恢复未完成的任务（服务器重启后调用）
+ * @param {Function} executeTaskFn 任务执行函数
+ * @returns {Promise<Array>} 恢复的任务列表
+ */
+async function recoverPendingTasks(executeTaskFn) {
+  logQueue(null, '恢复', '========== 开始恢复未完成任务 ==========');
+  
+  const recoveredTasks = [];
+  
+  try {
+    // 确保存储目录存在
+    await ensureStorageDir();
+    
+    // 读取所有任务文件
+    const files = await fs.readdir(TASK_STORAGE_DIR);
+    const taskFiles = files.filter(f => f.endsWith('.json'));
+    
+    logQueue(null, '恢复', `发现 ${taskFiles.length} 个任务文件`);
+    
+    for (const file of taskFiles) {
+      try {
+        const filePath = path.join(TASK_STORAGE_DIR, file);
+        const data = await fs.readFile(filePath, 'utf-8');
+        const task = JSON.parse(data);
+        
+        // 检查是否是需要恢复的任务（pending 或 processing 状态）
+        if (task.status === TaskStatus.PENDING || task.status === TaskStatus.PROCESSING) {
+          logQueue(task.id, '恢复', `发现未完成任务`, {
+            status: task.status,
+            mode: task.meta?.mode,
+            createdAt: task.createdAt
+          });
+          
+          // 检查任务是否过期（超过1小时的任务标记为超时）
+          const taskAge = Date.now() - new Date(task.createdAt).getTime();
+          const maxAge = 60 * 60 * 1000; // 1小时
+          
+          if (taskAge > maxAge) {
+            logQueue(task.id, '恢复', `任务已过期 (${Math.round(taskAge / 60000)} 分钟)，标记为超时`);
+            task.status = TaskStatus.TIMEOUT;
+            task.message = '任务超时，服务器重启后未能恢复';
+            task.updatedAt = new Date().toISOString();
+            task.completedAt = new Date().toISOString();
+            await persistTask(task);
+            taskQueue.set(task.id, task);
+            continue;
+          }
+          
+          // 将任务加载到内存队列
+          taskQueue.set(task.id, task);
+          
+          // 重置为 pending 状态（如果是 processing 状态）
+          if (task.status === TaskStatus.PROCESSING) {
+            task.status = TaskStatus.PENDING;
+            task.progress = 0;
+            task.message = '任务恢复中，准备重新执行...';
+            task.updatedAt = new Date().toISOString();
+            await persistTask(task);
+          }
+          
+          recoveredTasks.push(task);
+          logQueue(task.id, '恢复', `✅ 任务已加入恢复队列`);
+        } else {
+          // 已完成/失败的任务也加载到内存（用于查询）
+          taskQueue.set(task.id, task);
+        }
+      } catch (err) {
+        logQueue(null, '恢复', `❌ 读取任务文件失败: ${file}, 错误: ${err.message}`);
+      }
+    }
+    
+    logQueue(null, '恢复', `共恢复 ${recoveredTasks.length} 个未完成任务`);
+    
+    // 如果有执行函数，异步执行恢复的任务
+    if (executeTaskFn && recoveredTasks.length > 0) {
+      logQueue(null, '恢复', '开始异步执行恢复的任务...');
+      
+      // 延迟执行，避免服务器启动时负载过高
+      for (let i = 0; i < recoveredTasks.length; i++) {
+        const task = recoveredTasks[i];
+        const delay = i * 2000; // 每个任务间隔2秒
+        
+        setTimeout(() => {
+          logQueue(task.id, '恢复执行', `开始执行恢复的任务 (${i + 1}/${recoveredTasks.length})`);
+          executeTaskFn(task.id);
+        }, delay);
+      }
+    }
+    
+    logQueue(null, '恢复', '========== 任务恢复完成 ==========');
+    
+  } catch (error) {
+    logQueue(null, '恢复', `❌ 恢复任务失败: ${error.message}`);
+  }
+  
+  return recoveredTasks;
+}
+
+/**
+ * 获取所有 pending 状态的任务
+ * @returns {Array} pending 任务列表
+ */
+function getPendingTasks() {
+  const pendingTasks = [];
+  for (const task of taskQueue.values()) {
+    if (task.status === TaskStatus.PENDING) {
+      pendingTasks.push(task);
+    }
+  }
+  return pendingTasks;
+}
+
+/**
+ * 获取任务队列统计信息
+ * @returns {Object} 统计信息
+ */
+function getQueueStats() {
+  const stats = {
+    total: taskQueue.size,
+    pending: 0,
+    processing: 0,
+    completed: 0,
+    failed: 0,
+    timeout: 0,
+    cancelled: 0
+  };
+  
+  for (const task of taskQueue.values()) {
+    switch (task.status) {
+      case TaskStatus.PENDING:
+        stats.pending++;
+        break;
+      case TaskStatus.PROCESSING:
+        stats.processing++;
+        break;
+      case TaskStatus.COMPLETED:
+        stats.completed++;
+        break;
+      case TaskStatus.FAILED:
+        stats.failed++;
+        break;
+      case TaskStatus.TIMEOUT:
+        stats.timeout++;
+        break;
+      case TaskStatus.CANCELLED:
+        stats.cancelled++;
+        break;
+    }
+  }
+  
+  return stats;
+}
+
 module.exports = {
   TaskStatus,
   createTask,
@@ -285,5 +439,8 @@ module.exports = {
   getTask,
   deleteTask,
   getUserTasks,
-  cleanupExpiredTasks
+  cleanupExpiredTasks,
+  recoverPendingTasks,
+  getPendingTasks,
+  getQueueStats
 };

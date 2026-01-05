@@ -25,7 +25,7 @@ const errorLogService = require('./services/errorLogService');
 // 导入API调用日志服务
 const apiLogService = require('./services/apiLogService');
 // 导入异步任务队列服务
-const { TaskStatus, createTask, updateTask, getTask, getUserTasks } = require('./services/taskQueueService');
+const { TaskStatus, createTask, updateTask, getTask, getUserTasks, recoverPendingTasks, getQueueStats } = require('./services/taskQueueService');
 const { executeArtPhotoTask, retryTask, cancelTask } = require('./services/artPhotoWorker');
 // 导入参数校验工具
 const {
@@ -4218,4 +4218,22 @@ app.listen(PORT, () => {
   
   // 启动定时清理任务
   cleanupService.startCleanupSchedule();
+  
+  // 恢复未完成的任务
+  console.log(`🔄 正在检查并恢复未完成的任务...`);
+  recoverPendingTasks((taskId) => {
+    executeArtPhotoTask(taskId, generateArtPhotoInternal);
+  }).then((recoveredTasks) => {
+    if (recoveredTasks.length > 0) {
+      console.log(`✅ 已恢复 ${recoveredTasks.length} 个未完成任务`);
+    } else {
+      console.log(`✅ 没有需要恢复的任务`);
+    }
+    
+    // 打印任务队列统计
+    const stats = getQueueStats();
+    console.log(`📊 任务队列统计: 总计 ${stats.total}, 待处理 ${stats.pending}, 处理中 ${stats.processing}, 已完成 ${stats.completed}, 失败 ${stats.failed}`);
+  }).catch((err) => {
+    console.error(`❌ 恢复任务失败:`, err.message);
+  });
 });
