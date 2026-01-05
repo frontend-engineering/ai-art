@@ -46,9 +46,10 @@ const TRANSFORM_MODE_CONFIG = {
   },
   
   // 验证规则
+  // 注意：transform模式需要1张用户照片 + 1张模板图片 = 2张
   validation: {
     minImages: 1,
-    maxImages: 1,
+    maxImages: 2, // 允许用户照片+模板图片
     requireFaceDetection: true,
     supportMultipleFaces: true
   },

@@ -67,7 +67,9 @@ if (process.env.WECHAT_MCHID && process.env.WECHAT_SERIAL_NO &&
   console.warn('微信支付配置未完整设置，支付功能将不可用');
 }
 
-// 火山引擎API配置
+// 火山引擎API配置 - 使用火山方舟新版API
+const VOLCENGINE_ARK_ENDPOINT = 'https://ark.cn-beijing.volces.com/api/v3/images/generations';
+// 旧版API配置（保留兼容）
 const VOLCENGINE_ENDPOINT = 'https://open.volcengineapi.com';
 const VOLCENGINE_ACTION = 'JimengT2IV40SubmitTask';
 const VOLCENGINE_VERSION = '2024-06-06';
@@ -272,383 +274,232 @@ async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStre
 }
 
 /**
- * 内部函数：调用火山引擎API生成艺术照（不含重试逻辑）
+ * 内部函数：调用火山方舟API生成艺术照（使用新版API）
+ * 
+ * 根据火山方舟官方文档：https://www.volcengine.com/docs/82379/1541523
+ * - API端点: https://ark.cn-beijing.volces.com/api/v3/images/generations
+ * - 认证方式: Bearer Token (ARK_API_KEY)
+ * - 图片参数: image 字段支持 URL 或 Base64 编码
+ * - Base64格式: data:image/<图片格式>;base64,<Base64编码>
  */
 async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free', modeParams = {}) {
   const startTime = Date.now();
   const mode = modeParams.mode || 'unknown';
+  const { v4: uuidv4 } = require('uuid');
   
-  return new Promise((resolve, reject) => {
-    try {
-      // 检查环境变量是否已设置
-      if (!process.env.VOLCENGINE_ACCESS_KEY_ID || !process.env.VOLCENGINE_SECRET_ACCESS_KEY) {
-        throw new Error('火山引擎API的访问密钥未设置，请检查.env文件中的配置');
-      }
+  // 检查环境变量是否已设置
+  // 火山方舟新API需要 ARK_API_KEY，获取方式：
+  // https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey
+  if (!process.env.ARK_API_KEY) {
+    console.error('❌ ARK_API_KEY 未配置！');
+    console.error('请在 backend/.env 文件中添加: ARK_API_KEY=your_api_key');
+    console.error('获取方式: https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey');
+    throw new Error('火山方舟API密钥未设置，请在.env文件中配置 ARK_API_KEY。获取方式: https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey');
+  }
+  
+  const apiKey = process.env.ARK_API_KEY;
+  
+  console.log(`\n========== [${mode}模式] 火山方舟API调用准备 ==========`);
+  console.log('🔑 API密钥状态:', apiKey ? '已配置' : '未配置');
+  console.log('🖼️  输入图片数量:', imageUrls?.length || 0);
+  
+  // 处理图片URL - 确保格式正确
+  // 根据官方文档：
+  // - 图片URL：请确保图片URL可被访问
+  // - Base64编码：请遵循此格式 data:image/<图片格式>;base64,<Base64编码>
+  const processedImages = [];
+  
+  if (imageUrls && imageUrls.length > 0) {
+    for (let i = 0; i < Math.min(imageUrls.length, 14); i++) {
+      const imgUrl = imageUrls[i];
       
-      // 准备请求参数
-      const datetime = getDateTimeNow();
-      const urlObj = new URL(VOLCENGINE_ENDPOINT);
-      const host = urlObj.host;
-      
-      // 构造请求体 - 使用4选1生成策略，合并模式参数
-      const requestBody = {
-        model: "doubao-seedream-4.5",
-        prompt: prompt,
-        // 移除 size 参数，使用 size_param 控制分辨率
-        sequential_image_generation: "auto", // 启用组图功能
-        sequential_image_generation_options: {
-          max_images: 4 // 最多生成4张图片
-        },
-        stream: useStreaming, // 启用流式输出
-        response_format: "url",
-        watermark: paymentStatus === 'free', // 免费用户添加水印，付费用户不添加
-        force_single: false,
-        max_ratio: 3,
-        min_ratio: 0.33,
-        req_key: "jimeng_t2i_v40",
-        scale: 0.8,
-        size_param: 4194304, // 控制图片分辨率 (2048x2048)
-        ...modeParams // 合并模式特定参数
-      };
-      
-      // 如果提供了imageUrls，则添加到请求体中
-      if (imageUrls && imageUrls.length > 0) {
-        requestBody.image = imageUrls.slice(0, 14); // 限制最多14张图片
-        // 确保始终有艺术风格参考图
-        if (requestBody.image.length < 2) {
-          requestBody.image.push(`https://wms.webinfra.cloud/art-photos/template1.jpeg`);
-        }
+      if (imgUrl.startsWith('data:image/')) {
+        // 已经是正确的 Base64 格式
+        processedImages.push(imgUrl);
+        console.log(`📷 图片${i + 1}: Base64格式 (${imgUrl.substring(0, 30)}...)`);
+      } else if (imgUrl.startsWith('http://') || imgUrl.startsWith('https://')) {
+        // 完整的URL，直接使用
+        processedImages.push(imgUrl);
+        console.log(`📷 图片${i + 1}: URL格式 (${imgUrl})`);
+      } else if (imgUrl.startsWith('/')) {
+        // 相对路径，需要转换为完整URL或上传到OSS
+        // 这里需要特殊处理 - 模板图片应该预先上传到OSS
+        console.warn(`⚠️ 图片${i + 1}: 相对路径不支持，需要完整URL (${imgUrl})`);
+        // 尝试拼接为完整URL（假设有配置的域名）
+        const domain = process.env.COS_DOMAIN || 'wms.webinfra.cloud';
+        const fullUrl = `https://${domain}${imgUrl}`;
+        processedImages.push(fullUrl);
+        console.log(`📷 图片${i + 1}: 转换为URL (${fullUrl})`);
       } else {
-        // 如果没有提供imageUrls，则强制报错
-        throw new Error('请提供至少一张照片');
+        console.warn(`⚠️ 图片${i + 1}: 未知格式，跳过 (${imgUrl.substring(0, 50)}...)`);
       }
-      
-      // 如果提供了人脸位置信息，则添加到请求体中
-      if (facePositions && Array.isArray(facePositions) && facePositions.length > 0) {
-        requestBody.face_positions = facePositions;
-        console.log('使用画布定位信息:', JSON.stringify(facePositions, null, 2));
-      }
-      
-      // 将请求体转换为JSON字符串
-      const requestBodyString = JSON.stringify(requestBody);
-      
-      // 构造headers
-      const headers = {
-        'Content-Type': 'application/json; charset=utf-8',
-        'Host': host,
-        'X-Date': datetime,
-      };
-      
-      // 使用火山引擎SDK进行查询参数签名
-      const openApiRequestData = {
-        method: "POST",
-        region: VOLCENGINE_REGION,
-        params: {
-          Action: 'CVProcess', // 使用新的Action
-          Version: '2024-06-06',
-          'X-Algorithm': 'HMAC-SHA256',
-          'X-Date': datetime,
-          'X-Expires': '3600',
-          'X-NotSignBody': '1',
-          'X-SignedHeaders': 'content-type;host;x-date',
-        },
-      };
-      
-      const credentials = {
-        accessKeyId: process.env.VOLCENGINE_ACCESS_KEY_ID,
-        secretKey: process.env.VOLCENGINE_SECRET_ACCESS_KEY,
-        sessionToken: "",
-      };
-      
-      const signer = new Signer(openApiRequestData, VOLCENGINE_SERVICE_NAME);
-      const signedQueryString = signer.getSignUrl(credentials);
-      
-      // 构造完整的URL
-      const url = `${VOLCENGINE_ENDPOINT}/?${signedQueryString}`;
-      
-      console.log(`\n========== [${mode}模式] 火山引擎API调用详情 ==========`);
-      console.log('📍 请求URL:', url);
-      console.log('📋 请求Headers:', JSON.stringify(headers, null, 2));
-      console.log('📦 完整请求体:', requestBodyString);
-      console.log('🎨 Prompt:', requestBody.prompt);
-      console.log('🖼️  图片数组:', requestBody.image);
-      console.log('⚙️  模式参数:', JSON.stringify(modeParams, null, 2));
-      console.log('💧 水印设置:', requestBody.watermark);
-      console.log('📐 分辨率参数:', requestBody.size_param);
-      console.log('🔢 最大生成数:', requestBody.sequential_image_generation_options?.max_images);
-      console.log('================================================\n');
-      
-      // 构造请求选项
-      const options = {
-        method: 'POST',
-        headers: headers,
-      };
-      
-      // 如果使用流式输出，返回任务ID供前端轮询
-      // 否则直接返回生成结果
-      if (!useStreaming) {
-        // 非流式模式：发起请求并等待完整响应
-        const req = https.request(url, options, (res) => {
-          let data = '';
-          
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          
-          res.on('end', () => {
-            try {
-              const result = JSON.parse(data);
-              console.log('响应状态:', res.statusCode);
-              console.log('响应headers:', JSON.stringify(res.headers, null, 2));
-              console.log('响应体:', JSON.stringify(result, null, 2));
-              
-              // 检查API调用是否成功
-              if (res.statusCode !== 200) {
-                if (res.statusCode === 401) {
-                  if (result?.ResponseMetadata?.Error?.Code === 'SignatureDoesNotMatch') {
-                    reject(new Error(`签名错误: ${result.ResponseMetadata.Error.Message}`));
-                  } else {
-                    reject(new Error('API调用未授权，请检查访问密钥是否正确'));
-                  }
-                } else if (res.statusCode === 403) {
-                  reject(new Error('API调用被禁止，请检查访问密钥权限'));
-                } else {
-                  reject(new Error(`API调用失败，状态码: ${res.statusCode}`));
-                }
-                return;
-              }
-              
-              // 检查火山引擎API的返回结果
-              if (result?.Result?.code !== 10000) {
-                reject(new Error(result?.Result?.message || `API调用失败，错误码: ${result?.Result?.code}`));
-                return;
-              }
-              
-              // 获取任务ID
-              const taskId = result.Result.data?.task_id || '';
-              
-              // 记录新创建的任务
-              if (taskId) {
-                const historyRecord = {
-                  taskId: taskId,
-                  originalImageUrls: imageUrls || [],
-                  generatedImageUrls: [], // 初始为空，等任务完成后再填充
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                };
-                
-                // 保存到历史记录
-                const history = require('./history');
-                history.addHistoryRecord(historyRecord);
-                console.log(`新任务 ${taskId} 已记录`);
-              }
-              
-              // 返回任务ID
-              resolve(taskId);
-            } catch (parseError) {
-              console.error('解析响应失败:', parseError);
-              reject(new Error(`解析响应失败: ${parseError.message}`));
-            }
-          });
-        });
-        
-        req.on('error', (error) => {
-          console.error('网络请求失败:', error);
-          reject(new Error(`网络请求失败: ${error.message}`));
-        });
-        
-        // 发送请求体
-        req.write(requestBodyString);
-        req.end();
-      } else {
-        // 流式模式：返回任务ID，前端通过轮询获取4张图片
-        // 注意：根据即梦AI文档，流式模式会实时返回每张图片
-        // 但为了简化实现，我们先返回任务ID，让前端轮询
-        const req = https.request(url, options, (res) => {
-          let data = '';
-          
-          res.on('data', (chunk) => {
-            data += chunk;
-          });
-          
-          res.on('end', () => {
-            try {
-              const result = JSON.parse(data);
-              console.log('响应状态:', res.statusCode);
-              console.log('响应体:', JSON.stringify(result, null, 2));
-              
-              // 检查API调用是否成功
-              if (res.statusCode !== 200) {
-                if (res.statusCode === 401) {
-                  if (result?.ResponseMetadata?.Error?.Code === 'SignatureDoesNotMatch') {
-                    reject(new Error(`签名错误: ${result.ResponseMetadata.Error.Message}`));
-                  } else {
-                    reject(new Error('API调用未授权，请检查访问密钥是否正确'));
-                  }
-                } else if (res.statusCode === 403) {
-                  reject(new Error('API调用被禁止，请检查访问密钥权限'));
-                } else {
-                  reject(new Error(`API调用失败，状态码: ${res.statusCode}`));
-                }
-                return;
-              }
-              
-              // 检查火山引擎API的返回结果
-              if (result?.Result?.code !== 10000) {
-                reject(new Error(result?.Result?.message || `API调用失败，错误码: ${result?.Result?.code}`));
-                return;
-              }
-              
-              // 检查是否直接返回了图片数据（同步模式）
-              if (result.Result.data?.binary_data_base64 && Array.isArray(result.Result.data.binary_data_base64)) {
-                console.log(`[同步模式] API直接返回了 ${result.Result.data.binary_data_base64.length} 张图片`);
-                
-                // 生成一个唯一的任务ID用于保存
-                const { v4: uuidv4 } = require('uuid');
-                const taskId = uuidv4();
-                
-                // 将 base64 图片数据转换为 URL（需要上传到存储服务）
-                // 暂时先保存 base64 数据，后续可以上传到 OSS
-                const generatedImages = result.Result.data.binary_data_base64.map((base64Data, index) => {
-                  // 返回 data URL 格式，前端可以直接显示
-                  return `data:image/png;base64,${base64Data}`;
-                });
-                
-                // 记录API调用日志（异步，不阻塞主流程）
-                apiLogService.logApiCall({
-                  mode,
-                  taskId,
-                  request: {
-                    prompt,
-                    imageUrls,
-                    templateUrl: imageUrls?.[imageUrls.length - 1],
-                    modelParams: modeParams,
-                    facePositions
-                  },
-                  response: {
-                    taskId,
-                    imageUrls: generatedImages,
-                    status: 'done',
-                    message: '同步模式直接返回'
-                  },
-                  status: 'success',
-                  duration: Date.now() - startTime
-                }).catch(err => console.error('[API日志] 记录失败:', err));
-                
-                // 保存到历史记录
-                const historyRecord = {
-                  taskId: taskId,
-                  originalImageUrls: imageUrls || [],
-                  generatedImageUrls: generatedImages,
-                  status: 'done',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                };
-                
-                const history = require('./history');
-                history.addHistoryRecord(historyRecord);
-                console.log(`[同步模式] 任务 ${taskId} 已保存，包含 ${generatedImages.length} 张图片`);
-                
-                // 返回任务ID
-                resolve(taskId);
-                return;
-              }
-              
-              // 异步模式：获取任务ID
-              const taskId = result.Result.data?.task_id || '';
-              
-              // 记录API调用日志
-              apiLogService.logApiCall({
-                mode,
-                taskId,
-                request: {
-                  prompt,
-                  imageUrls,
-                  templateUrl: imageUrls?.[imageUrls.length - 1],
-                  modelParams: modeParams,
-                  facePositions
-                },
-                response: {
-                  taskId,
-                  status: 'pending',
-                  message: '异步任务已创建'
-                },
-                status: 'success',
-                duration: Date.now() - startTime
-              }).catch(err => console.error('[API日志] 记录失败:', err));
-              
-              // 记录新创建的任务
-              if (taskId) {
-                const historyRecord = {
-                  taskId: taskId,
-                  originalImageUrls: imageUrls || [],
-                  generatedImageUrls: [], // 初始为空，等任务完成后再填充
-                  status: 'pending',
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString()
-                };
-                
-                // 保存到历史记录
-                const history = require('./history');
-                history.addHistoryRecord(historyRecord);
-                console.log(`[异步模式] 新任务 ${taskId} 已记录`);
-              }
-              
-              // 返回任务ID
-              resolve(taskId);
-            } catch (parseError) {
-              console.error('解析响应失败:', parseError);
-              
-              // 记录错误日志
-              apiLogService.logApiCall({
-                mode,
-                taskId: 'unknown',
-                request: {
-                  prompt,
-                  imageUrls,
-                  modelParams: modeParams
-                },
-                response: null,
-                status: 'error',
-                error: `解析响应失败: ${parseError.message}`,
-                duration: Date.now() - startTime
-              }).catch(err => console.error('[API日志] 记录失败:', err));
-              
-              reject(new Error(`解析响应失败: ${parseError.message}`));
-            }
-          });
-        });
-        
-        req.on('error', (error) => {
-          console.error('网络请求失败:', error);
-          
-          // 记录错误日志
-          apiLogService.logApiCall({
-            mode,
-            taskId: 'unknown',
-            request: {
-              prompt,
-              imageUrls,
-              modelParams: modeParams
-            },
-            response: null,
-            status: 'error',
-            error: `网络请求失败: ${error.message}`,
-            duration: Date.now() - startTime
-          }).catch(err => console.error('[API日志] 记录失败:', err));
-          
-          reject(new Error(`网络请求失败: ${error.message}`));
-        });
-        
-        // 发送请求体
-        req.write(requestBodyString);
-        req.end();
-      }
-    } catch (error) {
-      console.error('生成艺术照过程中发生错误:', error);
-      reject(error);
     }
-  });
+  }
+  
+  if (processedImages.length === 0) {
+    throw new Error('请提供至少一张有效的照片');
+  }
+  
+  // 构造请求体 - 严格按照火山方舟官方文档格式
+  // 参考: https://www.volcengine.com/docs/82379/1541523
+  const requestBody = {
+    model: "doubao-seedream-4-5-251128", // 使用官方文档中的模型ID
+    prompt: prompt,
+    image: processedImages, // 图片数组，支持URL或Base64
+    size: "2K", // 使用2K分辨率，让模型自动判断宽高比
+    sequential_image_generation: "auto", // 启用组图功能
+    sequential_image_generation_options: {
+      max_images: 4 // 最多生成4张图片
+    },
+    stream: false, // 火山方舟新API建议使用非流式模式
+    response_format: "url", // 返回图片URL
+    watermark: paymentStatus === 'free', // 免费用户添加水印
+  };
+  
+  // 如果是transform模式，添加提示词优化
+  if (mode === 'transform') {
+    requestBody.optimize_prompt_options = {
+      mode: "standard" // 标准模式，生成质量更高
+    };
+  }
+  
+  const requestBodyString = JSON.stringify(requestBody);
+  
+  console.log('📍 请求URL:', VOLCENGINE_ARK_ENDPOINT);
+  console.log('🎨 Prompt:', prompt);
+  console.log('🖼️  处理后图片数组:', processedImages.map(img => img.startsWith('data:') ? `Base64(${img.substring(0, 30)}...)` : img));
+  console.log('⚙️  模式参数:', JSON.stringify(modeParams, null, 2));
+  console.log('💧 水印设置:', requestBody.watermark);
+  console.log('📐 分辨率:', requestBody.size);
+  console.log('🔢 最大生成数:', requestBody.sequential_image_generation_options?.max_images);
+  console.log('📦 完整请求体长度:', requestBodyString.length, '字节');
+  console.log('================================================\n');
+  
+  try {
+    // 使用 fetch 发起请求（Node.js 18+ 原生支持）
+    const response = await fetch(VOLCENGINE_ARK_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: requestBodyString
+    });
+    
+    const responseText = await response.text();
+    console.log('响应状态:', response.status);
+    
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseErr) {
+      console.error('响应解析失败，原始响应:', responseText.substring(0, 500));
+      throw new Error(`API响应解析失败: ${parseErr.message}`);
+    }
+    
+    console.log('响应体:', JSON.stringify(result, null, 2));
+    
+    // 检查API调用是否成功
+    if (!response.ok) {
+      const errorMsg = result?.error?.message || result?.message || `API调用失败，状态码: ${response.status}`;
+      console.error('API调用失败:', errorMsg);
+      
+      // 记录错误日志
+      await apiLogService.logApiCall({
+        mode,
+        taskId: 'error',
+        request: { prompt, imageUrls: processedImages, modelParams: modeParams },
+        response: result,
+        status: 'error',
+        error: errorMsg,
+        duration: Date.now() - startTime
+      }).catch(err => console.error('[API日志] 记录失败:', err));
+      
+      throw new Error(errorMsg);
+    }
+    
+    // 火山方舟新API直接返回生成的图片
+    // 响应格式: { model, created, data: [{ url, size }], usage }
+    if (result.data && Array.isArray(result.data)) {
+      const generatedImages = [];
+      
+      for (const item of result.data) {
+        if (item.url) {
+          generatedImages.push(item.url);
+        } else if (item.b64_json) {
+          generatedImages.push(`data:image/jpeg;base64,${item.b64_json}`);
+        } else if (item.error) {
+          console.warn('某张图片生成失败:', item.error);
+        }
+      }
+      
+      console.log(`✅ API成功返回 ${generatedImages.length} 张图片`);
+      
+      // 生成任务ID用于保存
+      const taskId = uuidv4();
+      
+      // 记录API调用日志
+      await apiLogService.logApiCall({
+        mode,
+        taskId,
+        request: {
+          prompt,
+          imageUrls: processedImages,
+          templateUrl: processedImages[processedImages.length - 1],
+          modelParams: modeParams,
+          facePositions
+        },
+        response: {
+          taskId,
+          imageUrls: generatedImages,
+          status: 'done',
+          message: '火山方舟API直接返回',
+          usage: result.usage
+        },
+        status: 'success',
+        duration: Date.now() - startTime
+      }).catch(err => console.error('[API日志] 记录失败:', err));
+      
+      // 保存到历史记录
+      const historyRecord = {
+        taskId: taskId,
+        originalImageUrls: imageUrls || [],
+        generatedImageUrls: generatedImages,
+        status: 'done',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      const history = require('./history');
+      history.addHistoryRecord(historyRecord);
+      console.log(`✅ 任务 ${taskId} 已保存，包含 ${generatedImages.length} 张图片`);
+      
+      return taskId;
+    }
+    
+    // 如果没有返回图片数据，检查是否有错误
+    if (result.error) {
+      throw new Error(result.error.message || 'API返回错误');
+    }
+    
+    throw new Error('API响应格式异常，未返回图片数据');
+    
+  } catch (error) {
+    console.error('生成艺术照过程中发生错误:', error);
+    
+    // 记录错误日志
+    await apiLogService.logApiCall({
+      mode,
+      taskId: 'error',
+      request: { prompt, imageUrls: processedImages, modelParams: modeParams },
+      response: null,
+      status: 'error',
+      error: error.message,
+      duration: Date.now() - startTime
+    }).catch(err => console.error('[API日志] 记录失败:', err));
+    
+    throw error;
+  }
 }
 
 /**
@@ -914,11 +765,11 @@ async function extractFaces(imageUrls) {
         }
       });
       
-      // 设置30秒超时
+      // 设置60秒超时
       setTimeout(() => {
         pythonProcess.kill();
         reject(new Error('人脸提取超时'));
-      }, 30000);
+      }, 60000);
       
     } catch (error) {
       console.error('调用Python脚本失败:', error);
@@ -1171,23 +1022,21 @@ app.put('/api/user/:userId/payment-status', async (req, res) => {
 });
 
 // 生成艺术照端点
+// 优化后的逻辑：
+// - 前端只传 imageUrls（用户照片）+ templateId（模板ID）+ mode
+// - 后端根据 templateId 获取模板图片URL和对应的prompt
+// - 防止prompt泄露，所有prompt由后端管理
 app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoParams), async (req, res) => {
   try {
-    const { prompt, imageUrls, facePositions, userId, templateUrl, mode = 'puzzle' } = req.body;
+    const { imageUrls, facePositions, userId, templateId, mode = 'puzzle' } = req.body;
     
-    if (!prompt || !imageUrls) {
+    // 导入模板配置
+    const { getTemplateConfig, getDefaultTemplate } = require('./config/templates');
+    
+    if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
       return res.status(400).json({ 
         error: '缺少必要参数', 
-        message: '需要提供 prompt 和 imageUrls 参数' 
-      });
-    }
-    
-    // 验证模式配置
-    const validation = validateModeRequest(mode, imageUrls);
-    if (!validation.valid) {
-      return res.status(400).json({ 
-        error: '参数验证失败', 
-        message: validation.error 
+        message: '需要提供 imageUrls 参数（用户照片）' 
       });
     }
     
@@ -1200,8 +1049,46 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
       });
     }
     
+    // 获取模板配置（根据templateId或使用默认模板）
+    let templateConfig = null;
+    if (templateId) {
+      templateConfig = getTemplateConfig(mode, templateId);
+      if (!templateConfig) {
+        console.warn(`[${modeConfig.name}] 模板 ${templateId} 不存在，使用默认模板`);
+        templateConfig = getDefaultTemplate(mode);
+      }
+    } else {
+      templateConfig = getDefaultTemplate(mode);
+    }
+    
+    if (!templateConfig) {
+      return res.status(400).json({ 
+        error: '模板配置错误', 
+        message: '无法获取模板配置' 
+      });
+    }
+    
+    console.log(`[${modeConfig.name}] 使用模板: ${templateConfig.name} (${templateConfig.id})`);
+    
+    // 验证用户照片数量（不包含模板图片）
+    // transform模式：只需要1张用户照片
+    // puzzle模式：需要2-5张用户照片
+    const userImageCount = imageUrls.length;
+    if (mode === 'transform' && userImageCount !== 1) {
+      return res.status(400).json({ 
+        error: '参数验证失败', 
+        message: '富贵变身模式需要且仅需要1张用户照片' 
+      });
+    }
+    if (mode === 'puzzle' && (userImageCount < 2 || userImageCount > 5)) {
+      return res.status(400).json({ 
+        error: '参数验证失败', 
+        message: '时空拼图模式需要2-5张用户照片' 
+      });
+    }
+    
     // 获取用户付费状态
-    let paymentStatus = 'free'; // 默认为免费用户
+    let paymentStatus = 'free';
     if (userId) {
       try {
         const user = await userService.getUserById(userId);
@@ -1210,36 +1097,33 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
         }
       } catch (error) {
         console.error('获取用户付费状态失败:', error);
-        // 如果获取失败，继续使用默认的免费状态
       }
     }
     
-    console.log(`[${modeConfig.name}] 用户 ${userId || '未知'} 的付费状态: ${paymentStatus}, 水印设置: ${paymentStatus === 'free'}`);
+    console.log(`[${modeConfig.name}] 用户 ${userId || '未知'} 的付费状态: ${paymentStatus}`);
+    
+    // 组装最终的图片数组：用户照片 + 模板图片
+    // 根据火山方舟API文档：图1为人物参考图，图2为背景/风格参考图
+    const finalImageUrls = [...imageUrls, templateConfig.imageUrl];
+    
+    // 使用模板配置的prompt（后端管理，防止泄露）
+    const finalPrompt = templateConfig.prompt;
     
     // 合并模式参数
     const modelParams = getModeModelParams(mode);
     
-    // 使用后端配置的 prompt 模板（如果前端没有提供或为空）
-    let finalPrompt = prompt;
-    if (!prompt || prompt.trim() === '') {
-      finalPrompt = getModePromptTemplate(mode, 'default');
-      console.log(`[${modeConfig.name}] 使用后端默认 prompt: ${finalPrompt}`);
-    } else {
-      console.log(`[${modeConfig.name}] 使用前端传入 prompt: ${finalPrompt}`);
-    }
+    console.log(`\n========== [${modeConfig.name}] 生成请求详情 ==========`);
+    console.log('📋 模式:', mode);
+    console.log('🎭 模板ID:', templateConfig.id);
+    console.log('🎭 模板名称:', templateConfig.name);
+    console.log('🖼️  用户照片数量:', userImageCount);
+    console.log('🖼️  模板图片URL:', templateConfig.imageUrl);
+    console.log('📦 最终图片数组:', finalImageUrls.length, '张');
+    console.log('🎨 Prompt (后端管理):', finalPrompt.substring(0, 100) + '...');
+    console.log('💧 水印设置:', paymentStatus === 'free');
+    console.log('================================================\n');
     
-    // 添加详细的请求日志
-    console.log(`[${modeConfig.name}] 生成请求详情:`, {
-      mode,
-      prompt: finalPrompt,
-      imageCount: imageUrls.length,
-      imageUrls: imageUrls,
-      hasFacePositions: !!facePositions,
-      modelParams,
-      paymentStatus
-    });
-    
-    const taskId = await generateArtPhoto(finalPrompt, imageUrls, facePositions, true, paymentStatus, modelParams);
+    const taskId = await generateArtPhoto(finalPrompt, finalImageUrls, facePositions, true, paymentStatus, modelParams);
     
     // 保存生成历史记录
     if (userId && taskId) {
@@ -1248,14 +1132,13 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
           userId: userId,
           taskIds: [taskId],
           originalImageUrls: imageUrls,
-          templateUrl: templateUrl || imageUrls[imageUrls.length - 1],
-          mode: mode, // 保存模式信息
+          templateUrl: templateConfig.imageUrl,
+          mode: mode,
           status: 'pending'
         });
         console.log(`[${modeConfig.name}] 生成历史记录已保存，任务ID: ${taskId}`);
       } catch (saveError) {
         console.error('保存生成历史记录失败:', saveError);
-        // 不影响主流程，继续返回任务ID
       }
     }
     
@@ -1263,7 +1146,8 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
       success: true, 
       data: { 
         taskId: taskId,
-        mode: mode
+        mode: mode,
+        templateId: templateConfig.id
       } 
     });
   } catch (error) {
@@ -3515,53 +3399,24 @@ app.post('/api/product-order/export-excel', async (req, res) => {
 // 获取模板列表
 app.get('/api/templates', async (req, res) => {
   try {
-    // 模板数据 - 可以从数据库或配置文件读取
-    const templates = [
-      {
-        id: 'template-1',
-        name: '新中式团圆',
-        url: 'https://wms.webinfra.cloud/art-photos/template1.jpeg',
-        category: 'chinese-style',
-        description: '传统中国风格，适合全家福',
-        isDefault: true
-      },
-      {
-        id: 'template-2',
-        name: '现代简约',
-        url: 'https://wms.webinfra.cloud/art-photos/template2.jpeg',
-        category: 'modern',
-        description: '现代简约风格，时尚大气',
-        isDefault: false
-      },
-      {
-        id: 'template-3',
-        name: '复古怀旧',
-        url: 'https://wms.webinfra.cloud/art-photos/template3.jpeg',
-        category: 'vintage',
-        description: '复古怀旧风格，温馨感人',
-        isDefault: false
-      },
-      {
-        id: 'template-4',
-        name: '浪漫唯美',
-        url: 'https://wms.webinfra.cloud/art-photos/template4.jpeg',
-        category: 'romantic',
-        description: '浪漫唯美风格，梦幻温馨',
-        isDefault: false
-      },
-      {
-        id: 'template-5',
-        name: '国潮风尚',
-        url: 'https://wms.webinfra.cloud/art-photos/template5.jpeg',
-        category: 'trendy',
-        description: '国潮风尚，年轻时尚',
-        isDefault: false
-      }
-    ];
+    const { mode } = req.query;
+    const { getTemplateList } = require('./config/templates');
+    
+    // 根据模式获取模板列表
+    const templates = getTemplateList(mode || 'transform');
+    
+    // 返回模板列表（不包含prompt，防止泄露）
+    const safeTemplates = templates.map(t => ({
+      id: t.id,
+      name: t.name,
+      category: t.category,
+      // 注意：不返回 imageUrl 和 prompt，防止信息泄露
+      // 前端使用本地图片显示，后端使用OSS图片调用API
+    }));
     
     res.json({
       success: true,
-      data: templates
+      data: safeTemplates
     });
   } catch (error) {
     console.error('获取模板列表失败:', error);

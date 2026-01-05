@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { faceAPI } from '@/lib/api';
-import { uploadImageToOSS } from '@/lib/utils';
 import { TRANSFORM_MODE } from '@/config/modes';
 import transformUploadBg from '@/assets/transform-upload.png';
 import PageTransition from '@/components/PageTransition';
@@ -54,13 +53,9 @@ export default function TransformUploadPage() {
         reader.readAsDataURL(file);
       });
 
-      // 上传到 OSS
-      setStatusText('正在上传图片...');
-      const imageUrl = await uploadImageToOSS(dataUrl);
-
-      // 检测人脸
+      // 直接使用 base64 进行人脸检测（避免 URL 下载问题）
       setStatusText('正在检测人脸...');
-      const result = await faceAPI.extractFaces([imageUrl]);
+      const result = await faceAPI.extractFaces([dataUrl]);
 
       if (!result.success || !result.faces || result.faces.length === 0) {
         setErrorMessage(result.message || '未检测到人脸，请重新上传清晰的照片');
@@ -83,7 +78,7 @@ export default function TransformUploadPage() {
 
     } catch (error) {
       console.error('上传失败:', error);
-      setErrorMessage('上传失败，请重试');
+      setErrorMessage(error instanceof Error ? error.message : '上传失败，请重试');
       setIsUploading(false);
       setStatusText('');
     }

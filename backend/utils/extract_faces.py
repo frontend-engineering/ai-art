@@ -27,7 +27,18 @@ def download_image_from_url(url):
         numpy.ndarray: OpenCV图片对象
     """
     try:
-        response = requests.get(url, timeout=10)
+        # 验证URL格式
+        if not url or not isinstance(url, str):
+            raise Exception(f'无效的URL: {url}')
+        
+        # 确保URL格式正确
+        url = url.strip()
+        if not url.startswith('http://') and not url.startswith('https://'):
+            raise Exception(f'URL必须以http://或https://开头: {url}')
+        
+        print(f'正在下载图片: {url}', file=sys.stderr)
+        
+        response = requests.get(url, timeout=30)
         response.raise_for_status()
         
         # 将响应内容转换为PIL Image
@@ -37,8 +48,10 @@ def download_image_from_url(url):
         opencv_image = cv2.cvtColor(np.array(pil_image), cv2.COLOR_RGB2BGR)
         
         return opencv_image
+    except requests.exceptions.RequestException as e:
+        raise Exception(f'下载图片失败 ({url}): {str(e)}')
     except Exception as e:
-        raise Exception(f'下载图片失败: {str(e)}')
+        raise Exception(f'处理图片失败 ({url}): {str(e)}')
 
 
 def extract_faces(image_paths, output_dir=None, min_face_size=80, confidence_threshold=0.7):
@@ -46,7 +59,7 @@ def extract_faces(image_paths, output_dir=None, min_face_size=80, confidence_thr
     从上传的照片中提取人脸区域
     
     Args:
-        image_paths: 图片路径或URL列表
+        image_paths: 图片路径、URL或Base64数据列表
         output_dir: 输出目录(可选)
         min_face_size: 最小人脸尺寸(像素)
         confidence_threshold: 置信度阈值
@@ -70,15 +83,41 @@ def extract_faces(image_paths, output_dir=None, min_face_size=80, confidence_thr
         
         # 处理每张图片
         for idx, image_path in enumerate(image_paths):
-            # 判断是URL还是本地路径
-            if image_path.startswith('http://') or image_path.startswith('https://'):
+            img = None
+            
+            # 判断输入类型
+            if image_path.startswith('data:image/'):
+                # Base64 数据URI格式
+                try:
+                    # 提取base64数据
+                    base64_data = image_path.split(',')[1] if ',' in image_path else image_path
+                    img_bytes = base64.b64decode(base64_data)
+                    nparr = np.frombuffer(img_bytes, np.uint8)
+                    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+                    print(f'图片{idx + 1}: 从Base64加载成功', file=sys.stderr)
+                except Exception as e:
+                    print(f'图片{idx + 1}: Base64解码失败: {str(e)}', file=sys.stderr)
+                    continue
+            elif image_path.startswith('http://') or image_path.startswith('https://'):
                 # 从URL下载图片
-                img = download_image_from_url(image_path)
+                try:
+                    img = download_image_from_url(image_path)
+                    print(f'图片{idx + 1}: 从URL下载成功', file=sys.stderr)
+                except Exception as e:
+                    print(f'图片{idx + 1}: URL下载失败: {str(e)}', file=sys.stderr)
+                    continue
             else:
                 # 读取本地图片
-                img = cv2.imread(image_path)
+                try:
+                    img = cv2.imread(image_path)
+                    if img is not None:
+                        print(f'图片{idx + 1}: 从本地文件加载成功', file=sys.stderr)
+                except Exception as e:
+                    print(f'图片{idx + 1}: 本地文件读取失败: {str(e)}', file=sys.stderr)
+                    continue
             
             if img is None:
+                print(f'图片{idx + 1}: 无法加载图片', file=sys.stderr)
                 continue
             
             # 转换为灰度图

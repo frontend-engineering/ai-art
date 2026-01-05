@@ -139,22 +139,21 @@ export default function TemplateSelector() {
       // 获取用户ID
       const userId = localStorage.getItem('userId') || '';
       
-      // 构建提示词（使用默认提示词模板）
-      const promptTemplate = modeConfig.prompts.templates.find(p => p.id === modeConfig.prompts.defaultPromptId) 
-        || modeConfig.prompts.templates[0];
-      
-      const prompt = promptTemplate ? promptTemplate.template : '生成艺术照';
-      
       console.log(`\n========== [${modeConfig.name}] 前端生成请求详情 ==========`);
       console.log('📋 模式ID:', modeConfig.id);
-      console.log('🎨 使用的 Prompt 模板:', promptTemplate);
-      console.log('📝 最终 Prompt:', prompt);
-      console.log('🖼️  上传的图片数量:', uploadedImages.length);
-      console.log('🎭 选中的模板:', selectedTemplate);
+      console.log('🎭 模板ID:', selectedTemplate.id);
+      console.log('🎭 模板名称:', selectedTemplate.name);
+      console.log('🖼️  用户照片数量:', uploadedImages.length);
       console.log('👤 用户ID:', userId || '未登录');
+      console.log('📝 注意: prompt由后端管理，前端不传递');
       console.log('================================================\n');
       
       // 调用生成API
+      // 优化后的参数：
+      // - imageUrls: 只包含用户照片（不包含模板图片）
+      // - templateId: 模板ID（后端根据ID获取模板图片和prompt）
+      // - mode: 模式ID
+      // - 不再传递 prompt 和 templateUrl，防止信息泄露
       const { buildApiUrl, API_ENDPOINTS } = await import('../lib/apiConfig');
       const response = await fetch(buildApiUrl(API_ENDPOINTS.GENERATE_ART_PHOTO), {
         method: 'POST',
@@ -162,17 +161,17 @@ export default function TemplateSelector() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: prompt,
-          imageUrls: uploadedImages,
+          imageUrls: uploadedImages, // 只传用户照片
+          templateId: selectedTemplate.id, // 只传模板ID
+          mode: modeConfig.id,
           userId: userId,
-          templateUrl: selectedTemplate.url,
-          mode: modeConfig.id, // 传递模式ID
           facePositions: null
         }),
       });
       
       if (!response.ok) {
-        throw new Error('生成请求失败');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || '生成请求失败');
       }
       
       const result = await response.json();
