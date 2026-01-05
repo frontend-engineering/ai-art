@@ -1795,6 +1795,35 @@ app.post('/api/unlock-watermark', async (req, res) => {
   }
 });
 
+// 获取所有历史记录端点 (用于调试和展示)
+app.get('/api/history/all', async (req, res) => {
+  try {
+    const { limit } = req.query;
+    const db = require('./db/connection');
+    const connection = await db.pool.getConnection();
+    const limitNum = limit ? parseInt(limit) : 20;
+    
+    try {
+      const [rows] = await connection.execute(
+        `SELECT * FROM generation_history ORDER BY created_at DESC LIMIT ${limitNum}`
+      );
+      
+      res.json({ 
+        success: true, 
+        data: rows 
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('获取所有历史记录失败:', error);
+    res.status(500).json({ 
+      error: '获取所有历史记录失败', 
+      message: error.message 
+    });
+  }
+});
+
 // 获取用户历史记录端点 (查询用户最近10条记录)
 app.get('/api/history/user/:userId', async (req, res) => {
   try {

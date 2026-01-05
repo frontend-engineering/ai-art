@@ -5,6 +5,17 @@ import { TRANSFORM_MODE } from '@/config/modes';
 import transformUploadBg from '@/assets/transform-upload.png';
 import PageTransition from '@/components/PageTransition';
 
+// 日志工具函数
+function logUpload(stage: string, message: string, data?: unknown) {
+  const timestamp = new Date().toISOString();
+  const prefix = `[TransformUpload][${timestamp}][${stage}]`;
+  if (data) {
+    console.log(`${prefix} ${message}`, data);
+  } else {
+    console.log(`${prefix} ${message}`);
+  }
+}
+
 export default function TransformUploadPage() {
   const navigate = useNavigate();
   const [isUploading, setIsUploading] = useState(false);
@@ -14,31 +25,47 @@ export default function TransformUploadPage() {
 
   const handleClick = () => {
     if (isUploading) return;
+    logUpload('点击', '用户点击上传区域');
     setErrorMessage('');
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      logUpload('文件选择', '用户取消选择文件');
+      return;
+    }
+
+    logUpload('文件选择', '========== 开始处理上传文件 ==========');
+    logUpload('文件选择', '文件信息', {
+      name: file.name,
+      type: file.type,
+      size: `${(file.size / 1024 / 1024).toFixed(2)}MB`
+    });
 
     // 检查文件格式
     if (!file.type.match(/^image\/(jpeg|jpg|png)$/)) {
+      logUpload('验证', '❌ 文件格式不支持', { type: file.type });
       setErrorMessage('请上传JPG或PNG格式的图片');
       return;
     }
+    logUpload('验证', '✅ 文件格式验证通过');
 
     // 检查文件大小（最大10MB）
     if (file.size > 10 * 1024 * 1024) {
+      logUpload('验证', '❌ 文件过大', { size: file.size });
       setErrorMessage('图片文件过大，请上传小于10MB的图片');
       return;
     }
+    logUpload('验证', '✅ 文件大小验证通过');
 
     setIsUploading(true);
     setErrorMessage('');
 
     try {
       // 读取文件为 base64
+      logUpload('读取', '正在读取图片为Base64...');
       setStatusText('正在读取图片...');
       const reader = new FileReader();
       const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -52,12 +79,23 @@ export default function TransformUploadPage() {
         reader.onerror = () => reject(new Error('读取文件失败'));
         reader.readAsDataURL(file);
       });
+      logUpload('读取', '✅ 图片读取成功', {
+        dataUrlLength: dataUrl.length,
+        preview: dataUrl.substring(0, 50) + '...'
+      });
 
       // 直接使用 base64 进行人脸检测（避免 URL 下载问题）
+      logUpload('人脸检测', '正在调用人脸检测API...');
       setStatusText('正在检测人脸...');
       const result = await faceAPI.extractFaces([dataUrl]);
+      logUpload('人脸检测', '人脸检测API返回', {
+        success: result.success,
+        faceCount: result.faces?.length || 0,
+        message: result.message
+      });
 
       if (!result.success || !result.faces || result.faces.length === 0) {
+        logUpload('人脸检测', '❌ 未检测到人脸');
         setErrorMessage(result.message || '未检测到人脸，请重新上传清晰的照片');
         setIsUploading(false);
         setStatusText('');
@@ -65,7 +103,15 @@ export default function TransformUploadPage() {
       }
 
       // 检测成功，自动进入下一步
+      logUpload('人脸检测', `✅ 检测到 ${result.faces.length} 张人脸`);
       setStatusText('检测成功，正在跳转...');
+      
+      logUpload('跳转', '准备跳转到模板选择页', {
+        targetPath: `${TRANSFORM_MODE.slug}/template`,
+        imageCount: 1,
+        faceCount: result.faces.length
+      });
+      
       setTimeout(() => {
         navigate(`${TRANSFORM_MODE.slug}/template`, {
           state: {
@@ -77,6 +123,7 @@ export default function TransformUploadPage() {
       }, 300);
 
     } catch (error) {
+      logUpload('错误', `❌ 上传处理失败: ${error instanceof Error ? error.message : '未知错误'}`);
       console.error('上传失败:', error);
       setErrorMessage(error instanceof Error ? error.message : '上传失败，请重试');
       setIsUploading(false);

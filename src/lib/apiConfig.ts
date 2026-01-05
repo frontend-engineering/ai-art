@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
   // 历史记录
   HISTORY_USER: (userId: string, limit?: number) => 
     `/api/history/user/${userId}${limit ? `?limit=${limit}` : ''}`,
+  HISTORY_ALL: (limit?: number) => `/api/history/all${limit ? `?limit=${limit}` : ''}`,
   HISTORY_GET: (recordId: string) => `/api/history/${recordId}`,
   HISTORY_TASK: (taskId: string) => `/api/history/task/${taskId}`,
   

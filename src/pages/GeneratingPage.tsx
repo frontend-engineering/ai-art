@@ -62,9 +62,33 @@ export default function GeneratingPage() {
   const cancelPollRef = useRef<(() => void) | null>(null);
   const progressIntervalRef = useRef<number | null>(null);
 
+  // 日志工具函数
+  const logPage = (stage: string, message: string, data?: unknown) => {
+    const timestamp = new Date().toISOString();
+    const prefix = `[GeneratingPage][${timestamp}][${taskId || 'NO_TASK'}][${stage}]`;
+    if (data) {
+      console.log(`${prefix} ${message}`, data);
+    } else {
+      console.log(`${prefix} ${message}`);
+    }
+  };
+
+  // 页面加载时记录日志
+  useEffect(() => {
+    logPage('初始化', '========== 生成页面加载 ==========');
+    logPage('初始化', '页面参数', {
+      taskId,
+      userId,
+      mode,
+      uploadedImagesCount: uploadedImages?.length || 0,
+      selectedTemplate: selectedTemplate?.id || selectedTemplate
+    });
+  }, []);
+
   // 页面加载时播放语音引导
   useEffect(() => {
     if (voiceEnabled) {
+      logPage('语音', '播放语音引导');
       speak('正在为您生成艺术照，请稍候');
     }
   }, [voiceEnabled, speak]);
@@ -72,6 +96,7 @@ export default function GeneratingPage() {
   // 生成完成时播放语音提示
   useEffect(() => {
     if (progress === 100 && voiceEnabled) {
+      logPage('语音', '播放完成提示');
       speak('生成完成，即将为您展示结果');
     }
   }, [progress, voiceEnabled, speak]);
@@ -79,6 +104,7 @@ export default function GeneratingPage() {
   // 错误时播放语音提示
   useEffect(() => {
     if (error && voiceEnabled) {
+      logPage('语音', '播放错误提示');
       speak('生成失败，请点击重试按钮');
     }
   }, [error, voiceEnabled, speak]);
@@ -88,6 +114,7 @@ export default function GeneratingPage() {
     if (!taskInfo) return;
     
     const targetProgress = taskInfo.progress;
+    logPage('进度动画', `目标进度: ${targetProgress}%, 当前进度: ${progress}%`);
     
     // 清除之前的定时器
     if (progressIntervalRef.current) {
@@ -118,36 +145,52 @@ export default function GeneratingPage() {
   // 更新阶段文案
   useEffect(() => {
     const stage = getStageText(progress);
-    setCurrentStage(stage);
+    if (stage !== currentStage) {
+      logPage('阶段更新', `阶段变化: ${currentStage} → ${stage}`);
+      setCurrentStage(stage);
+    }
   }, [progress]);
 
   // 轮询任务状态
   useEffect(() => {
     if (!taskId) {
+      logPage('错误', '❌ 缺少任务ID，无法查询生成状态');
       setError('缺少任务ID，无法查询生成状态');
       return;
     }
 
+    logPage('轮询', '开始轮询任务状态');
+    
     // 开始轮询
     cancelPollRef.current = pollTaskStatus(
       taskId,
       // 进度回调
       (task) => {
+        logPage('进度回调', `收到进度更新: ${task.progress}%, 状态: ${task.status}`, {
+          message: task.message,
+          retryCount: task.retryCount
+        });
         setTaskInfo(task);
         setTaskMessage(task.message);
       },
       // 完成回调
       (task) => {
+        logPage('完成回调', '✅ 任务完成！', {
+          imageCount: task.result?.images?.length || 0,
+          generatedAt: task.result?.generatedAt
+        });
         setTaskInfo(task);
         setProgress(100);
         setCurrentStage('完成');
         
         // 获取生成的图片
         const generatedImages = task.result?.images || [];
+        logPage('完成回调', `准备跳转到结果页，图片数量: ${generatedImages.length}`);
         
         // 延迟跳转，让用户看到完成状态
         setTimeout(() => {
           const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
+          logPage('跳转', `跳转到: ${targetPath}`);
           navigate(targetPath, {
             state: {
               mode,
@@ -161,6 +204,11 @@ export default function GeneratingPage() {
       },
       // 错误回调
       (errorMsg, task) => {
+        logPage('错误回调', `❌ 任务失败: ${errorMsg}`, {
+          status: task?.status,
+          retryCount: task?.retryCount,
+          maxRetries: task?.maxRetries
+        });
         setError(errorMsg);
         if (task) {
           setTaskInfo(task);
@@ -169,6 +217,7 @@ export default function GeneratingPage() {
     );
 
     return () => {
+      logPage('清理', '组件卸载，取消轮询');
       if (cancelPollRef.current) {
         cancelPollRef.current();
       }
@@ -182,6 +231,7 @@ export default function GeneratingPage() {
   const handleRetry = async () => {
     if (!taskId) return;
     
+    logPage('重试', '========== 用户点击重试 ==========');
     setIsRetrying(true);
     setError(null);
     setProgress(0);
@@ -189,20 +239,25 @@ export default function GeneratingPage() {
 
     try {
       // 调用重试接口
+      logPage('重试', '正在调用重试接口...');
       await retryTask(taskId);
+      logPage('重试', '✅ 重试接口调用成功');
       
       // 重新开始轮询
       if (cancelPollRef.current) {
         cancelPollRef.current();
       }
       
+      logPage('重试', '重新开始轮询');
       cancelPollRef.current = pollTaskStatus(
         taskId,
         (task) => {
+          logPage('重试-进度', `进度: ${task.progress}%, 状态: ${task.status}`);
           setTaskInfo(task);
           setTaskMessage(task.message);
         },
         (task) => {
+          logPage('重试-完成', '✅ 重试后任务完成！');
           setTaskInfo(task);
           setProgress(100);
           setCurrentStage('完成');
@@ -223,6 +278,7 @@ export default function GeneratingPage() {
           }, 1000);
         },
         (errorMsg, task) => {
+          logPage('重试-错误', `❌ 重试后仍然失败: ${errorMsg}`);
           setError(errorMsg);
           if (task) {
             setTaskInfo(task);
@@ -230,7 +286,7 @@ export default function GeneratingPage() {
         }
       );
     } catch (err) {
-      console.error('重试失败:', err);
+      logPage('重试', `❌ 重试失败: ${err instanceof Error ? err.message : '未知错误'}`);
       setError(err instanceof Error ? err.message : '重试失败，请稍后再试');
     } finally {
       setIsRetrying(false);
@@ -239,6 +295,7 @@ export default function GeneratingPage() {
 
   // 查看案例（跳转到首页）
   const handleViewExamples = () => {
+    logPage('操作', '用户点击查看案例');
     navigate('/');
   };
 

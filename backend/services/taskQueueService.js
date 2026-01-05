@@ -28,12 +28,26 @@ const taskQueue = new Map();
 // 任务持久化目录
 const TASK_STORAGE_DIR = path.join(__dirname, '../db/tasks');
 
+/**
+ * 日志工具函数
+ */
+function logQueue(taskId, operation, message, data = null) {
+  const timestamp = new Date().toISOString();
+  const prefix = `[TaskQueue][${timestamp}][${taskId || 'SYSTEM'}][${operation}]`;
+  if (data) {
+    console.log(`${prefix} ${message}`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`${prefix} ${message}`);
+  }
+}
+
 // 确保存储目录存在
 async function ensureStorageDir() {
   try {
     await fs.mkdir(TASK_STORAGE_DIR, { recursive: true });
+    logQueue(null, '初始化', `✅ 任务存储目录已创建: ${TASK_STORAGE_DIR}`);
   } catch (error) {
-    console.error('创建任务存储目录失败:', error);
+    logQueue(null, '初始化', `❌ 创建任务存储目录失败: ${error.message}`);
   }
 }
 
@@ -48,6 +62,16 @@ ensureStorageDir();
 function createTask(params) {
   const taskId = uuidv4();
   const now = new Date().toISOString();
+  
+  logQueue(taskId, '创建', '========== 开始创建新任务 ==========');
+  logQueue(taskId, '创建', '任务参数', {
+    mode: params.mode || 'unknown',
+    userId: params.userId || '',
+    templateId: params.templateId || '',
+    imageCount: params.imageUrls?.length || 0,
+    hasPrompt: !!params.finalPrompt,
+    hasFacePositions: !!params.facePositions
+  });
   
   const task = {
     id: taskId,
@@ -73,11 +97,14 @@ function createTask(params) {
   };
   
   taskQueue.set(taskId, task);
+  logQueue(taskId, '创建', '✅ 任务已添加到内存队列');
   
   // 异步持久化（不阻塞）
-  persistTask(task).catch(err => console.error('持久化任务失败:', err));
+  persistTask(task)
+    .then(() => logQueue(taskId, '持久化', '✅ 任务已持久化到文件'))
+    .catch(err => logQueue(taskId, '持久化', `❌ 持久化失败: ${err.message}`));
   
-  console.log(`[TaskQueue] 任务已创建: ${taskId}`);
+  logQueue(taskId, '创建', '========== 任务创建完成 ==========');
   return task;
 }
 
@@ -89,14 +116,36 @@ function createTask(params) {
 function updateTask(taskId, updates) {
   const task = taskQueue.get(taskId);
   if (!task) {
-    console.warn(`[TaskQueue] 任务不存在: ${taskId}`);
+    logQueue(taskId, '更新', '⚠️ 任务不存在，无法更新');
     return null;
   }
   
+  const oldStatus = task.status;
+  const oldProgress = task.progress;
+  
   Object.assign(task, updates, { updatedAt: new Date().toISOString() });
   
+  // 记录状态变化
+  const changes = [];
+  if (updates.status && updates.status !== oldStatus) {
+    changes.push(`状态: ${oldStatus} → ${updates.status}`);
+  }
+  if (updates.progress !== undefined && updates.progress !== oldProgress) {
+    changes.push(`进度: ${oldProgress}% → ${updates.progress}%`);
+  }
+  if (updates.message) {
+    changes.push(`消息: ${updates.message}`);
+  }
+  if (updates.error) {
+    changes.push(`错误: ${updates.error}`);
+  }
+  
+  logQueue(taskId, '更新', `任务状态更新: ${changes.join(', ')}`);
+  
   // 异步持久化
-  persistTask(task).catch(err => console.error('持久化任务失败:', err));
+  persistTask(task)
+    .then(() => logQueue(taskId, '持久化', '✅ 更新已持久化'))
+    .catch(err => logQueue(taskId, '持久化', `❌ 持久化失败: ${err.message}`));
   
   return task;
 }
@@ -107,15 +156,30 @@ function updateTask(taskId, updates) {
  * @returns {Object|null} 任务信息
  */
 async function getTask(taskId) {
+  logQueue(taskId, '查询', '正在获取任务信息...');
+  
   // 先从内存获取
   let task = taskQueue.get(taskId);
   
+  if (task) {
+    logQueue(taskId, '查询', '✅ 从内存获取成功', {
+      status: task.status,
+      progress: task.progress
+    });
+    return task;
+  }
+  
   // 如果内存中没有，尝试从文件加载
-  if (!task) {
-    task = await loadTask(taskId);
-    if (task) {
-      taskQueue.set(taskId, task);
-    }
+  logQueue(taskId, '查询', '内存中未找到，尝试从文件加载...');
+  task = await loadTask(taskId);
+  if (task) {
+    taskQueue.set(taskId, task);
+    logQueue(taskId, '查询', '✅ 从文件加载成功', {
+      status: task.status,
+      progress: task.progress
+    });
+  } else {
+    logQueue(taskId, '查询', '⚠️ 任务不存在');
   }
   
   return task;
@@ -142,7 +206,7 @@ async function loadTask(taskId) {
     return JSON.parse(data);
   } catch (error) {
     if (error.code !== 'ENOENT') {
-      console.error(`加载任务失败 ${taskId}:`, error);
+      logQueue(taskId, '加载', `❌ 加载任务失败: ${error.message}`);
     }
     return null;
   }
@@ -153,13 +217,15 @@ async function loadTask(taskId) {
  * @param {string} taskId 任务ID
  */
 async function deleteTask(taskId) {
+  logQueue(taskId, '删除', '正在删除任务...');
   taskQueue.delete(taskId);
   try {
     const filePath = path.join(TASK_STORAGE_DIR, `${taskId}.json`);
     await fs.unlink(filePath);
+    logQueue(taskId, '删除', '✅ 任务已删除');
   } catch (error) {
     if (error.code !== 'ENOENT') {
-      console.error(`删除任务文件失败 ${taskId}:`, error);
+      logQueue(taskId, '删除', `❌ 删除任务文件失败: ${error.message}`);
     }
   }
 }
@@ -170,6 +236,7 @@ async function deleteTask(taskId) {
  * @returns {Array} 任务列表
  */
 async function getUserTasks(userId) {
+  logQueue(null, '查询用户任务', `正在获取用户 ${userId} 的任务列表...`);
   const tasks = [];
   
   // 从内存中筛选
@@ -179,6 +246,7 @@ async function getUserTasks(userId) {
     }
   }
   
+  logQueue(null, '查询用户任务', `✅ 找到 ${tasks.length} 个任务`);
   return tasks.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 }
 
@@ -188,6 +256,9 @@ async function getUserTasks(userId) {
 async function cleanupExpiredTasks() {
   const now = Date.now();
   const expireTime = 24 * 60 * 60 * 1000; // 24小时
+  let cleanedCount = 0;
+  
+  logQueue(null, '清理', '========== 开始清理过期任务 ==========');
   
   for (const [taskId, task] of taskQueue.entries()) {
     const taskAge = now - new Date(task.createdAt).getTime();
@@ -197,9 +268,11 @@ async function cleanupExpiredTasks() {
          task.status === TaskStatus.FAILED ||
          task.status === TaskStatus.CANCELLED)) {
       await deleteTask(taskId);
-      console.log(`[TaskQueue] 清理过期任务: ${taskId}`);
+      cleanedCount++;
     }
   }
+  
+  logQueue(null, '清理', `✅ 清理完成，共清理 ${cleanedCount} 个过期任务`);
 }
 
 // 每小时清理一次过期任务

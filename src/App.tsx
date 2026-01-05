@@ -12,6 +12,7 @@ import CardEditor from "@/pages/CardEditor";
 import PuzzleLaunchScreen from "@/pages/modes/PuzzleLaunchScreen";
 import TransformLaunchScreen from "@/pages/modes/TransformLaunchScreen";
 import TransformUploadPage from "@/pages/modes/TransformUploadPage";
+import TransformHistoryPage from "@/pages/modes/TransformHistoryPage";
 import ResultSelectorPage from "@/pages/ResultSelectorPage";
 import { UserProvider } from "@/contexts/UserContext";
 import { ElderModeProvider } from "@/contexts/ElderModeContext";
@@ -43,6 +44,7 @@ function AnimatedRoutes() {
         <Route path="/transform/generating" element={<GeneratingPage />} />
         <Route path="/transform/result-selector" element={<ResultSelectorPage />} />
         <Route path="/transform/result" element={<ResultPage />} />
+        <Route path="/transform/history" element={<TransformHistoryPage />} />
         
         {/* 贺卡编辑页 */}
         <Route path="/card-editor" element={<CardEditor />} />

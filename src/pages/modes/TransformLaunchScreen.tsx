@@ -15,6 +15,10 @@ export default function TransformLaunchScreen() {
     navigate(`${config.slug}/upload`);
   };
 
+  const handleHistory = () => {
+    navigate(`${config.slug}/history`);
+  };
+
   return (
     <PageTransition>
       <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
@@ -100,6 +104,19 @@ export default function TransformLaunchScreen() {
                 transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
               />
             </div>
+          </motion.button>
+
+          {/* 我的记录按钮 */}
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.6 }}
+            onClick={handleHistory}
+            className="mt-4 px-6 py-2 bg-white/80 backdrop-blur-sm rounded-full text-[#8B4513] font-medium shadow-md"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            📷 我的记录
           </motion.button>
         </div>
       </div>
