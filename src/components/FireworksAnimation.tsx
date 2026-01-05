@@ -182,7 +182,7 @@ export default function FireworksAnimation({ isVisible, onComplete }: FireworksA
           
           {/* "团圆成功"文字 */}
           <motion.div
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+            className="absolute inset-0 flex items-center justify-center"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
@@ -193,8 +193,8 @@ export default function FireworksAnimation({ isVisible, onComplete }: FireworksA
               stiffness: 200
             }}
           >
-            <div className="bg-gradient-to-r from-[#D4302B] to-[#D4AF37] text-white px-8 py-4 rounded-2xl shadow-2xl">
-              <h2 className="text-4xl font-bold text-center whitespace-nowrap">
+            <div className="bg-gradient-to-r from-[#D4302B] to-[#D4AF37] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-2xl shadow-2xl">
+              <h2 className="text-2xl sm:text-4xl font-bold text-center whitespace-nowrap">
                 🎊 团圆成功 🎊
               </h2>
             </div>

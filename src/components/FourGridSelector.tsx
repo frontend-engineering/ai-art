@@ -9,6 +9,72 @@ interface FourGridSelectorProps {
   isLoading?: boolean;
 }
 
+// 中国风边框装饰组件
+const ChineseFrameCorner = ({ position }: { position: 'tl' | 'tr' | 'bl' | 'br' }) => {
+  const rotations = {
+    tl: 'rotate-0',
+    tr: 'rotate-90',
+    br: 'rotate-180',
+    bl: '-rotate-90'
+  };
+  const positions = {
+    tl: 'top-0 left-0',
+    tr: 'top-0 right-0',
+    bl: 'bottom-0 left-0',
+    br: 'bottom-0 right-0'
+  };
+  
+  return (
+    <div className={`absolute ${positions[position]} w-10 h-10 sm:w-12 sm:h-12 ${rotations[position]} pointer-events-none z-20`}>
+      <svg viewBox="0 0 24 24" className="w-full h-full">
+        <path
+          d="M0 0 L0 14 L3 14 L3 3 L14 3 L14 0 Z"
+          fill="#FFD700"
+        />
+        <path
+          d="M1 1 L1 12 L4 12 L4 4 L12 4 L12 1 Z"
+          fill="#C41E3A"
+        />
+      </svg>
+    </div>
+  );
+};
+
+// 中国风图片边框组件
+const ChineseImageFrame = ({ children, isSelected }: { children: React.ReactNode; isSelected: boolean }) => {
+  return (
+    <div className="relative">
+      {/* 内容区域 */}
+      <div className="relative rounded-md overflow-hidden bg-white">
+        {children}
+      </div>
+      
+      {/* 边框覆盖层 - 在图片上面 */}
+      <div className="absolute inset-0 pointer-events-none rounded-md">
+        {/* 金色边框 */}
+        <div className={`absolute inset-0 rounded-md border-4 sm:border-[6px] transition-all duration-300 ${
+          isSelected 
+            ? 'border-[#FFD700] shadow-xl shadow-[#FFD700]/50' 
+            : 'border-[#D4AF37]'
+        }`} />
+        
+        {/* 内层红色边框 */}
+        <div className={`absolute inset-1 sm:inset-1.5 rounded-sm border-2 sm:border-[3px] transition-all duration-300 ${
+          isSelected 
+            ? 'border-[#C41E3A]' 
+            : 'border-[#8B0000]'
+        }`} />
+      </div>
+      
+      {/* 四角装饰 - 最上层 */}
+      <ChineseFrameCorner position="tl" />
+      <ChineseFrameCorner position="tr" />
+      <ChineseFrameCorner position="bl" />
+      <ChineseFrameCorner position="br" />
+    </div>
+  );
+};
+
 export default function FourGridSelector({ 
   images, 
   selectedImage, 
@@ -76,12 +142,19 @@ export default function FourGridSelector({
     }, 100);
   };
 
-  // 处理图片点击 - 打开预览
+  // 处理图片点击 - 直接选择图片
   const handleImageClick = (imageUrl: string, e: React.MouseEvent) => {
-    // 如果点击的是选中标记，不打开预览
-    if ((e.target as HTMLElement).closest('.select-badge')) {
+    // 如果点击的是预览按钮，不选择
+    if ((e.target as HTMLElement).closest('.preview-btn')) {
       return;
     }
+    // 直接选择图片
+    onSelect(imageUrl);
+  };
+
+  // 处理预览按钮点击
+  const handlePreviewClick = (imageUrl: string, e: React.MouseEvent) => {
+    e.stopPropagation();
     setPreviewImage(imageUrl);
   };
 
@@ -149,39 +222,42 @@ export default function FourGridSelector({
   // 如果正在加载或没有图片，显示加载状态
   if (isLoading || images.length === 0) {
     return (
-      <div className="grid grid-cols-2 gap-4 w-full max-w-2xl mx-auto">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-sm sm:max-w-2xl mx-auto px-2 sm:px-0">
         {[1, 2, 3, 4].map((index) => (
           <motion.div 
             key={index}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.1 }}
-            className="aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex flex-col items-center justify-center relative overflow-hidden"
           >
-            {/* 闪烁背景效果 */}
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
-              animate={{
-                x: ['-100%', '100%']
-              }}
-              transition={{
-                duration: 1.5,
-                repeat: Infinity,
-                ease: "linear"
-              }}
-            />
-            
-            {/* 旋转灯笼图标 */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="text-4xl mb-2"
-            >
-              🏮
-            </motion.div>
-            
-            <p className="text-gray-500 text-sm font-medium">生成中...</p>
-            <p className="text-gray-400 text-xs mt-1">选项 {index + 1}</p>
+            <ChineseImageFrame isSelected={false}>
+              <div className="aspect-square bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] flex flex-col items-center justify-center relative overflow-hidden">
+                {/* 闪烁背景效果 */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+                  animate={{
+                    x: ['-100%', '100%']
+                  }}
+                  transition={{
+                    duration: 1.5,
+                    repeat: Infinity,
+                    ease: "linear"
+                  }}
+                />
+                
+                {/* 旋转灯笼图标 */}
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="text-3xl sm:text-4xl mb-2"
+                >
+                  🏮
+                </motion.div>
+                
+                <p className="text-[#8B4513] text-xs sm:text-sm font-medium">生成中...</p>
+                <p className="text-[#8B4513]/60 text-xs mt-1">选项 {index}</p>
+              </div>
+            </ChineseImageFrame>
           </motion.div>
         ))}
       </div>
@@ -189,23 +265,23 @@ export default function FourGridSelector({
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
+    <div className="w-full max-w-sm sm:max-w-2xl mx-auto px-2 sm:px-0">
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-4 text-center"
+        className="mb-3 sm:mb-4 text-center"
       >
-        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+        <h3 className="text-base sm:text-lg font-semibold text-[#FFD700] mb-1 sm:mb-2">
           ✨ {images.length === 1 ? '您的生成结果' : '选择您最满意的一张'}
         </h3>
-        <p className="text-sm text-gray-600">
+        <p className="text-xs sm:text-sm text-white/80">
           {images.length === 1 
             ? '点击图片查看大图，可以保存或重新生成' 
             : '点击图片进行选择，选中后可以保存或重新生成'}
         </p>
       </motion.div>
       
-      <div className={`grid gap-4 ${images.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'}`}>
+      <div className={`grid gap-4 sm:gap-5 ${images.length === 1 ? 'grid-cols-1 max-w-xs sm:max-w-md mx-auto' : 'grid-cols-2'}`}>
         {images.map((imageUrl, index) => (
           <motion.div
             key={`${imageUrl}-${index}`}
@@ -216,165 +292,124 @@ export default function FourGridSelector({
               delay: index * 0.15,
               ease: [0.25, 0.46, 0.45, 0.94]
             }}
-            className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-4 transition-all ${
-              selectedImage === imageUrl
-                ? 'border-[#D4302B] ring-4 ring-[#D4302B] ring-opacity-50 shadow-xl'
-                : 'border-gray-200 hover:border-[#D4AF37] shadow-md hover:shadow-lg'
-            }`}
             onClick={(e) => handleImageClick(imageUrl, e)}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            className="cursor-pointer relative"
           >
-            {/* 图片容器 - 带模糊到清晰效果 */}
-            <div className="relative w-full h-full">
-              <motion.img
-                src={imageUrl}
-                alt={`Generated option ${index + 1}`}
-                className="w-full h-full object-cover"
-                initial={{ filter: 'blur(20px)', scale: 1.1 }}
-                animate={{ 
-                  filter: revealStates[index] ? 'blur(0px)' : 'blur(20px)',
-                  scale: revealStates[index] ? 1 : 1.1
-                }}
-                transition={{ 
-                  duration: 0.8,
-                  ease: "easeOut"
-                }}
-                onLoad={() => handleImageLoad(index)}
-              />
-              
-              {/* 揭幕效果 - 从上到下的渐变遮罩 */}
-              <AnimatePresence>
-                {!revealStates[index] && (
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-b from-gray-300 via-gray-200 to-gray-100"
-                    initial={{ y: 0 }}
-                    exit={{ y: '100%' }}
-                    transition={{ 
-                      duration: 0.8,
-                      ease: [0.25, 0.46, 0.45, 0.94]
-                    }}
-                  >
-                    {/* 闪光效果 */}
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40"
-                      animate={{
-                        x: ['-100%', '100%']
-                      }}
-                      transition={{
-                        duration: 1.2,
-                        repeat: Infinity,
-                        ease: "linear"
-                      }}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              
-              {/* 加载中的旋转灯笼 */}
-              <AnimatePresence>
-                {!imageLoadStates[index] && (
-                  <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-gray-100"
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                      className="text-5xl"
-                    >
-                      🏮
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* 选中标记 - 带弹出动画 */}
-            <AnimatePresence>
-              {selectedImage === imageUrl && (
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  exit={{ scale: 0, rotate: 180 }}
+            <ChineseImageFrame isSelected={selectedImage === imageUrl}>
+              {/* 图片容器 - 带模糊到清晰效果 */}
+              <div className="relative w-full aspect-square">
+                <motion.img
+                  src={imageUrl}
+                  alt={`Generated option ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  initial={{ filter: 'blur(20px)', scale: 1.1 }}
+                  animate={{ 
+                    filter: revealStates[index] ? 'blur(0px)' : 'blur(20px)',
+                    scale: revealStates[index] ? 1 : 1.1
+                  }}
                   transition={{ 
-                    type: "spring",
-                    stiffness: 260,
-                    damping: 20
+                    duration: 0.8,
+                    ease: "easeOut"
                   }}
-                  className="select-badge absolute top-2 right-2 bg-[#D4302B] text-white rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect(imageUrl);
-                  }}
-                >
-                  <motion.i 
-                    className="fas fa-check text-sm"
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.1 }}
-                  />
-                  <span className="text-xs font-bold">选中</span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            {/* 未选中时显示选择按钮 */}
-            <AnimatePresence>
-              {selectedImage !== imageUrl && revealStates[index] && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="select-badge absolute top-2 right-2 bg-white/90 backdrop-blur-sm text-gray-700 rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-md border border-gray-200 hover:bg-[#D4302B] hover:text-white hover:border-[#D4302B] transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelect(imageUrl);
-                  }}
-                >
-                  <i className="far fa-circle text-sm" />
-                  <span className="text-xs font-medium">选择</span>
-                </motion.button>
-              )}
-            </AnimatePresence>
-            
-            {/* 图片编号 - 淡入效果 */}
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: revealStates[index] ? 1 : 0 }}
-              transition={{ delay: 0.5 }}
-              className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-3 py-1.5 rounded-full backdrop-blur-sm"
-            >
-              选项 {index + 1}
-            </motion.div>
-            
-            {/* 悬停效果 */}
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none"
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            />
-            
-            {/* 揭幕完成后的闪光效果 */}
-            <AnimatePresence>
-              {revealStates[index] && (
-                <motion.div
-                  className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent pointer-events-none"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: [0, 1, 0], scale: 1.2 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  onLoad={() => handleImageLoad(index)}
                 />
+                
+                {/* 揭幕效果 - 从上到下的渐变遮罩 */}
+                <AnimatePresence>
+                  {!revealStates[index] && (
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-b from-[#F4E4C1] via-[#FFF8DC] to-[#F4E4C1]"
+                      initial={{ y: 0 }}
+                      exit={{ y: '100%' }}
+                      transition={{ 
+                        duration: 0.8,
+                        ease: [0.25, 0.46, 0.45, 0.94]
+                      }}
+                    >
+                      {/* 闪光效果 */}
+                      <motion.div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-40"
+                        animate={{
+                          x: ['-100%', '100%']
+                        }}
+                        transition={{
+                          duration: 1.2,
+                          repeat: Infinity,
+                          ease: "linear"
+                        }}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                {/* 加载中的旋转灯笼 */}
+                <AnimatePresence>
+                  {!imageLoadStates[index] && (
+                    <motion.div
+                      className="absolute inset-0 flex items-center justify-center bg-[#FFF8DC]"
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                        className="text-4xl sm:text-5xl"
+                      >
+                        🏮
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                {/* 图片编号 - 淡入效果 */}
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: revealStates[index] ? 1 : 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="absolute bottom-2 left-2 bg-[#8B0000]/80 text-[#FFD700] text-xs px-2 sm:px-3 py-1 sm:py-1.5 rounded-full backdrop-blur-sm border border-[#D4AF37]/50"
+                >
+                  选项 {index + 1}
+                </motion.div>
+                
+                {/* 预览按钮 */}
+                <button
+                  className="preview-btn absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
+                  onClick={(e) => handlePreviewClick(imageUrl, e)}
+                >
+                  <i className="fas fa-search-plus mr-1" />
+                  放大
+                </button>
+                
+                {/* 选中遮罩 */}
+                {selectedImage === imageUrl && (
+                  <div className="absolute inset-0 bg-[#D4302B]/20 pointer-events-none" />
+                )}
+              </div>
+            </ChineseImageFrame>
+            
+            {/* 选中标记 - 始终显示在右上角 */}
+            <div className="absolute -top-1 -right-1 z-20">
+              {selectedImage === imageUrl ? (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="bg-[#D4302B] text-white rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg border-2 border-[#FFD700]"
+                >
+                  <i className="fas fa-check text-sm sm:text-base" />
+                </motion.div>
+              ) : (
+                <div className="bg-white text-[#8B4513] rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg border-2 border-[#D4AF37] hover:bg-[#FFF8DC] transition-colors">
+                  <i className="far fa-circle text-sm sm:text-base" />
+                </div>
               )}
-            </AnimatePresence>
+            </div>
           </motion.div>
         ))}
       </div>
       
-      {/* 提示信息 - 带滑入动画和自动隐藏 */}
+      {/* 提示信息 - 中国风卷轴样式 */}
       <AnimatePresence>
         {selectedImage && showHint && (
           <motion.div
@@ -386,10 +421,14 @@ export default function FourGridSelector({
               stiffness: 300,
               damping: 25
             }}
-            className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl text-center shadow-sm"
+            className="mt-3 sm:mt-4 p-3 sm:p-4 bg-gradient-to-r from-[#F4E4C1] via-[#FFF8DC] to-[#F4E4C1] border-2 border-[#D4AF37] rounded-lg text-center shadow-md relative"
           >
+            {/* 装饰角 */}
+            <div className="absolute top-1 left-1 text-[#D4AF37] text-xs">🎋</div>
+            <div className="absolute top-1 right-1 text-[#D4AF37] text-xs">🎋</div>
+            
             <motion.i 
-              className="fas fa-check-circle text-green-600 mr-2 text-lg"
+              className="fas fa-check-circle text-[#D4302B] mr-2 text-base sm:text-lg"
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ 
@@ -399,41 +438,66 @@ export default function FourGridSelector({
                 delay: 0.1
               }}
             />
-            <span className="text-green-700 text-sm font-medium">
+            <span className="text-[#8B4513] text-xs sm:text-sm font-medium">
               已选中，您可以继续保存或重新生成
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* 确认选择按钮 */}
+      {/* 确认选择按钮 - 中国风样式 */}
       {onConfirm && (
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          disabled={!selectedImage}
-          onClick={onConfirm}
-          className={`mt-6 w-full py-4 rounded-xl font-bold text-lg transition-all ${
-            selectedImage
-              ? 'bg-gradient-to-r from-[#D4302B] to-[#B8261F] text-white shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98] cursor-pointer'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-          whileHover={selectedImage ? { scale: 1.02 } : {}}
-          whileTap={selectedImage ? { scale: 0.98 } : {}}
+          className="mt-4 sm:mt-6"
         >
-          {selectedImage ? (
-            <span className="flex items-center justify-center gap-2">
-              <i className="fas fa-check-circle" />
-              确认选择
-            </span>
-          ) : (
-            <span className="flex items-center justify-center gap-2">
-              <i className="far fa-circle" />
-              请先选择一张图片
-            </span>
-          )}
-        </motion.button>
+          <button
+            disabled={!selectedImage}
+            onClick={onConfirm}
+            className={`relative w-full overflow-hidden transition-all ${
+              selectedImage ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+            }`}
+          >
+            {/* 外层金色边框 */}
+            <div className={`absolute inset-0 rounded-full transition-all ${
+              selectedImage 
+                ? 'bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5' 
+                : 'bg-gradient-to-r from-gray-400 to-gray-500 p-0.5'
+            }`} />
+            
+            {/* 按钮主体 */}
+            <div className={`relative h-11 sm:h-14 rounded-full flex items-center justify-center transition-all ${
+              selectedImage
+                ? 'bg-gradient-to-r from-[#D4302B] to-[#B8261F] hover:from-[#B8261F] hover:to-[#D4302B]'
+                : 'bg-gray-300'
+            }`}>
+              {/* 装饰纹理 */}
+              {selectedImage && (
+                <div className="absolute inset-0 rounded-full overflow-hidden">
+                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMTAiIGN5PSIxMCIgcj0iMiIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjEpIi8+PC9zdmc+')] opacity-30" />
+                </div>
+              )}
+              
+              <span className={`relative z-10 text-sm sm:text-lg font-bold flex items-center justify-center gap-2 ${
+                selectedImage ? 'text-[#FFD700]' : 'text-gray-500'
+              }`}>
+                {selectedImage ? (
+                  <>
+                    <i className="fas fa-check-circle" />
+                    确认选择
+                  </>
+                ) : (
+                  <>
+                    <i className="far fa-circle" />
+                    请先选择一张图片
+                  </>
+                )}
+              </span>
+            </div>
+          </button>
+        </motion.div>
       )}
 
       {/* 图片预览模态框 */}
@@ -458,7 +522,7 @@ export default function FourGridSelector({
             </motion.button>
 
             {/* 缩放提示 */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -466,7 +530,7 @@ export default function FourGridSelector({
             >
               <i className="fas fa-search-plus mr-2" />
               滚轮缩放 | 双指缩放 | 拖拽移动
-            </motion.div>
+            </motion.div> */}
 
             {/* 图片容器 */}
             <motion.div
@@ -497,7 +561,7 @@ export default function FourGridSelector({
             </motion.div>
 
             {/* 缩放控制按钮 */}
-            <motion.div
+            {/* <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
@@ -537,7 +601,7 @@ export default function FourGridSelector({
                 <i className="fas fa-redo mr-2" />
                 重置
               </button>
-            </motion.div>
+            </motion.div> */}
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import Background from '../components/Background';
-import ElderModeToggle from '../components/ElderModeToggle';
 import { useElderMode } from '@/contexts/ElderModeContext';
 import { useModeConfig } from '@/hooks/useModeConfig';
 import PageTransition from '@/components/PageTransition';
@@ -14,12 +12,49 @@ import {
   type TemplateConfig 
 } from '@/config/modes/index';
 
+// 导入背景图片
+import commonBg from '@/assets/common-bg.jpg';
+
+// 喜庆风格的自定义 Toast 组件
+interface FestiveToastProps {
+  message: string;
+  visible: boolean;
+}
+
+const FestiveToast: React.FC<FestiveToastProps> = ({ message, visible }) => {
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="fixed top-20 left-1/2 z-[100] pointer-events-none"
+          initial={{ opacity: 0, y: -20, x: '-50%' }}
+          animate={{ opacity: 1, y: 0, x: '-50%' }}
+          exit={{ opacity: 0, y: -20, x: '-50%' }}
+          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+        >
+          <div className="relative px-6 py-3 rounded-full bg-gradient-to-r from-[#C8102E] via-[#E31837] to-[#C8102E] shadow-lg border-2 border-[#FFD700]">
+            {/* 金色装饰边框光效 */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-[#FFD700]/20 via-transparent to-[#FFD700]/20" />
+            
+            {/* 内容 */}
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🎊</span>
+              <span className="text-white font-medium text-sm whitespace-nowrap">{message}</span>
+              <span className="text-lg">🎊</span>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
 export default function TemplateSelector() {
   const navigate = useNavigate();
   const location = useLocation();
   const modeConfig = useModeConfig();
   const { mode, uploadedImages } = location.state || {};
-  const { isElderMode, voiceEnabled, speak } = useElderMode();
+  const { voiceEnabled, speak } = useElderMode();
   
   const [templates, setTemplates] = useState<TemplateConfig[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -27,8 +62,17 @@ export default function TemplateSelector() {
   const [isLoading, setIsLoading] = useState(true);
   const [showPreview, setShowPreview] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState<TemplateConfig | null>(null);
+  const [festiveToast, setFestiveToast] = useState({ visible: false, message: '' });
   
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // 显示喜庆风格的 toast
+  const showFestiveToast = useCallback((message: string) => {
+    setFestiveToast({ visible: true, message });
+    setTimeout(() => {
+      setFestiveToast({ visible: false, message: '' });
+    }, 2000);
+  }, []);
   
   // 获取当前模式的分类
   const categories = modeConfig ? getModeTemplateCategories(modeConfig.id) : [];
@@ -108,7 +152,7 @@ export default function TemplateSelector() {
       (navigator as any).vibrate(50);
     }
     
-    toast.success(`已选择：${template.name}`);
+    showFestiveToast(`已选择：${template.name}`);
   };
   
   const handlePreview = (template: TemplateConfig) => {
@@ -149,11 +193,6 @@ export default function TemplateSelector() {
       console.log('================================================\n');
       
       // 调用生成API
-      // 优化后的参数：
-      // - imageUrls: 只包含用户照片（不包含模板图片）
-      // - templateId: 模板ID（后端根据ID获取模板图片和prompt）
-      // - mode: 模式ID
-      // - 不再传递 prompt 和 templateUrl，防止信息泄露
       const { buildApiUrl, API_ENDPOINTS } = await import('../lib/apiConfig');
       const response = await fetch(buildApiUrl(API_ENDPOINTS.GENERATE_ART_PHOTO), {
         method: 'POST',
@@ -161,8 +200,8 @@ export default function TemplateSelector() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          imageUrls: uploadedImages, // 只传用户照片
-          templateId: selectedTemplate.id, // 只传模板ID
+          imageUrls: uploadedImages,
+          templateId: selectedTemplate.id,
           mode: modeConfig.id,
           userId: userId,
           facePositions: null
@@ -209,343 +248,267 @@ export default function TemplateSelector() {
   
   return (
     <PageTransition>
-      <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-gradient-to-b from-[#C8102E] via-[#D4302B] to-[#B8001F]">
-      {/* 装饰背景元素 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* 祥云装饰 */}
-        <motion.div
-          className="absolute top-20 left-10 text-4xl opacity-10"
-          animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        >
-          ☁️
-        </motion.div>
-        <motion.div
-          className="absolute bottom-40 right-10 text-4xl opacity-10"
-          animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        >
-          ☁️
-        </motion.div>
+      <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
+        {/* 喜庆风格 Toast */}
+        <FestiveToast message={festiveToast.message} visible={festiveToast.visible} />
         
-        {/* 金币装饰 */}
-        <motion.div
-          className="absolute top-32 right-16 text-2xl opacity-30"
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        >
-          🪙
-        </motion.div>
-      </div>
-      
-      {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3">
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={handleBack} 
-            className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
-          >
-            <i className="fas fa-arrow-left mr-1"></i>
-            <span>Back</span>
-          </button>
-          <h1 className="text-xl font-bold text-[#FFD700]">
-            {modeConfig?.name || '模板选择'}
-          </h1>
-          <ElderModeToggle />
-        </div>
-      </header>
+        {/* 背景图片 */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(${commonBg})`,
+          }}
+        />
+        
+        {/* 深色渐变遮罩 - 增强可读性 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
 
-      <main className="flex-1 px-4 py-6 z-10 flex flex-col">
-        {/* 引导文案 - 卷轴样式 */}
-        {voiceEnabled && (
-          <motion.div
-            className="mb-6 relative"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="relative bg-gradient-to-r from-[#F4E4C1] via-[#FFF8DC] to-[#F4E4C1] rounded-lg p-4 border-2 border-[#D4AF37] shadow-lg">
-              <div className="absolute top-2 left-2 text-[#D4AF37] text-xs">🎋</div>
-              <div className="absolute top-2 right-2 text-[#D4AF37] text-xs">🎋</div>
-              <p className="text-[#8B4513] text-base font-medium text-center flex items-center justify-center">
-                <i className="fas fa-palette mr-2 text-[#D4302B]"></i>
-                选择一个艺术风格模板，让AI为您生成专属全家福
-              </p>
-            </div>
-          </motion.div>
-        )}
+        {/* 顶部导航栏 - 透明风格 */}
+        <header className="relative z-30 w-full px-4 py-3 pt-safe">
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={handleBack} 
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white"
+            >
+              <i className="fas fa-arrow-left text-lg"></i>
+            </button>
+            <h1 className="text-xl font-bold text-white drop-shadow-lg">
+              选择模板
+            </h1>
+            <div className="w-10" /> {/* 占位保持居中 */}
+          </div>
+        </header>
 
-        {/* 分类筛选 */}
-        {categories.length > 0 && (
-          <motion.div
-            className="mb-4"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                  selectedCategory === 'all'
-                    ? 'bg-gradient-to-r from-[#D4AF37] to-[#F4C430] text-[#8B0000] font-bold shadow-lg'
-                    : 'bg-white/20 text-white hover:bg-white/30'
-                }`}
-              >
-                全部
-              </button>
-              {categories.map(cat => (
+        <main className="flex-1 relative z-10 flex flex-col px-4 pb-28">
+          {/* 分类标签栏 */}
+          {categories.length > 0 && (
+            <motion.div
+              className="py-3"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full whitespace-nowrap transition-all ${
-                    selectedCategory === cat.id
-                      ? 'bg-gradient-to-r from-[#D4AF37] to-[#F4C430] text-[#8B0000] font-bold shadow-lg'
-                      : 'bg-white/20 text-white hover:bg-white/30'
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
+                    selectedCategory === 'all'
+                      ? 'bg-[#C8102E] text-white shadow-lg'
+                      : 'bg-white/80 text-gray-700 hover:bg-white'
                   }`}
                 >
-                  {cat.icon} {cat.name}
+                  全部
                 </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
+                {categories.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
+                      selectedCategory === cat.id
+                        ? 'bg-[#C8102E] text-white shadow-lg'
+                        : 'bg-white/80 text-gray-700 hover:bg-white'
+                    }`}
+                  >
+                    {cat.icon} {cat.name}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-        {/* 当前选中模板预览 */}
-        {selectedTemplate && (
+          {/* 模板网格区域 */}
           <motion.div
-            className="mb-6 relative"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            className="flex-1 overflow-y-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
-              <div className="bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-4 shadow-2xl">
-                <h2 className="text-base font-semibold text-[#FFD700] mb-3 flex items-center">
-                  <i className="fas fa-check-circle text-green-400 mr-2"></i>
-                  当前选中：{selectedTemplate.name}
-                </h2>
-                <div className="relative">
-                  {/* 金色相框边框 */}
-                  <div className="relative p-1 rounded-xl bg-gradient-to-br from-[#FFD700] via-[#FFC700] to-[#D4AF37]">
-                    <img
-                      src={selectedTemplate.url}
-                      alt={selectedTemplate.name}
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                  </div>
-                  <div className="absolute top-3 right-3 bg-gradient-to-r from-[#D4AF37] to-[#F4C430] text-[#8B0000] px-3 py-1 rounded-full text-sm font-bold flex items-center shadow-lg">
-                    <i className="fas fa-star mr-1"></i>
-                    爆款
-                  </div>
+            {isLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-3 border-b-3 border-[#C8102E] mx-auto mb-3"></div>
+                  <p className="text-white/80 text-sm">加载模板中...</p>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-
-        {/* 模板横向滚动列表 */}
-        <motion.div
-          className="flex-1 relative"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] h-full">
-            <div className="bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-4 shadow-2xl h-full flex flex-col">
-              <h2 className="text-base font-semibold text-[#FFD700] mb-3">
-                选择模板风格
-              </h2>
-              
-              {isLoading ? (
-                <div className="flex items-center justify-center h-40">
-                  <div className="text-center">
-                    <i className="fas fa-spinner fa-spin text-[#FFD700] text-3xl mb-2"></i>
-                    <p className="text-white/80">加载模板中...</p>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  ref={scrollContainerRef}
-                  className="flex overflow-x-auto gap-4 pb-4 snap-x snap-mandatory scrollbar-hide"
-                  style={{
-                    scrollBehavior: 'smooth',
-                    WebkitOverflowScrolling: 'touch'
-                  }}
-                >
-                  {filteredTemplates.map((template, index) => (
-                    <motion.div
-                      key={template.id}
-                      className="flex-shrink-0 snap-center"
-                      initial={{ opacity: 0, x: 50 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
+            ) : (
+              <div
+                ref={scrollContainerRef}
+                className="grid grid-cols-2 gap-3 pb-4"
+              >
+                {filteredTemplates.map((template, index) => (
+                  <motion.div
+                    key={template.id}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                  >
+                    <div
+                      className={`relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 ${
+                        selectedTemplate?.id === template.id
+                          ? 'ring-3 ring-[#C8102E] shadow-xl scale-[1.02]'
+                          : 'ring-1 ring-white/30 hover:ring-white/60 hover:shadow-lg'
+                      }`}
+                      onClick={() => handleTemplateSelect(template)}
+                      style={{ aspectRatio: '3/4' }}
                     >
-                      <div
-                        className={`relative cursor-pointer rounded-lg overflow-hidden transition-all duration-300 ${
-                          selectedTemplate?.id === template.id
-                            ? 'ring-4 ring-[#FFD700] shadow-2xl scale-105'
-                            : 'ring-2 ring-[#FFD700]/30 hover:ring-[#FFD700] hover:shadow-lg'
-                        }`}
-                        onClick={() => handleTemplateSelect(template)}
-                        style={{ width: '200px', height: '280px' }}
-                      >
-                        {/* 金色边框 */}
-                        <div className="absolute inset-0 p-0.5 bg-gradient-to-br from-[#FFD700] to-[#D4AF37] rounded-lg">
-                          <img
-                            src={template.url}
-                            alt={template.name}
-                            className="w-full h-full object-cover rounded-lg"
-                          />
-                        </div>
-                        
-                        {/* 选中标记 */}
-                        {selectedTemplate?.id === template.id && (
-                          <motion.div
-                            className="absolute top-2 right-2 bg-gradient-to-r from-[#D4AF37] to-[#F4C430] text-[#8B0000] rounded-full w-8 h-8 flex items-center justify-center shadow-lg"
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ type: 'spring', stiffness: 500, damping: 15 }}
-                          >
-                            <i className="fas fa-check text-sm font-bold"></i>
-                          </motion.div>
-                        )}
-                        
-                        {/* 模板名称 */}
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                          <p className="text-[#FFD700] font-medium text-sm">{template.name}</p>
-                        </div>
-                        
-                        {/* 预览按钮 */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePreview(template);
-                          }}
-                          className="absolute top-2 left-2 bg-white/90 text-[#8B0000] rounded-full w-8 h-8 flex items-center justify-center hover:bg-white transition-colors shadow-lg"
+                      {/* 模板图片 */}
+                      <img
+                        src={template.url}
+                        alt={template.name}
+                        className="w-full h-full object-cover"
+                      />
+                      
+                      {/* 选中标记 */}
+                      {selectedTemplate?.id === template.id && (
+                        <motion.div
+                          className="absolute top-2 right-2 bg-[#C8102E] text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg"
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: 'spring', stiffness: 500, damping: 15 }}
                         >
-                          <i className="fas fa-search-plus text-sm"></i>
-                        </button>
+                          <i className="fas fa-check text-xs"></i>
+                        </motion.div>
+                      )}
+                      
+                      {/* 模板名称 - 底部渐变 */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3 pt-8">
+                        <p className="text-white font-medium text-sm truncate">{template.name}</p>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-              
-              {/* 滚动提示 */}
-              {filteredTemplates.length > 2 && (
-                <div className="mt-3 text-center">
-                  <p className="text-white/60 text-xs flex items-center justify-center">
-                    <i className="fas fa-hand-point-right mr-2"></i>
-                    左右滑动查看更多模板
-                  </p>
-                </div>
-              )}
-              
-              {/* 无模板提示 */}
-              {filteredTemplates.length === 0 && !isLoading && (
-                <div className="text-center py-8">
-                  <p className="text-white/60">该分类暂无模板</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </motion.div>
+                      
+                      {/* 预览按钮 */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreview(template);
+                        }}
+                        className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-black/70 transition-colors"
+                      >
+                        <i className="fas fa-expand text-xs"></i>
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+            
+            {/* 无模板提示 */}
+            {filteredTemplates.length === 0 && !isLoading && (
+              <div className="text-center py-12">
+                <div className="text-5xl mb-4">🎨</div>
+                <p className="text-white/60">该分类暂无模板</p>
+              </div>
+            )}
+          </motion.div>
+        </main>
 
-        {/* 生成按钮 - 金色渐变 */}
+        {/* 底部操作区 - 固定在屏幕底部 */}
         <motion.div
-          className="mt-6"
+          className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-safe bg-gradient-to-t from-black/80 via-black/60 to-transparent"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
+          {/* 当前选中提示 */}
+          {selectedTemplate && (
+            <div className="mb-2 text-center">
+              <p className="text-white/90 text-sm">
+                已选择：<span className="text-white font-medium">{selectedTemplate.name}</span>
+              </p>
+            </div>
+          )}
+          
+          {/* 生成按钮 */}
           <button
             onClick={handleGenerate}
             disabled={!selectedTemplate}
-            className={`relative w-full h-14 rounded-full overflow-hidden ${
-              !selectedTemplate ? 'opacity-50 cursor-not-allowed' : ''
+            className={`relative w-full h-14 rounded-full overflow-hidden transition-all ${
+              !selectedTemplate ? 'opacity-50 cursor-not-allowed' : 'active:scale-[0.98]'
             }`}
           >
             {selectedTemplate ? (
-              <>
-                {/* 金色边框 */}
-                <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                  <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
-                    <span className="text-[#8B0000] text-lg font-bold flex items-center">
-                      <i className="fas fa-magic mr-2"></i>
-                      立即生成
-                    </span>
-                  </div>
-                </div>
+              <div className="w-full h-full bg-gradient-to-r from-[#C8102E] to-[#E31837] rounded-full flex items-center justify-center shadow-lg">
+                <span className="text-white text-lg font-bold flex items-center">
+                  <i className="fas fa-magic mr-2"></i>
+                  立即生成
+                </span>
                 {/* 光效动画 */}
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
                   animate={{ x: ['-100%', '200%'] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
-              </>
+              </div>
             ) : (
-              <div className="absolute inset-0 bg-gray-400 rounded-full flex items-center justify-center">
-                <span className="text-white text-lg font-bold flex items-center">
-                  <i className="fas fa-lock mr-2"></i>
+              <div className="w-full h-full bg-gray-400/80 rounded-full flex items-center justify-center">
+                <span className="text-white/80 text-lg font-medium">
                   请先选择模板
                 </span>
               </div>
             )}
           </button>
-          
-          {selectedTemplate && (
-            <p className={`text-white/80 text-sm mt-2 text-center ${isElderMode ? 'elder-mode-hide' : ''}`}>
-              点击生成后，AI将为您创作专属全家福
-            </p>
-          )}
         </motion.div>
-      </main>
 
-      {/* 模板预览弹窗 */}
-      <AnimatePresence>
-        {showPreview && previewTemplate && (
-          <motion.div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setShowPreview(false)}
-          >
+        {/* 模板预览弹窗 */}
+        <AnimatePresence>
+          {showPreview && previewTemplate && (
             <motion.div
-              className="relative max-w-2xl w-full"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPreview(false)}
             >
-              <img
-                src={previewTemplate.url}
-                alt={previewTemplate.name}
-                className="w-full h-auto rounded-lg shadow-2xl"
-              />
-              <button
-                onClick={() => setShowPreview(false)}
-                className="absolute -top-4 -right-4 bg-white text-gray-700 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 shadow-lg"
+              <motion.div
+                className="relative max-w-lg w-full"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
               >
-                <i className="fas fa-times"></i>
-              </button>
-              <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-3">
-                <p className="text-gray-800 font-medium">{previewTemplate.name}</p>
-              </div>
+                <img
+                  src={previewTemplate.url}
+                  alt={previewTemplate.name}
+                  className="w-full h-auto rounded-xl shadow-2xl"
+                />
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="absolute -top-3 -right-3 bg-white text-gray-700 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 shadow-lg"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent rounded-b-xl p-4">
+                  <p className="text-white font-medium text-lg">{previewTemplate.name}</p>
+                  <button
+                    onClick={() => {
+                      handleTemplateSelect(previewTemplate);
+                      setShowPreview(false);
+                    }}
+                    className="mt-3 w-full py-3 bg-[#C8102E] text-white rounded-full font-medium"
+                  >
+                    选择此模板
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
 
-      {/* 自定义滚动条样式 */}
-      <style>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-    </div>
+        {/* 自定义滚动条样式 */}
+        <style>{`
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+          }
+          .pt-safe {
+            padding-top: max(12px, env(safe-area-inset-top));
+          }
+          .pb-safe {
+            padding-bottom: max(16px, env(safe-area-inset-bottom));
+          }
+        `}</style>
+      </div>
     </PageTransition>
   );
 }

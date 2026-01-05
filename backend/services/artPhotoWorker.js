@@ -10,6 +10,17 @@ const { TaskStatus, updateTask, getTask } = require('./taskQueueService');
 // 正在处理的任务集合（防止重复处理）
 const processingTasks = new Set();
 
+// Mock 模式配置
+const MOCK_ENABLED = process.env.MOCK_AI_ENABLED === 'true';
+
+// Mock 图片 URL（使用真实生成过的图片作为示例）
+const MOCK_IMAGES = [
+  'https://wms.webinfra.cloud/art-photos/mock-result-1.jpg',
+  'https://wms.webinfra.cloud/art-photos/mock-result-2.jpg',
+  'https://wms.webinfra.cloud/art-photos/mock-result-3.jpg',
+  'https://wms.webinfra.cloud/art-photos/mock-result-4.jpg'
+];
+
 /**
  * 日志工具函数
  */
@@ -21,6 +32,23 @@ function logWorker(taskId, stage, message, data = null) {
   } else {
     console.log(`${prefix} ${message}`);
   }
+}
+
+/**
+ * Mock 生成函数 - 模拟 AI 生成过程
+ */
+async function mockGenerateArtPhoto(taskId) {
+  logWorker(taskId, 'MOCK', '🎭 Mock 模式启用，模拟 AI 生成过程...');
+  
+  // 模拟 AI 处理时间（2-4秒）
+  const delay = 2000 + Math.random() * 2000;
+  await new Promise(resolve => setTimeout(resolve, delay));
+  
+  logWorker(taskId, 'MOCK', `✅ Mock 生成完成，耗时 ${Math.round(delay)}ms`);
+  
+  // 返回 mock 图片（随机选择1-4张）
+  const imageCount = Math.floor(Math.random() * 4) + 1;
+  return MOCK_IMAGES.slice(0, imageCount);
 }
 
 /**
@@ -85,29 +113,37 @@ async function executeArtPhotoTask(taskId, generateFn) {
     });
     
     // 阶段3: 准备调用AI服务
-    logWorker(taskId, '阶段3-AI调用准备', '正在准备调用火山方舟API...');
+    logWorker(taskId, '阶段3-AI调用准备', MOCK_ENABLED ? '🎭 Mock 模式，跳过真实 AI 调用' : '正在准备调用火山方舟API...');
     updateTask(taskId, {
       progress: 30,
-      message: '正在生成艺术照...'
+      message: MOCK_ENABLED ? '🎭 Mock 模式生成中...' : '正在生成艺术照...'
     });
     logWorker(taskId, '阶段3-AI调用准备', '✅ 进度更新: 30%');
     
     // 阶段4: 调用生成函数（带超时控制）
     const timeoutMs = 120000; // 2分钟超时
-    logWorker(taskId, '阶段4-AI生成', `开始调用生成函数，超时时间: ${timeoutMs}ms`);
+    logWorker(taskId, '阶段4-AI生成', MOCK_ENABLED ? '🎭 使用 Mock 生成' : `开始调用生成函数，超时时间: ${timeoutMs}ms`);
     
     const generateStartTime = Date.now();
-    const result = await Promise.race([
-      generateFn(finalPrompt, finalImageUrls, facePositions, true, paymentStatus, modelParams),
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('生成超时，请重试')), timeoutMs)
-      )
-    ]);
+    let result;
+    
+    if (MOCK_ENABLED) {
+      // Mock 模式：直接返回模拟图片
+      result = await mockGenerateArtPhoto(taskId);
+    } else {
+      // 真实模式：调用 AI API
+      result = await Promise.race([
+        generateFn(finalPrompt, finalImageUrls, facePositions, true, paymentStatus, modelParams),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('生成超时，请重试')), timeoutMs)
+        )
+      ]);
+    }
     const generateDuration = Date.now() - generateStartTime;
     
-    logWorker(taskId, '阶段4-AI生成', `✅ AI生成完成，耗时: ${generateDuration}ms`, {
+    logWorker(taskId, '阶段4-AI生成', `✅ ${MOCK_ENABLED ? 'Mock' : 'AI'}生成完成，耗时: ${generateDuration}ms`, {
       resultType: typeof result,
-      resultValue: typeof result === 'string' ? result : `Array(${result?.length || 0})`
+      resultValue: Array.isArray(result) ? `Array(${result.length})` : (typeof result === 'string' ? result : 'unknown')
     });
     
     // 阶段5: 处理生成结果
@@ -121,7 +157,11 @@ async function executeArtPhotoTask(taskId, generateFn) {
     // 获取生成的图片
     let generatedImages = [];
     
-    if (typeof result === 'string') {
+    if (Array.isArray(result)) {
+      // Mock 模式或直接返回图片数组
+      generatedImages = result;
+      logWorker(taskId, '阶段5-结果处理', `✅ 直接获取到 ${generatedImages.length} 张图片`);
+    } else if (typeof result === 'string') {
       logWorker(taskId, '阶段5-结果处理', `返回值为taskId: ${result}，从history获取图片`);
       const history = require('../history');
       const historyRecord = history.findHistoryRecordByTaskId(result);
@@ -131,9 +171,6 @@ async function executeArtPhotoTask(taskId, generateFn) {
       } else {
         logWorker(taskId, '阶段5-结果处理', '⚠️ history中未找到图片记录');
       }
-    } else if (Array.isArray(result)) {
-      generatedImages = result;
-      logWorker(taskId, '阶段5-结果处理', `✅ 直接获取到 ${generatedImages.length} 张图片`);
     }
     
     if (generatedImages.length === 0) {
