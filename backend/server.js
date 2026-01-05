@@ -24,6 +24,9 @@ const { executeWithRetry, executeWithSmartRetry } = require('./utils/apiRetry');
 const errorLogService = require('./services/errorLogService');
 // 导入API调用日志服务
 const apiLogService = require('./services/apiLogService');
+// 导入异步任务队列服务
+const { TaskStatus, createTask, updateTask, getTask, getUserTasks } = require('./services/taskQueueService');
+const { executeArtPhotoTask, retryTask, cancelTask } = require('./services/artPhotoWorker');
 // 导入参数校验工具
 const {
   validateRequest,
@@ -1026,6 +1029,11 @@ app.put('/api/user/:userId/payment-status', async (req, res) => {
 // - 前端只传 imageUrls（用户照片）+ templateId（模板ID）+ mode
 // - 后端根据 templateId 获取模板图片URL和对应的prompt
 // - 防止prompt泄露，所有prompt由后端管理
+// 
+// 【重要】此接口已改为异步任务模式：
+// 1. 立即返回 taskId，不阻塞前端
+// 2. 后台异步执行生成任务
+// 3. 前端通过 /api/task/:taskId 轮询获取状态和结果
 app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoParams), async (req, res) => {
   try {
     const { imageUrls, facePositions, userId, templateId, mode = 'puzzle' } = req.body;
@@ -1111,8 +1119,9 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
     
     // 合并模式参数
     const modelParams = getModeModelParams(mode);
+    modelParams.mode = mode; // 确保 mode 被传递
     
-    console.log(`\n========== [${modeConfig.name}] 生成请求详情 ==========`);
+    console.log(`\n========== [${modeConfig.name}] 异步任务创建 ==========`);
     console.log('📋 模式:', mode);
     console.log('🎭 模板ID:', templateConfig.id);
     console.log('🎭 模板名称:', templateConfig.name);
@@ -1121,41 +1130,63 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
     console.log('📦 最终图片数组:', finalImageUrls.length, '张');
     console.log('🎨 Prompt (后端管理):', finalPrompt.substring(0, 100) + '...');
     console.log('💧 水印设置:', paymentStatus === 'free');
+    
+    // 【异步任务模式】创建任务，立即返回
+    const task = createTask({
+      mode,
+      userId,
+      templateId: templateConfig.id,
+      imageUrls,
+      finalPrompt,
+      finalImageUrls,
+      facePositions,
+      paymentStatus,
+      modelParams
+    });
+    
+    console.log('🆔 任务ID:', task.id);
     console.log('================================================\n');
     
-    const taskId = await generateArtPhoto(finalPrompt, finalImageUrls, facePositions, true, paymentStatus, modelParams);
-    
     // 保存生成历史记录
-    if (userId && taskId) {
+    if (userId && task.id) {
       try {
         await generationService.saveGenerationHistory({
           userId: userId,
-          taskIds: [taskId],
+          taskIds: [task.id],
           originalImageUrls: imageUrls,
           templateUrl: templateConfig.imageUrl,
           mode: mode,
           status: 'pending'
         });
-        console.log(`[${modeConfig.name}] 生成历史记录已保存，任务ID: ${taskId}`);
+        console.log(`[${modeConfig.name}] 生成历史记录已保存，任务ID: ${task.id}`);
       } catch (saveError) {
         console.error('保存生成历史记录失败:', saveError);
       }
     }
     
+    // 立即返回任务ID（不等待生成完成）
     res.json({ 
       success: true, 
       data: { 
-        taskId: taskId,
+        taskId: task.id,
         mode: mode,
-        templateId: templateConfig.id
+        templateId: templateConfig.id,
+        status: task.status,
+        message: task.message
       } 
     });
+    
+    // 【异步执行】在响应返回后开始执行任务
+    setImmediate(() => {
+      executeArtPhotoTask(task.id, generateArtPhotoInternal);
+    });
+    
   } catch (error) {
-    console.error('生成艺术照失败:', error);
+    console.error('创建生成任务失败:', error);
     
     // 记录错误日志
     await errorLogService.logError(
-      'ART_PHOTO_GENERATION_FAILED',
+      'ART_PHOTO_TASK_CREATE_FAILED',
       error.message,
       {
         userId: req.body.userId,
@@ -1172,6 +1203,190 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
     });
   }
 });
+
+// ============================================
+// 异步任务管理接口
+// ============================================
+
+/**
+ * 查询异步任务状态
+ * 前端轮询此接口获取任务进度和结果
+ */
+app.get('/api/task/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    if (!taskId) {
+      return res.status(400).json({ 
+        error: '缺少必要参数', 
+        message: '需要提供 taskId 参数' 
+      });
+    }
+    
+    const task = await getTask(taskId);
+    
+    if (!task) {
+      return res.status(404).json({ 
+        error: '任务不存在', 
+        message: '未找到对应的任务，可能已过期或被删除' 
+      });
+    }
+    
+    // 返回任务状态（不包含敏感的 params 信息）
+    res.json({ 
+      success: true, 
+      data: {
+        taskId: task.id,
+        status: task.status,
+        progress: task.progress,
+        message: task.message,
+        result: task.result,
+        error: task.error,
+        retryCount: task.retryCount,
+        maxRetries: task.maxRetries,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
+        completedAt: task.completedAt,
+        meta: task.meta
+      }
+    });
+  } catch (error) {
+    console.error('查询任务状态失败:', error);
+    res.status(500).json({ 
+      error: '查询任务状态失败', 
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * 重试失败的任务
+ */
+app.post('/api/task/:taskId/retry', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    if (!taskId) {
+      return res.status(400).json({ 
+        error: '缺少必要参数', 
+        message: '需要提供 taskId 参数' 
+      });
+    }
+    
+    const task = await getTask(taskId);
+    
+    if (!task) {
+      return res.status(404).json({ 
+        error: '任务不存在', 
+        message: '未找到对应的任务' 
+      });
+    }
+    
+    // 检查任务状态
+    if (task.status !== TaskStatus.FAILED && task.status !== TaskStatus.TIMEOUT) {
+      return res.status(400).json({ 
+        error: '无法重试', 
+        message: '只能重试失败或超时的任务' 
+      });
+    }
+    
+    // 重试任务
+    await retryTask(taskId, generateArtPhotoInternal);
+    
+    res.json({ 
+      success: true, 
+      message: '任务已重新开始',
+      data: {
+        taskId: taskId,
+        status: TaskStatus.PENDING
+      }
+    });
+  } catch (error) {
+    console.error('重试任务失败:', error);
+    res.status(500).json({ 
+      error: '重试任务失败', 
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * 取消任务
+ */
+app.post('/api/task/:taskId/cancel', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    if (!taskId) {
+      return res.status(400).json({ 
+        error: '缺少必要参数', 
+        message: '需要提供 taskId 参数' 
+      });
+    }
+    
+    await cancelTask(taskId);
+    
+    res.json({ 
+      success: true, 
+      message: '任务已取消',
+      data: {
+        taskId: taskId,
+        status: TaskStatus.CANCELLED
+      }
+    });
+  } catch (error) {
+    console.error('取消任务失败:', error);
+    res.status(500).json({ 
+      error: '取消任务失败', 
+      message: error.message 
+    });
+  }
+});
+
+/**
+ * 获取用户的所有任务
+ */
+app.get('/api/tasks/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        error: '缺少必要参数', 
+        message: '需要提供 userId 参数' 
+      });
+    }
+    
+    const tasks = await getUserTasks(userId);
+    
+    // 返回任务列表（简化信息）
+    const taskList = tasks.map(task => ({
+      taskId: task.id,
+      status: task.status,
+      progress: task.progress,
+      message: task.message,
+      result: task.result,
+      createdAt: task.createdAt,
+      completedAt: task.completedAt,
+      meta: task.meta
+    }));
+    
+    res.json({ 
+      success: true, 
+      data: taskList
+    });
+  } catch (error) {
+    console.error('获取用户任务列表失败:', error);
+    res.status(500).json({ 
+      error: '获取用户任务列表失败', 
+      message: error.message 
+    });
+  }
+});
+
+// ============================================
+// 旧版任务状态查询接口（兼容）
+// ============================================
 
 // 查询任务状态端点
 app.get('/api/task-status/:taskId', async (req, res) => {
@@ -3920,9 +4135,17 @@ app.listen(PORT, () => {
   
   console.log(`📋 核心功能端点:`);
   console.log(`  - 健康检查: http://localhost:${PORT}/health`);
-  console.log(`  - 生成艺术照: POST /api/generate-art-photo`);
-  console.log(`  - 查询任务状态: GET /api/task-status/:taskId`);
+  console.log(`  - 生成艺术照: POST /api/generate-art-photo (异步任务模式)`);
   console.log(`  - 上传图片: POST /api/upload-image\n`);
+  
+  console.log(`📦 异步任务管理 (新):`);
+  console.log(`  - 查询任务状态: GET /api/task/:taskId`);
+  console.log(`  - 重试任务: POST /api/task/:taskId/retry`);
+  console.log(`  - 取消任务: POST /api/task/:taskId/cancel`);
+  console.log(`  - 用户任务列表: GET /api/tasks/user/:userId\n`);
+  
+  console.log(`📋 旧版任务接口 (兼容):`);
+  console.log(`  - 查询任务状态: GET /api/task-status/:taskId\n`);
   
   console.log(`👤 用户管理:`);
   console.log(`  - 初始化用户: POST /api/user/init`);

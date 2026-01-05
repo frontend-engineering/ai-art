@@ -24,6 +24,12 @@ export const API_ENDPOINTS = {
   TASK_STATUS: (taskId: string) => `/api/task-status/${taskId}`,
   TASK_STATUS_STREAM: (taskId: string) => `/api/task-status-stream/${taskId}`,
   
+  // 异步任务管理（新）
+  TASK_GET: (taskId: string) => `/api/task/${taskId}`,
+  TASK_RETRY: (taskId: string) => `/api/task/${taskId}/retry`,
+  TASK_CANCEL: (taskId: string) => `/api/task/${taskId}/cancel`,
+  TASKS_USER: (userId: string) => `/api/tasks/user/${userId}`,
+  
   // 历史记录
   HISTORY_USER: (userId: string, limit?: number) => 
     `/api/history/user/${userId}${limit ? `?limit=${limit}` : ''}`,

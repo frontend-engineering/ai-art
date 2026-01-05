@@ -115,13 +115,14 @@ function validatePhone(phone) {
 function validateGenerateArtPhotoParams(params) {
   const errors = [];
   
-  // 校验必需字段（userId改为可选）
-  const { valid, missingFields } = validateRequiredFields(params, ['prompt', 'imageUrls']);
+  // 校验必需字段
+  // 注意：prompt 改为可选，因为后端会根据 templateId 自动获取 prompt
+  const { valid, missingFields } = validateRequiredFields(params, ['imageUrls']);
   if (!valid) {
     errors.push(`缺少必需参数: ${missingFields.join(', ')}`);
   }
   
-  // 校验prompt
+  // 校验prompt（可选，如果提供则校验长度）
   if (params.prompt && !validateStringLength(params.prompt, 1, 1000)) {
     errors.push('prompt长度必须在1-1000字符之间');
   }
@@ -131,10 +132,14 @@ function validateGenerateArtPhotoParams(params) {
     if (!validateArrayLength(params.imageUrls, 1, 14)) {
       errors.push('imageUrls数组长度必须在1-14之间');
     } else {
-      // 校验每个URL格式
+      // 校验每个图片格式（支持URL或Base64）
       for (let i = 0; i < params.imageUrls.length; i++) {
-        if (!validateUrl(params.imageUrls[i])) {
-          errors.push(`imageUrls[${i}]不是有效的URL格式`);
+        const img = params.imageUrls[i];
+        // 支持 URL 或 Base64 格式
+        const isValidUrl = validateUrl(img);
+        const isBase64 = typeof img === 'string' && img.startsWith('data:image/');
+        if (!isValidUrl && !isBase64) {
+          errors.push(`imageUrls[${i}]不是有效的URL或Base64格式`);
         }
       }
     }
