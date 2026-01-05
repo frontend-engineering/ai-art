@@ -11,8 +11,8 @@ const db = require('../db/connection');
 // 期望的表结构
 const EXPECTED_TABLES = {
   users: [
-    'id', 'wechat_openid', 'nickname', 'avatar_url', 
-    'payment_status', 'created_at', 'updated_at'
+    'id', 'payment_status', 'regenerate_count',
+    'created_at', 'updated_at'
   ],
   generation_history: [
     'id', 'user_id', 'task_ids', 'original_image_urls', 
@@ -28,10 +28,6 @@ const EXPECTED_TABLES = {
     'id', 'user_id', 'generation_id', 'product_type', 'product_price',
     'shipping_name', 'shipping_phone', 'shipping_address',
     'status', 'created_at', 'updated_at'
-  ],
-  greeting_cards: [
-    'id', 'user_id', 'image_url', 'greeting_text', 'template_style',
-    'created_at', 'updated_at'
   ]
 };
 
