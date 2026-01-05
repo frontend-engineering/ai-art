@@ -10,6 +10,8 @@ const { Payment } = require('wechatpay-node-v3');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// 导入模式配置
+const { getModeConfig, validateModeRequest, getModeModelParams } = require('./config/modes');
 // 导入用户服务
 const userService = require('./services/userService');
 // 导入生成历史服务
@@ -20,6 +22,8 @@ const cleanupService = require('./services/cleanupService');
 const { executeWithRetry, executeWithSmartRetry } = require('./utils/apiRetry');
 // 导入错误日志服务
 const errorLogService = require('./services/errorLogService');
+// 导入API调用日志服务
+const apiLogService = require('./services/apiLogService');
 // 导入参数校验工具
 const {
   validateRequest,
@@ -249,12 +253,13 @@ function sign(params) {
  * @param facePositions 人脸位置信息数组(可选)
  * @param useStreaming 是否使用流式输出(默认true)
  * @param paymentStatus 用户付费状态 ('free', 'basic', 'premium')
+ * @param modeParams 模式特定参数
  * @returns 生成任务ID或流式响应
  */
-async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free') {
+async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free', modeParams = {}) {
   // 使用重试机制包装API调用
   return executeWithRetry(
-    () => generateArtPhotoInternal(prompt, imageUrls, facePositions, useStreaming, paymentStatus),
+    () => generateArtPhotoInternal(prompt, imageUrls, facePositions, useStreaming, paymentStatus, modeParams),
     {
       maxRetries: 1,
       timeout: 30000,
@@ -269,7 +274,10 @@ async function generateArtPhoto(prompt, imageUrls, facePositions = null, useStre
 /**
  * 内部函数：调用火山引擎API生成艺术照（不含重试逻辑）
  */
-async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free') {
+async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null, useStreaming = true, paymentStatus = 'free', modeParams = {}) {
+  const startTime = Date.now();
+  const mode = modeParams.mode || 'unknown';
+  
   return new Promise((resolve, reject) => {
     try {
       // 检查环境变量是否已设置
@@ -282,11 +290,11 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
       const urlObj = new URL(VOLCENGINE_ENDPOINT);
       const host = urlObj.host;
       
-      // 构造请求体 - 使用4选1生成策略
+      // 构造请求体 - 使用4选1生成策略，合并模式参数
       const requestBody = {
         model: "doubao-seedream-4.5",
         prompt: prompt,
-        size: "2K",
+        // 移除 size 参数，使用 size_param 控制分辨率
         sequential_image_generation: "auto", // 启用组图功能
         sequential_image_generation_options: {
           max_images: 4 // 最多生成4张图片
@@ -299,7 +307,8 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
         min_ratio: 0.33,
         req_key: "jimeng_t2i_v40",
         scale: 0.8,
-        size_param: 4194304
+        size_param: 4194304, // 控制图片分辨率 (2048x2048)
+        ...modeParams // 合并模式特定参数
       };
       
       // 如果提供了imageUrls，则添加到请求体中
@@ -357,10 +366,17 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
       // 构造完整的URL
       const url = `${VOLCENGINE_ENDPOINT}/?${signedQueryString}`;
       
-      console.log('火山引擎API请求URL:', url);
-      console.log('请求headers:', JSON.stringify(headers, null, 2));
-      console.log('请求体:', requestBodyString);
-      console.log('最终的image数组:', requestBody.image);
+      console.log(`\n========== [${mode}模式] 火山引擎API调用详情 ==========`);
+      console.log('📍 请求URL:', url);
+      console.log('📋 请求Headers:', JSON.stringify(headers, null, 2));
+      console.log('📦 完整请求体:', requestBodyString);
+      console.log('🎨 Prompt:', requestBody.prompt);
+      console.log('🖼️  图片数组:', requestBody.image);
+      console.log('⚙️  模式参数:', JSON.stringify(modeParams, null, 2));
+      console.log('💧 水印设置:', requestBody.watermark);
+      console.log('📐 分辨率参数:', requestBody.size_param);
+      console.log('🔢 最大生成数:', requestBody.sequential_image_generation_options?.max_images);
+      console.log('================================================\n');
       
       // 构造请求选项
       const options = {
@@ -483,8 +499,83 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
                 return;
               }
               
-              // 获取任务ID
+              // 检查是否直接返回了图片数据（同步模式）
+              if (result.Result.data?.binary_data_base64 && Array.isArray(result.Result.data.binary_data_base64)) {
+                console.log(`[同步模式] API直接返回了 ${result.Result.data.binary_data_base64.length} 张图片`);
+                
+                // 生成一个唯一的任务ID用于保存
+                const { v4: uuidv4 } = require('uuid');
+                const taskId = uuidv4();
+                
+                // 将 base64 图片数据转换为 URL（需要上传到存储服务）
+                // 暂时先保存 base64 数据，后续可以上传到 OSS
+                const generatedImages = result.Result.data.binary_data_base64.map((base64Data, index) => {
+                  // 返回 data URL 格式，前端可以直接显示
+                  return `data:image/png;base64,${base64Data}`;
+                });
+                
+                // 记录API调用日志（异步，不阻塞主流程）
+                apiLogService.logApiCall({
+                  mode,
+                  taskId,
+                  request: {
+                    prompt,
+                    imageUrls,
+                    templateUrl: imageUrls?.[imageUrls.length - 1],
+                    modelParams: modeParams,
+                    facePositions
+                  },
+                  response: {
+                    taskId,
+                    imageUrls: generatedImages,
+                    status: 'done',
+                    message: '同步模式直接返回'
+                  },
+                  status: 'success',
+                  duration: Date.now() - startTime
+                }).catch(err => console.error('[API日志] 记录失败:', err));
+                
+                // 保存到历史记录
+                const historyRecord = {
+                  taskId: taskId,
+                  originalImageUrls: imageUrls || [],
+                  generatedImageUrls: generatedImages,
+                  status: 'done',
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString()
+                };
+                
+                const history = require('./history');
+                history.addHistoryRecord(historyRecord);
+                console.log(`[同步模式] 任务 ${taskId} 已保存，包含 ${generatedImages.length} 张图片`);
+                
+                // 返回任务ID
+                resolve(taskId);
+                return;
+              }
+              
+              // 异步模式：获取任务ID
               const taskId = result.Result.data?.task_id || '';
+              
+              // 记录API调用日志
+              apiLogService.logApiCall({
+                mode,
+                taskId,
+                request: {
+                  prompt,
+                  imageUrls,
+                  templateUrl: imageUrls?.[imageUrls.length - 1],
+                  modelParams: modeParams,
+                  facePositions
+                },
+                response: {
+                  taskId,
+                  status: 'pending',
+                  message: '异步任务已创建'
+                },
+                status: 'success',
+                duration: Date.now() - startTime
+              }).catch(err => console.error('[API日志] 记录失败:', err));
               
               // 记录新创建的任务
               if (taskId) {
@@ -492,6 +583,7 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
                   taskId: taskId,
                   originalImageUrls: imageUrls || [],
                   generatedImageUrls: [], // 初始为空，等任务完成后再填充
+                  status: 'pending',
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString()
                 };
@@ -499,13 +591,29 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
                 // 保存到历史记录
                 const history = require('./history');
                 history.addHistoryRecord(historyRecord);
-                console.log(`新任务 ${taskId} 已记录（4选1模式）`);
+                console.log(`[异步模式] 新任务 ${taskId} 已记录`);
               }
               
               // 返回任务ID
               resolve(taskId);
             } catch (parseError) {
               console.error('解析响应失败:', parseError);
+              
+              // 记录错误日志
+              apiLogService.logApiCall({
+                mode,
+                taskId: 'unknown',
+                request: {
+                  prompt,
+                  imageUrls,
+                  modelParams: modeParams
+                },
+                response: null,
+                status: 'error',
+                error: `解析响应失败: ${parseError.message}`,
+                duration: Date.now() - startTime
+              }).catch(err => console.error('[API日志] 记录失败:', err));
+              
               reject(new Error(`解析响应失败: ${parseError.message}`));
             }
           });
@@ -513,6 +621,22 @@ async function generateArtPhotoInternal(prompt, imageUrls, facePositions = null,
         
         req.on('error', (error) => {
           console.error('网络请求失败:', error);
+          
+          // 记录错误日志
+          apiLogService.logApiCall({
+            mode,
+            taskId: 'unknown',
+            request: {
+              prompt,
+              imageUrls,
+              modelParams: modeParams
+            },
+            response: null,
+            status: 'error',
+            error: `网络请求失败: ${error.message}`,
+            duration: Date.now() - startTime
+          }).catch(err => console.error('[API日志] 记录失败:', err));
+          
           reject(new Error(`网络请求失败: ${error.message}`));
         });
         
@@ -1049,12 +1173,30 @@ app.put('/api/user/:userId/payment-status', async (req, res) => {
 // 生成艺术照端点
 app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoParams), async (req, res) => {
   try {
-    const { prompt, imageUrls, facePositions, userId, templateUrl } = req.body;
+    const { prompt, imageUrls, facePositions, userId, templateUrl, mode = 'puzzle' } = req.body;
     
     if (!prompt || !imageUrls) {
       return res.status(400).json({ 
         error: '缺少必要参数', 
         message: '需要提供 prompt 和 imageUrls 参数' 
+      });
+    }
+    
+    // 验证模式配置
+    const validation = validateModeRequest(mode, imageUrls);
+    if (!validation.valid) {
+      return res.status(400).json({ 
+        error: '参数验证失败', 
+        message: validation.error 
+      });
+    }
+    
+    // 获取模式配置
+    const modeConfig = getModeConfig(mode);
+    if (!modeConfig) {
+      return res.status(400).json({ 
+        error: '无效的模式', 
+        message: `模式 ${mode} 不存在` 
       });
     }
     
@@ -1072,21 +1214,45 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
       }
     }
     
-    console.log(`用户 ${userId || '未知'} 的付费状态: ${paymentStatus}, 水印设置: ${paymentStatus === 'free'}`);
+    console.log(`[${modeConfig.name}] 用户 ${userId || '未知'} 的付费状态: ${paymentStatus}, 水印设置: ${paymentStatus === 'free'}`);
     
-    const taskId = await generateArtPhoto(prompt, imageUrls, facePositions, true, paymentStatus);
+    // 合并模式参数
+    const modelParams = getModeModelParams(mode);
+    
+    // 使用后端配置的 prompt 模板（如果前端没有提供或为空）
+    let finalPrompt = prompt;
+    if (!prompt || prompt.trim() === '') {
+      finalPrompt = getModePromptTemplate(mode, 'default');
+      console.log(`[${modeConfig.name}] 使用后端默认 prompt: ${finalPrompt}`);
+    } else {
+      console.log(`[${modeConfig.name}] 使用前端传入 prompt: ${finalPrompt}`);
+    }
+    
+    // 添加详细的请求日志
+    console.log(`[${modeConfig.name}] 生成请求详情:`, {
+      mode,
+      prompt: finalPrompt,
+      imageCount: imageUrls.length,
+      imageUrls: imageUrls,
+      hasFacePositions: !!facePositions,
+      modelParams,
+      paymentStatus
+    });
+    
+    const taskId = await generateArtPhoto(finalPrompt, imageUrls, facePositions, true, paymentStatus, modelParams);
     
     // 保存生成历史记录
     if (userId && taskId) {
       try {
         await generationService.saveGenerationHistory({
           userId: userId,
-          taskIds: [taskId], // 4选1模式下只有一个任务ID
+          taskIds: [taskId],
           originalImageUrls: imageUrls,
-          templateUrl: templateUrl || imageUrls[imageUrls.length - 1], // 使用最后一张图片作为模板
+          templateUrl: templateUrl || imageUrls[imageUrls.length - 1],
+          mode: mode, // 保存模式信息
           status: 'pending'
         });
-        console.log(`生成历史记录已保存，任务ID: ${taskId}`);
+        console.log(`[${modeConfig.name}] 生成历史记录已保存，任务ID: ${taskId}`);
       } catch (saveError) {
         console.error('保存生成历史记录失败:', saveError);
         // 不影响主流程，继续返回任务ID
@@ -1096,7 +1262,8 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
     res.json({ 
       success: true, 
       data: { 
-        taskId: taskId 
+        taskId: taskId,
+        mode: mode
       } 
     });
   } catch (error) {
@@ -1108,6 +1275,7 @@ app.post('/api/generate-art-photo', validateRequest(validateGenerateArtPhotoPara
       error.message,
       {
         userId: req.body.userId,
+        mode: req.body.mode,
         imageCount: req.body.imageUrls?.length,
         endpoint: '/api/generate-art-photo',
         method: 'POST'
@@ -3797,6 +3965,93 @@ app.post('/api/admin/error-logs/log', async (req, res) => {
     console.error('记录错误日志失败:', error);
     res.status(500).json({
       error: '记录错误日志失败',
+      message: error.message
+    });
+  }
+});
+
+// ==================== API调用日志查询端点 ====================
+
+/**
+ * 查询API调用日志
+ * GET /api/logs/api-calls?mode=transform&taskId=xxx&date=2026-01-04&limit=50
+ */
+app.get('/api/logs/api-calls', async (req, res) => {
+  try {
+    const { mode, taskId, date, limit } = req.query;
+    
+    const logs = await apiLogService.queryApiLogs({
+      mode,
+      taskId,
+      date,
+      limit: limit ? parseInt(limit) : 50
+    });
+    
+    res.json({
+      success: true,
+      data: logs,
+      count: logs.length
+    });
+  } catch (error) {
+    console.error('查询API日志失败:', error);
+    res.status(500).json({
+      error: '查询API日志失败',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * 获取最近的API调用日志
+ * GET /api/logs/api-calls/recent?limit=20
+ */
+app.get('/api/logs/api-calls/recent', async (req, res) => {
+  try {
+    const { limit } = req.query;
+    
+    const logs = await apiLogService.getRecentApiLogs(
+      limit ? parseInt(limit) : 20
+    );
+    
+    res.json({
+      success: true,
+      data: logs,
+      count: logs.length
+    });
+  } catch (error) {
+    console.error('获取最近API日志失败:', error);
+    res.status(500).json({
+      error: '获取最近API日志失败',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * 根据任务ID获取API调用日志
+ * GET /api/logs/api-calls/:taskId
+ */
+app.get('/api/logs/api-calls/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    const log = await apiLogService.getApiLogByTaskId(taskId);
+    
+    if (!log) {
+      return res.status(404).json({
+        error: '未找到日志',
+        message: `任务ID ${taskId} 的日志不存在`
+      });
+    }
+    
+    res.json({
+      success: true,
+      data: log
+    });
+  } catch (error) {
+    console.error('获取API日志失败:', error);
+    res.status(500).json({
+      error: '获取API日志失败',
       message: error.message
     });
   }

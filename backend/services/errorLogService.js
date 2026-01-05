@@ -126,6 +126,12 @@ class ErrorLogService {
         const { v4: uuidv4 } = require('uuid');
         const logId = uuidv4();
         
+        // 转换 ISO 时间戳为 MySQL DATETIME 格式
+        const mysqlTimestamp = new Date(logEntry.timestamp)
+          .toISOString()
+          .slice(0, 19)
+          .replace('T', ' ');
+        
         // 插入日志记录
         await connection.execute(
           `INSERT INTO error_logs 
@@ -133,7 +139,7 @@ class ErrorLogService {
           VALUES (?, ?, ?, ?, ?, ?, NOW())`,
           [
             logId,
-            logEntry.timestamp,
+            mysqlTimestamp,
             logEntry.level,
             logEntry.errorCode,
             logEntry.errorMessage,

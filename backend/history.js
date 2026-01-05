@@ -1,94 +1,91 @@
+/**
+ * 历史记录管理模块
+ * 负责管理生成任务的历史记录
+ */
+
 const fs = require('fs');
 const path = require('path');
 
-// 历史记录文件路径
 const HISTORY_FILE = path.join(__dirname, '..', 'db', 'history.json');
 
 /**
  * 读取历史记录
- * @returns {Array} 历史记录数组
  */
 function readHistory() {
   try {
-    if (fs.existsSync(HISTORY_FILE)) {
-      const data = fs.readFileSync(HISTORY_FILE, 'utf8');
-      return JSON.parse(data);
+    if (!fs.existsSync(HISTORY_FILE)) {
+      return [];
     }
+    const data = fs.readFileSync(HISTORY_FILE, 'utf8');
+    return JSON.parse(data);
   } catch (error) {
     console.error('读取历史记录失败:', error);
+    return [];
   }
-  return [];
 }
 
 /**
  * 写入历史记录
- * @param {Array} history 历史记录数组
  */
 function writeHistory(history) {
   try {
-    // 确保目录存在
     const dir = path.dirname(HISTORY_FILE);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    
-    // 写入文件
-    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2));
+    fs.writeFileSync(HISTORY_FILE, JSON.stringify(history, null, 2), 'utf8');
   } catch (error) {
     console.error('写入历史记录失败:', error);
+    throw error;
   }
 }
 
 /**
  * 添加历史记录
- * @param {Object} record 历史记录项
  */
 function addHistoryRecord(record) {
-  try {
-    const history = readHistory();
-    history.unshift(record); // 添加到数组开头
-    
-    // 限制历史记录数量，最多保存100条
-    if (history.length > 100) {
-      history.splice(100);
-    }
-    
-    writeHistory(history);
-  } catch (error) {
-    console.error('添加历史记录失败:', error);
-  }
+  const history = readHistory();
+  history.unshift(record); // 添加到开头
+  writeHistory(history);
 }
 
 /**
  * 根据任务ID查找历史记录
- * @param {string} taskId 任务ID
- * @returns {Object|null} 历史记录项或null
  */
 function findHistoryRecordByTaskId(taskId) {
-  try {
-    const history = readHistory();
-    return history.find(record => record.taskId === taskId) || null;
-  } catch (error) {
-    console.error('查找历史记录失败:', error);
-    return null;
-  }
+  const history = readHistory();
+  // 找到最新的匹配记录（有生成图片的）
+  return history.find(record => 
+    record.taskId === taskId && 
+    record.generatedImageUrls && 
+    record.generatedImageUrls.length > 0
+  );
 }
 
 /**
- * 获取所有历史记录
- * @returns {Array} 历史记录数组
+ * 更新历史记录
  */
-function getAllHistoryRecords() {
-  try {
-    return readHistory();
-  } catch (error) {
-    console.error('获取历史记录失败:', error);
-    return [];
+function updateHistoryRecord(taskId, updates) {
+  const history = readHistory();
+  const index = history.findIndex(record => record.taskId === taskId);
+  
+  if (index !== -1) {
+    history[index] = {
+      ...history[index],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    };
+    writeHistory(history);
+    return history[index];
   }
+  
+  return null;
 }
 
 module.exports = {
+  readHistory,
+  writeHistory,
   addHistoryRecord,
   findHistoryRecordByTaskId,
-  getAllHistoryRecords
+  updateHistoryRecord
 };

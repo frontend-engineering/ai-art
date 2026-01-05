@@ -1,12 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import Background from '../components/Background';
+import CornerBackground from '@/components/CornerBackground';
 import { useElderMode } from '@/contexts/ElderModeContext';
 import PageTransition from '@/components/PageTransition';
 import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001';
 
 // 进度阶段配置
 const PROGRESS_STAGES = [
@@ -16,34 +14,6 @@ const PROGRESS_STAGES = [
   { progress: 80, text: '优化细节' },
   { progress: 100, text: '完成' }
 ];
-
-// 灯笼SVG组件
-const LanternIcon = () => (
-  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* 顶部装饰 */}
-    <rect x="35" y="8" width="10" height="4" fill="#D4AF37" rx="1" />
-    
-    {/* 灯笼主体 */}
-    <ellipse cx="40" cy="20" rx="8" ry="4" fill="#D4302B" />
-    <path d="M32 20 L32 50 Q32 55 40 55 Q48 55 48 50 L48 20" fill="#D4302B" />
-    <ellipse cx="40" cy="50" rx="8" ry="4" fill="#8B0000" />
-    
-    {/* 灯笼纹理 */}
-    <line x1="32" y1="28" x2="48" y2="28" stroke="#FFD700" strokeWidth="0.5" opacity="0.6" />
-    <line x1="32" y1="35" x2="48" y2="35" stroke="#FFD700" strokeWidth="0.5" opacity="0.6" />
-    <line x1="32" y1="42" x2="48" y2="42" stroke="#FFD700" strokeWidth="0.5" opacity="0.6" />
-    
-    {/* 福字 */}
-    <text x="40" y="38" fontSize="12" fill="#FFD700" textAnchor="middle" fontWeight="bold">福</text>
-    
-    {/* 底部流苏 */}
-    <line x1="40" y1="54" x2="40" y2="62" stroke="#D4AF37" strokeWidth="2" />
-    <circle cx="40" cy="64" r="3" fill="#D4AF37" />
-    <line x1="40" y1="64" x2="37" y2="70" stroke="#D4AF37" strokeWidth="1.5" />
-    <line x1="40" y1="64" x2="40" y2="72" stroke="#D4AF37" strokeWidth="1.5" />
-    <line x1="40" y1="64" x2="43" y2="70" stroke="#D4AF37" strokeWidth="1.5" />
-  </svg>
-);
 
 export default function GeneratingPage() {
   const navigate = useNavigate();
@@ -160,7 +130,9 @@ export default function GeneratingPage() {
 
           // 延迟跳转，让用户看到完成状态
           setTimeout(() => {
-            navigate('/generator', {
+            // 根据模式跳转到对应的结果选择页
+            const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
+            navigate(targetPath, {
               state: {
                 mode,
                 uploadedImages,
@@ -262,68 +234,107 @@ export default function GeneratingPage() {
 
   return (
     <PageTransition>
-      <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden px-4">
-      <Background />
+      <CornerBackground>
+        <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden px-4">
+          {/* 装饰背景元素 */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* 祥云装饰 */}
+        <motion.div
+          className="absolute top-20 left-10 text-4xl opacity-10"
+          animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          ☁️
+        </motion.div>
+        <motion.div
+          className="absolute bottom-40 right-10 text-4xl opacity-10"
+          animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        >
+          ☁️
+        </motion.div>
+      </div>
       
       <div className="z-10 w-full max-w-md">
         {/* 旋转灯笼动画 */}
         <motion.div
           className="flex justify-center mb-8"
           animate={{
-            rotate: 360
+            y: [0, -10, 0],
+            rotate: [0, 5, -5, 0]
           }}
           transition={{
             duration: 3,
             repeat: Infinity,
-            ease: "linear"
+            ease: "easeInOut"
           }}
         >
-          <LanternIcon />
+          <div className="text-8xl">🏮</div>
         </motion.div>
 
-        {/* 进度条 */}
+        {/* 标题 */}
+        <motion.h1
+          className="text-2xl font-bold text-center text-[#FFD700] mb-6"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          AI家庭生成等待页
+        </motion.h1>
+
+        {/* 进度条 - 金色渐变 */}
         <div className="mb-6">
-          <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-[#D4302B] to-[#D4AF37]"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.3 }}
-            />
+          <div className="relative">
+            {/* 金色边框 */}
+            <div className="relative p-0.5 rounded-full bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+              <div className="w-full h-4 bg-[#8B0000] rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430]"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.3 }}
+                />
+              </div>
+            </div>
           </div>
           
           {/* 进度百分比和文案 */}
           <motion.div
-            className="mt-3 text-center"
+            className="mt-4 text-center"
             key={currentStage}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <p className="text-2xl font-bold text-[#D4302B] mb-1">
+            <p className="text-3xl font-bold text-[#FFD700] mb-2">
               {Math.round(progress)}%
             </p>
-            <p className="text-lg text-gray-700">
-              {currentStage}
-            </p>
+            <div className="flex items-center justify-center text-white/90">
+              <span className="text-lg">～ {currentStage}...{currentStage === '识别人脸' ? '福气满满' : currentStage === '调和光线' ? '光彩照人' : currentStage === '融合背景' ? '喜气洋洋' : currentStage === '优化细节' ? '精雕细琢' : '恭喜发财'} ～</span>
+            </div>
           </motion.div>
         </div>
 
-        {/* 队列提示 */}
+        {/* 队列提示 - 卷轴样式 */}
         <AnimatePresence>
           {queuePosition !== null && estimatedWaitTime !== null && !error && (
             <motion.div
-              className="bg-white/80 backdrop-blur-sm rounded-lg p-4 mb-4 text-center"
+              className="relative mb-4"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
             >
-              <p className="text-gray-700 mb-2">
-                您前面还有 <span className="text-[#D4302B] font-bold">{queuePosition}</span> 位用户
-              </p>
-              <p className="text-gray-600 text-sm">
-                预计等待 <span className="font-semibold">{estimatedWaitTime}</span> 秒
-              </p>
+              <div className="relative bg-gradient-to-r from-[#F4E4C1] via-[#FFF8DC] to-[#F4E4C1] rounded-lg p-4 border-2 border-[#D4AF37] shadow-lg">
+                <div className="absolute top-2 left-2 text-[#D4AF37] text-xs">🎋</div>
+                <div className="absolute top-2 right-2 text-[#D4AF37] text-xs">🎋</div>
+                
+                <p className="text-[#8B4513] text-center mb-2">
+                  您的作品正在生成中，前面还有
+                </p>
+                <p className="text-center">
+                  <span className="text-2xl font-bold text-[#D4302B]">{queuePosition}</span>
+                  <span className="text-[#8B4513] ml-1">位在等待，请稍候...</span>
+                </p>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -332,21 +343,31 @@ export default function GeneratingPage() {
         <AnimatePresence>
           {error && (
             <motion.div
-              className="bg-red-50 border-2 border-red-200 rounded-lg p-6 text-center"
+              className="relative"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
             >
-              <div className="text-4xl mb-3">⚠️</div>
-              <h3 className="text-lg font-bold text-red-600 mb-2">生成失败</h3>
-              <p className="text-gray-700 mb-4">{error}</p>
-              <button
-                onClick={handleRetry}
-                disabled={isRetrying}
-                className="w-full bg-gradient-to-r from-[#D4302B] to-[#B8251F] text-white py-3 px-6 rounded-lg font-semibold text-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isRetrying ? '重试中...' : '点击重试'}
-              </button>
+              <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+                <div className="bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-6 text-center">
+                  <div className="text-5xl mb-3">⚠️</div>
+                  <h3 className="text-lg font-bold text-[#FFD700] mb-2">生成失败</h3>
+                  <p className="text-white/90 mb-4">{error}</p>
+                  <button
+                    onClick={handleRetry}
+                    disabled={isRetrying}
+                    className="relative w-full h-12 rounded-full overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                      <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
+                        <span className="text-[#8B0000] text-lg font-bold">
+                          {isRetrying ? '重试中...' : '点击重试'}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -355,11 +376,12 @@ export default function GeneratingPage() {
         {!error && queuePosition !== null && !isElderMode && (
           <motion.button
             onClick={handleViewExamples}
-            className="w-full mt-4 bg-white/60 backdrop-blur-sm text-gray-700 py-3 px-6 rounded-lg font-medium hover:bg-white/80 transition-all"
+            className="w-full mt-4 bg-white/20 backdrop-blur-sm text-white py-3 px-6 rounded-lg font-medium hover:bg-white/30 transition-all border border-white/30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1 }}
           >
+            <i className="fas fa-eye mr-2"></i>
             先看别人的作品
           </motion.button>
         )}
@@ -367,7 +389,7 @@ export default function GeneratingPage() {
         {/* 温馨提示 */}
         {!error && (
           <motion.p
-            className="mt-6 text-center text-sm text-gray-500"
+            className="mt-6 text-center text-sm text-white/70"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5 }}
@@ -376,7 +398,8 @@ export default function GeneratingPage() {
           </motion.p>
         )}
       </div>
-    </div>
+      </div>
+      </CornerBackground>
     </PageTransition>
   );
 }

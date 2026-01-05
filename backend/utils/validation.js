@@ -115,8 +115,8 @@ function validatePhone(phone) {
 function validateGenerateArtPhotoParams(params) {
   const errors = [];
   
-  // 校验必需字段
-  const { valid, missingFields } = validateRequiredFields(params, ['prompt', 'imageUrls', 'userId']);
+  // 校验必需字段（userId改为可选）
+  const { valid, missingFields } = validateRequiredFields(params, ['prompt', 'imageUrls']);
   if (!valid) {
     errors.push(`缺少必需参数: ${missingFields.join(', ')}`);
   }
@@ -145,9 +145,9 @@ function validateGenerateArtPhotoParams(params) {
     errors.push('userId必须是有效的UUID格式');
   }
   
-  // 校验templateUrl（可选）
-  if (params.templateUrl && !validateUrl(params.templateUrl)) {
-    errors.push('templateUrl不是有效的URL格式');
+  // 校验templateUrl（可选）- 允许相对路径
+  if (params.templateUrl && typeof params.templateUrl !== 'string') {
+    errors.push('templateUrl必须是字符串');
   }
   
   // 校验facePositions（可选）

@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import Background from '../components/Background';
+import CornerBackground from '@/components/CornerBackground';
 import PaymentModal from '../components/PaymentModal';
 import ProductRecommendation from '../components/ProductRecommendation';
-import FestivalGreeting from '../components/FestivalGreeting';
 import { useUser } from '../contexts/UserContext';
+import { useModeConfig } from '@/hooks/useModeConfig';
 import PageTransition from '@/components/PageTransition';
 import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
 
@@ -14,6 +14,7 @@ export default function ResultPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useUser();
+  const modeConfig = useModeConfig();
   
   // 从路由状态获取选中的图片和历史记录信息
   const { selectedImage, historyItem, hasLivePhoto } = location.state || {};
@@ -25,9 +26,10 @@ export default function ResultPage() {
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
-  // 如果没有图片数据，返回生成页
+  // 如果没有图片数据，返回结果选择页或上传页
   if (!selectedImage) {
-    navigate('/generator');
+    const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
+    navigate(targetPath);
     return null;
   }
   
@@ -47,7 +49,11 @@ export default function ResultPage() {
   }, [hasLivePhoto]);
   
   const handleBack = () => {
-    navigate('/generator');
+    // 返回到结果选择页
+    const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
+    navigate(targetPath, {
+      state: location.state // 保持原有状态
+    });
   };
   
   const handleDownload = () => {
@@ -166,97 +172,124 @@ export default function ResultPage() {
   
   return (
     <PageTransition>
-      <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
-      <Background />
-      
-      {/* 节气文案 */}
-      <FestivalGreeting />
+      <CornerBackground>
+        <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
+      {/* 装饰背景元素 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {/* 祥云装饰 */}
+        <motion.div
+          className="absolute top-20 left-10 text-4xl opacity-10"
+          animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          ☁️
+        </motion.div>
+        <motion.div
+          className="absolute bottom-40 right-10 text-4xl opacity-10"
+          animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        >
+          ☁️
+        </motion.div>
+        
+        {/* 金币装饰 */}
+        <motion.div
+          className="absolute top-32 right-16 text-2xl opacity-30"
+          animate={{ rotate: [0, 360] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+        >
+          🪙
+        </motion.div>
+      </div>
       
       {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-white/70 shadow-sm px-4 py-3">
+      <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3">
         <div className="flex items-center justify-between">
           <button 
             onClick={handleBack} 
-            className="flex items-center text-[#D4302B] font-medium"
+            className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
           >
             <i className="fas fa-arrow-left mr-1"></i>
-            <span>返回</span>
+            <span>Back</span>
           </button>
-          <h1 className="text-xl font-bold text-[#D4302B]">生成成果</h1>
+          <h1 className="text-xl font-bold text-[#FFD700]">年节结果页</h1>
           <div className="w-16"></div>
         </div>
       </header>
 
       <main className="flex-1 z-10 flex flex-col">
-        {/* 高清图展示区 - 占据60%屏幕高度 */}
-        <div className="relative h-[60vh] bg-gradient-to-b from-gray-900 to-gray-800">
-          {/* Live Photo标识 */}
-          {hasLivePhoto && (
-            <motion.div 
-              className="absolute top-4 left-4 z-20 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-              <span className="text-xs font-semibold text-gray-800">Live</span>
-            </motion.div>
-          )}
-          
-          {/* 高清图片 */}
-          <motion.div
-            className="relative w-full h-full flex items-center justify-center p-4"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            onContextMenu={(e) => e.preventDefault()}
-            onTouchStart={() => {
-              const longPressTimer = setTimeout(() => {
-                handleLongPress();
-              }, 800);
+        {/* 高清图展示区 - 金色相框 */}
+        <div className="relative p-4">
+          <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+            <div className="relative bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-4">
+              {/* Live Photo标识 */}
+              {hasLivePhoto && (
+                <motion.div 
+                  className="absolute top-6 left-6 z-20 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                  <span className="text-xs font-semibold text-gray-800">Live</span>
+                </motion.div>
+              )}
               
-              const handleTouchEnd = () => {
-                clearTimeout(longPressTimer);
-                document.removeEventListener('touchend', handleTouchEnd);
-              };
-              
-              document.addEventListener('touchend', handleTouchEnd);
-            }}
-          >
-            <img 
-              ref={imageRef}
-              src={selectedImage} 
-              alt="Generated Art Photo" 
-              className={`max-w-full max-h-full object-contain rounded-lg shadow-2xl ${
-                isPlayingLivePhoto ? 'animate-pulse' : ''
-              }`}
-            />
-            
-            {/* 红色印章水印 - AI团圆照相馆 */}
-            {!isPaid && (
-              <motion.div 
-                className="absolute bottom-8 right-8 w-24 h-24 opacity-80"
-                initial={{ opacity: 0, rotate: -10 }}
-                animate={{ opacity: 0.8, rotate: 0 }}
-                transition={{ delay: 0.5 }}
+              {/* 高清图片 - 金色内边框 */}
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                onContextMenu={(e) => e.preventDefault()}
+                onTouchStart={() => {
+                  const longPressTimer = setTimeout(() => {
+                    handleLongPress();
+                  }, 800);
+                  
+                  const handleTouchEnd = () => {
+                    clearTimeout(longPressTimer);
+                    document.removeEventListener('touchend', handleTouchEnd);
+                  };
+                  
+                  document.addEventListener('touchend', handleTouchEnd);
+                }}
               >
-                <div className="relative w-full h-full">
-                  {/* 印章背景 */}
-                  <div className="absolute inset-0 bg-[#D4302B] rounded-full border-4 border-[#D4302B] flex items-center justify-center">
-                    <div className="text-center">
-                      <div className="text-white text-xs font-bold leading-tight">
-                        AI团圆<br/>照相馆
+                <div className="relative p-0.5 rounded-lg bg-gradient-to-br from-[#FFD700] to-[#D4AF37]">
+                  <img 
+                    ref={imageRef}
+                    src={selectedImage} 
+                    alt="Generated Art Photo" 
+                    className={`w-full h-auto object-contain rounded-lg ${
+                      isPlayingLivePhoto ? 'animate-pulse' : ''
+                    }`}
+                  />
+                </div>
+                
+                {/* AI团圆照相馆制作标识 */}
+                <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs flex items-center">
+                  <i className="fas fa-robot mr-1"></i>
+                  AI团圆照相馆制作
+                </div>
+                
+                {/* 小程序码水印 */}
+                {!isPaid && (
+                  <motion.div 
+                    className="absolute bottom-4 right-4 w-16 h-16"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <div className="relative w-full h-full bg-white rounded-lg p-1 shadow-lg">
+                      <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+                        <i className="fas fa-qrcode text-gray-400 text-2xl"></i>
                       </div>
                     </div>
-                  </div>
-                  {/* 小程序码占位 */}
-                  <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-white rounded border-2 border-[#D4302B] flex items-center justify-center">
-                    <i className="fas fa-qrcode text-[#D4302B] text-xs"></i>
-                  </div>
-                </div>
+                  </motion.div>
+                )}
               </motion.div>
-            )}
-          </motion.div>
+            </div>
+          </div>
           
           {/* 保存成功提示 */}
           {showSaveSuccess && (
@@ -272,83 +305,94 @@ export default function ResultPage() {
           )}
         </div>
 
-        {/* 功能按钮区 - 占据40%屏幕高度 */}
-        <div className="flex-1 bg-[#FFF8F0] px-6 py-6">
-          <div className="max-w-md mx-auto space-y-4">
-            {/* 下载高清图按钮 - 金色 */}
+        {/* 功能按钮区 */}
+        <div className="flex-1 px-6 py-6">
+          <div className="max-w-md mx-auto space-y-3">
+            {/* 下载高清图按钮 - 金色渐变 */}
             <motion.button
               onClick={handleDownload}
-              className="w-full h-12 bg-gradient-to-r from-[#D4AF37] to-[#F4CF47] text-white rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+              className="relative w-full h-12 rounded-full overflow-hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
             >
-              <i className={`fas fa-${isPaid ? 'download' : 'lock'} mr-2 text-lg`}></i>
-              <span className="text-base">{isPaid ? '下载高清图' : '下载高清图'}</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
+                  <span className="text-[#8B0000] text-base font-bold flex items-center">
+                    <i className="fas fa-download mr-2"></i>
+                    下载高清图
+                  </span>
+                </div>
+              </div>
+              {/* 光效动画 */}
+              <motion.div
+                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+                animate={{ x: ['-100%', '200%'] }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              />
             </motion.button>
 
-            {/* 生成拜年贺卡按钮 - 红色 */}
+            {/* 生成拜年贺卡按钮 - 红色渐变 */}
             <motion.button
               onClick={handleGenerateGreetingCard}
-              className="w-full h-12 bg-gradient-to-r from-[#D4302B] to-[#E74C3C] text-white rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+              className="relative w-full h-12 rounded-full overflow-hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <i className="fas fa-envelope mr-2 text-lg"></i>
-              <span className="text-base">生成拜年贺卡</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                <div className="w-full h-full bg-gradient-to-r from-[#D4302B] to-[#E84A3D] rounded-full flex items-center justify-center hover:from-[#C02820] hover:to-[#D74D3A] transition-all duration-300">
+                  <span className="text-white text-base font-bold flex items-center">
+                    <i className="fas fa-envelope mr-2"></i>
+                    生成拜年贺卡
+                  </span>
+                </div>
+              </div>
             </motion.button>
 
-            {/* 定制晶瓷画按钮 - 紫色 */}
+            {/* 定制晶瓷画按钮 - 紫色渐变 */}
             <motion.button
               onClick={() => setShowProductRecommendation(true)}
-              className="w-full h-12 bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] text-white rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+              className="relative w-full h-12 rounded-full overflow-hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <i className="fas fa-image mr-2 text-lg"></i>
-              <span className="text-base">定制晶瓷画</span>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                <div className="w-full h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] rounded-full flex items-center justify-center hover:from-[#7C3AED] hover:to-[#8B5CF6] transition-all duration-300">
+                  <span className="text-white text-base font-bold flex items-center">
+                    <i className="fas fa-image mr-2"></i>
+                    定制晶瓷画
+                  </span>
+                </div>
+              </div>
             </motion.button>
 
-            {/* 分享家族群按钮 - 灰色 */}
+            {/* 分享家族群按钮 - 灰色渐变 */}
             <motion.button
               onClick={handleShare}
-              className="w-full h-12 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-medium flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
+              className="relative w-full h-12 rounded-full overflow-hidden"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
             >
-              <i className="fas fa-share-alt mr-2 text-lg"></i>
-              <span className="text-base">分享家族群</span>
-            </motion.button>
-
-            {/* 温馨提示 */}
-            <motion.div 
-              className="mt-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-xl"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <div className="flex items-start">
-                <i className="fas fa-info-circle text-[#D4302B] mt-1 mr-3"></i>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-700">
-                    {!isPaid 
-                      ? '长按图片可保存带水印预览图。付费后可下载无水印高清原图。' 
-                      : '您的高清无水印照片已准备好，可以下载保存了！'}
-                  </p>
+              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                <div className="w-full h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center hover:from-gray-600 hover:to-gray-700 transition-all duration-300">
+                  <span className="text-white text-base font-bold flex items-center">
+                    <i className="fas fa-users mr-2"></i>
+                    分享家族群
+                  </span>
                 </div>
               </div>
-            </motion.div>
+            </motion.button>
           </div>
         </div>
       </main>
@@ -372,7 +416,8 @@ export default function ResultPage() {
           onOrderProduct={handleOrderProduct}
         />
       )}
-    </div>
+      </div>
+      </CornerBackground>
     </PageTransition>
   );
 }

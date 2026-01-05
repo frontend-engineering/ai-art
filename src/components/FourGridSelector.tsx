@@ -27,6 +27,8 @@ export default function FourGridSelector({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  // 提示信息显示状态
+  const [showHint, setShowHint] = useState(true);
 
   // 当图片URL改变时，重置状态
   useEffect(() => {
@@ -43,6 +45,18 @@ export default function FourGridSelector({
       setPosition({ x: 0, y: 0 });
     }
   }, [previewImage]);
+
+  // 选中图片后自动隐藏提示信息
+  useEffect(() => {
+    if (selectedImage) {
+      setShowHint(true);
+      const timer = setTimeout(() => {
+        setShowHint(false);
+      }, 3000); // 3秒后自动隐藏
+
+      return () => clearTimeout(timer);
+    }
+  }, [selectedImage]);
 
   // 处理图片加载完成
   const handleImageLoad = (index: number) => {
@@ -182,14 +196,16 @@ export default function FourGridSelector({
         className="mb-4 text-center"
       >
         <h3 className="text-lg font-semibold text-gray-800 mb-2">
-          ✨ 选择您最满意的一张
+          ✨ {images.length === 1 ? '您的生成结果' : '选择您最满意的一张'}
         </h3>
         <p className="text-sm text-gray-600">
-          点击图片进行选择，选中后可以保存或重新生成
+          {images.length === 1 
+            ? '点击图片查看大图，可以保存或重新生成' 
+            : '点击图片进行选择，选中后可以保存或重新生成'}
         </p>
       </motion.div>
       
-      <div className="grid grid-cols-2 gap-4">
+      <div className={`grid gap-4 ${images.length === 1 ? 'grid-cols-1 max-w-md mx-auto' : 'grid-cols-2'}`}>
         {images.map((imageUrl, index) => (
           <motion.div
             key={`${imageUrl}-${index}`}
@@ -358,9 +374,9 @@ export default function FourGridSelector({
         ))}
       </div>
       
-      {/* 提示信息 - 带滑入动画 */}
+      {/* 提示信息 - 带滑入动画和自动隐藏 */}
       <AnimatePresence>
-        {selectedImage && (
+        {selectedImage && showHint && (
           <motion.div
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
