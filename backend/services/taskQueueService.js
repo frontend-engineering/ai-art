@@ -28,6 +28,9 @@ const taskQueue = new Map();
 // 任务持久化目录
 const TASK_STORAGE_DIR = path.join(__dirname, '../db/tasks');
 
+// 写入锁，防止并发写入导致文件损坏
+const writeLocks = new Map();
+
 /**
  * 日志工具函数
  */
@@ -186,24 +189,67 @@ async function getTask(taskId) {
 }
 
 /**
- * 持久化任务到文件
+ * 持久化任务到文件（带写入锁，防止并发写入）
  * @param {Object} task 任务对象
  */
 async function persistTask(task) {
-  const filePath = path.join(TASK_STORAGE_DIR, `${task.id}.json`);
-  await fs.writeFile(filePath, JSON.stringify(task, null, 2), 'utf-8');
+  const taskId = task.id;
+  const filePath = path.join(TASK_STORAGE_DIR, `${taskId}.json`);
+  
+  // 等待之前的写入完成
+  const existingLock = writeLocks.get(taskId);
+  if (existingLock) {
+    await existingLock;
+  }
+  
+  // 创建新的写入锁
+  const writePromise = (async () => {
+    try {
+      const jsonStr = JSON.stringify(task, null, 2);
+      await fs.writeFile(filePath, jsonStr, 'utf-8');
+    } finally {
+      writeLocks.delete(taskId);
+    }
+  })();
+  
+  writeLocks.set(taskId, writePromise);
+  await writePromise;
 }
 
 /**
- * 从文件加载任务
+ * 从文件加载任务（带 JSON 解析容错）
  * @param {string} taskId 任务ID
  * @returns {Object|null} 任务对象
  */
 async function loadTask(taskId) {
   try {
     const filePath = path.join(TASK_STORAGE_DIR, `${taskId}.json`);
-    const data = await fs.readFile(filePath, 'utf-8');
-    return JSON.parse(data);
+    let data = await fs.readFile(filePath, 'utf-8');
+    
+    // 尝试解析 JSON
+    try {
+      return JSON.parse(data);
+    } catch (parseError) {
+      // JSON 解析失败，尝试修复常见问题
+      logQueue(taskId, '加载', `⚠️ JSON 解析失败，尝试修复: ${parseError.message}`);
+      
+      // 修复末尾多余的 } 问题
+      data = data.trim();
+      while (data.endsWith('}}') && !data.endsWith('"}}')) {
+        data = data.slice(0, -1);
+      }
+      
+      try {
+        const task = JSON.parse(data);
+        // 修复成功，重新保存正确的文件
+        await fs.writeFile(filePath, JSON.stringify(task, null, 2), 'utf-8');
+        logQueue(taskId, '加载', '✅ JSON 修复成功');
+        return task;
+      } catch (retryError) {
+        logQueue(taskId, '加载', `❌ JSON 修复失败: ${retryError.message}`);
+        return null;
+      }
+    }
   } catch (error) {
     if (error.code !== 'ENOENT') {
       logQueue(taskId, '加载', `❌ 加载任务失败: ${error.message}`);
