@@ -49,8 +49,8 @@ function registerRoutes(app) {
   // 管理员接口
   app.use('/api/admin', adminRoutes);
   
-  // 兼容旧的日志查询接口
-  app.use('/api/logs/api-calls', adminRoutes);
+  // 日志查询接口 (独立路径)
+  app.use('/api/logs', adminRoutes);
   app.use('/api/error-logs', adminRoutes);
 }
 

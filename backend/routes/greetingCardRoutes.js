@@ -49,6 +49,40 @@ router.post('/create', async (req, res) => {
   }
 });
 
+// 获取用户的所有贺卡 (必须放在 /:cardId 之前)
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { limit } = req.query;
+    
+    if (!userId) {
+      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 userId 参数' });
+    }
+    
+    const connection = await db.pool.getConnection();
+    try {
+      const limitValue = limit ? parseInt(limit) : 10;
+      const [rows] = await connection.execute(
+        `SELECT * FROM greeting_cards WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`,
+        [userId, limitValue]
+      );
+      
+      const cards = rows.map(row => ({
+        cardId: row.id, userId: row.user_id, imageUrl: row.image_url,
+        greeting: row.greeting_text, templateStyle: row.template_style,
+        createdAt: row.created_at, updatedAt: row.updated_at
+      }));
+      
+      res.json({ success: true, data: cards });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('获取用户贺卡列表失败:', error);
+    res.status(500).json({ error: '获取用户贺卡列表失败', message: error.message });
+  }
+});
+
 // 获取贺卡详情
 router.get('/:cardId', async (req, res) => {
   try {
@@ -81,40 +115,6 @@ router.get('/:cardId', async (req, res) => {
   } catch (error) {
     console.error('获取贺卡详情失败:', error);
     res.status(500).json({ error: '获取贺卡详情失败', message: error.message });
-  }
-});
-
-// 获取用户的所有贺卡
-router.get('/user/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const { limit } = req.query;
-    
-    if (!userId) {
-      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 userId 参数' });
-    }
-    
-    const connection = await db.pool.getConnection();
-    try {
-      const limitValue = limit ? parseInt(limit) : 10;
-      const [rows] = await connection.execute(
-        `SELECT * FROM greeting_cards WHERE user_id = ? ORDER BY created_at DESC LIMIT ?`,
-        [userId, limitValue]
-      );
-      
-      const cards = rows.map(row => ({
-        cardId: row.id, userId: row.user_id, imageUrl: row.image_url,
-        greeting: row.greeting_text, templateStyle: row.template_style,
-        createdAt: row.created_at, updatedAt: row.updated_at
-      }));
-      
-      res.json({ success: true, data: cards });
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error('获取用户贺卡列表失败:', error);
-    res.status(500).json({ error: '获取用户贺卡列表失败', message: error.message });
   }
 });
 

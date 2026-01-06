@@ -12,10 +12,11 @@ router.get('/all', async (req, res) => {
   try {
     const { limit } = req.query;
     const connection = await db.pool.getConnection();
-    const limitNum = limit ? parseInt(limit) : 20;
+    const limitNum = Math.min(Math.max(parseInt(limit) || 20, 1), 100); // 限制1-100
     
     try {
-      const [rows] = await connection.execute(
+      // MySQL2 execute 不支持 LIMIT 参数化，使用 query 方法
+      const [rows] = await connection.query(
         `SELECT * FROM generation_history ORDER BY created_at DESC LIMIT ${limitNum}`
       );
       
@@ -84,6 +85,27 @@ router.get('/user/:userId', async (req, res) => {
   }
 });
 
+// 根据任务ID获取历史记录 (必须放在 /:recordId 之前，避免路由冲突)
+router.get('/task/:taskId', async (req, res) => {
+  try {
+    const { taskId } = req.params;
+    
+    if (!taskId) {
+      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 taskId 参数' });
+    }
+    
+    const record = await generationService.getGenerationHistoryByTaskId(taskId);
+    if (!record) {
+      return res.status(404).json({ error: '未找到记录', message: '未找到对应的任务记录' });
+    }
+    
+    res.json({ success: true, data: record });
+  } catch (error) {
+    console.error('获取历史记录失败:', error);
+    res.status(500).json({ error: '获取历史记录失败', message: error.message });
+  }
+});
+
 // 根据记录ID获取历史记录
 router.get('/:recordId', async (req, res) => {
   try {
@@ -96,27 +118,6 @@ router.get('/:recordId', async (req, res) => {
     const record = await generationService.getGenerationHistoryById(recordId);
     if (!record) {
       return res.status(404).json({ error: '未找到记录', message: '未找到对应的历史记录' });
-    }
-    
-    res.json({ success: true, data: record });
-  } catch (error) {
-    console.error('获取历史记录失败:', error);
-    res.status(500).json({ error: '获取历史记录失败', message: error.message });
-  }
-});
-
-// 根据任务ID获取历史记录
-router.get('/task/:taskId', async (req, res) => {
-  try {
-    const { taskId } = req.params;
-    
-    if (!taskId) {
-      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 taskId 参数' });
-    }
-    
-    const record = await generationService.getGenerationHistoryByTaskId(taskId);
-    if (!record) {
-      return res.status(404).json({ error: '未找到记录', message: '未找到对应的任务记录' });
     }
     
     res.json({ success: true, data: record });

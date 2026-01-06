@@ -11,6 +11,7 @@ const UTILS_PATH = path.join(__dirname, '..', 'utils');
 
 /**
  * 通用Python脚本执行函数
+ * 通过 stdin 传递参数，避免命令行参数过长导致 E2BIG 错误
  * @param scriptName 脚本名称
  * @param params 参数对象
  * @param timeout 超时时间(毫秒)
@@ -19,7 +20,8 @@ async function executePythonScript(scriptName, params, timeout = 60000) {
   return new Promise((resolve, reject) => {
     try {
       const scriptPath = path.join(UTILS_PATH, scriptName);
-      const pythonProcess = spawn(PYTHON_PATH, [scriptPath, JSON.stringify(params)]);
+      // 不再通过命令行参数传递，改用 stdin
+      const pythonProcess = spawn(PYTHON_PATH, [scriptPath]);
       
       let stdout = '';
       let stderr = '';
@@ -48,12 +50,21 @@ async function executePythonScript(scriptName, params, timeout = 60000) {
         }
       });
       
+      pythonProcess.on('error', (error) => {
+        console.error(`Python进程错误 ${scriptName}:`, error);
+        reject(error);
+      });
+      
       const timeoutId = setTimeout(() => {
         pythonProcess.kill();
         reject(new Error(`Python脚本 ${scriptName} 执行超时`));
       }, timeout);
       
       pythonProcess.on('close', () => clearTimeout(timeoutId));
+      
+      // 通过 stdin 传递参数（避免 E2BIG 错误）
+      pythonProcess.stdin.write(JSON.stringify(params));
+      pythonProcess.stdin.end();
       
     } catch (error) {
       console.error(`调用Python脚本 ${scriptName} 失败:`, error);

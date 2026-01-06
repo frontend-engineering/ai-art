@@ -373,14 +373,14 @@ export default function FourGridSelector({
                   选项 {index + 1}
                 </motion.div>
                 
-                {/* 预览按钮 */}
-                <button
+                {/* 预览按钮 - 暂时隐藏 */}
+                {/* <button
                   className="preview-btn absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm hover:bg-black/70 transition-colors"
                   onClick={(e) => handlePreviewClick(imageUrl, e)}
                 >
                   <i className="fas fa-search-plus mr-1" />
                   放大
-                </button>
+                </button> */}
                 
                 {/* 选中遮罩 */}
                 {selectedImage === imageUrl && (
@@ -500,8 +500,8 @@ export default function FourGridSelector({
         </motion.div>
       )}
 
-      {/* 图片预览模态框 */}
-      <AnimatePresence>
+      {/* 图片预览模态框 - 暂时隐藏 */}
+      {/* <AnimatePresence>
         {previewImage && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -510,7 +510,6 @@ export default function FourGridSelector({
             className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
             onClick={() => setPreviewImage(null)}
           >
-            {/* 关闭按钮 */}
             <motion.button
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -521,18 +520,6 @@ export default function FourGridSelector({
               <i className="fas fa-times text-xl" />
             </motion.button>
 
-            {/* 缩放提示 */}
-            {/* <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm"
-            >
-              <i className="fas fa-search-plus mr-2" />
-              滚轮缩放 | 双指缩放 | 拖拽移动
-            </motion.div> */}
-
-            {/* 图片容器 */}
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -559,52 +546,9 @@ export default function FourGridSelector({
                 draggable={false}
               />
             </motion.div>
-
-            {/* 缩放控制按钮 */}
-            {/* <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 bg-white/10 backdrop-blur-sm rounded-full p-2"
-            >
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setScale(prev => Math.max(1, prev - 0.5));
-                }}
-                className="bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors"
-                disabled={scale <= 1}
-              >
-                <i className="fas fa-minus" />
-              </button>
-              <div className="bg-white/20 text-white rounded-full px-4 py-2 flex items-center justify-center min-w-[80px]">
-                {Math.round(scale * 100)}%
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setScale(prev => Math.min(4, prev + 0.5));
-                }}
-                className="bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center transition-colors"
-                disabled={scale >= 4}
-              >
-                <i className="fas fa-plus" />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setScale(1);
-                  setPosition({ x: 0, y: 0 });
-                }}
-                className="bg-white/20 hover:bg-white/30 text-white rounded-full px-4 py-2 flex items-center justify-center transition-colors ml-2"
-              >
-                <i className="fas fa-redo mr-2" />
-                重置
-              </button>
-            </motion.div> */}
           </motion.div>
         )}
-      </AnimatePresence>
+      </AnimatePresence> */}
     </div>
   );
 }

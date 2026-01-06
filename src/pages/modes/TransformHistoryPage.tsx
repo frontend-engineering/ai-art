@@ -56,6 +56,7 @@ export default function TransformHistoryPage() {
     if (record.status === 'completed' && record.generated_image_urls?.length > 0) {
       navigate('/transform/result-selector', {
         state: {
+          mode: 'transform',
           taskId: record.task_ids?.[0],
           generatedImages: record.generated_image_urls,
           uploadedImages: record.original_image_urls,

@@ -70,40 +70,7 @@ router.post('/create', validateRequest(validateCreateProductOrderParams), async 
   }
 });
 
-// 查询产品订单
-router.get('/:orderId', async (req, res) => {
-  try {
-    const { orderId } = req.params;
-    
-    const connection = await db.pool.getConnection();
-    try {
-      const [rows] = await connection.execute('SELECT * FROM product_orders WHERE id = ?', [orderId]);
-      
-      if (rows.length === 0) {
-        return res.status(404).json({ error: '订单不存在', message: '未找到对应的产品订单' });
-      }
-      
-      const order = rows[0];
-      res.json({ 
-        success: true, 
-        data: {
-          orderId: order.id, userId: order.user_id, generationId: order.generation_id,
-          productType: order.product_type, productPrice: parseFloat(order.product_price),
-          shippingName: order.shipping_name, shippingPhone: order.shipping_phone,
-          shippingAddress: order.shipping_address, status: order.status,
-          createdAt: order.created_at, updatedAt: order.updated_at
-        }
-      });
-    } finally {
-      connection.release();
-    }
-  } catch (error) {
-    console.error('查询产品订单失败:', error);
-    res.status(500).json({ error: '查询产品订单失败', message: error.message });
-  }
-});
-
-// 查询用户的所有产品订单
+// 查询用户的所有产品订单 (必须放在 /:orderId 之前)
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
@@ -138,6 +105,39 @@ router.get('/user/:userId', async (req, res) => {
   } catch (error) {
     console.error('查询用户产品订单失败:', error);
     res.status(500).json({ error: '查询用户产品订单失败', message: error.message });
+  }
+});
+
+// 查询产品订单
+router.get('/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const connection = await db.pool.getConnection();
+    try {
+      const [rows] = await connection.execute('SELECT * FROM product_orders WHERE id = ?', [orderId]);
+      
+      if (rows.length === 0) {
+        return res.status(404).json({ error: '订单不存在', message: '未找到对应的产品订单' });
+      }
+      
+      const order = rows[0];
+      res.json({ 
+        success: true, 
+        data: {
+          orderId: order.id, userId: order.user_id, generationId: order.generation_id,
+          productType: order.product_type, productPrice: parseFloat(order.product_price),
+          shippingName: order.shipping_name, shippingPhone: order.shipping_phone,
+          shippingAddress: order.shipping_address, status: order.status,
+          createdAt: order.created_at, updatedAt: order.updated_at
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('查询产品订单失败:', error);
+    res.status(500).json({ error: '查询产品订单失败', message: error.message });
   }
 });
 

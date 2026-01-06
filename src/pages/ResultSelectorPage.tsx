@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -12,19 +12,58 @@ export default function ResultSelectorPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const modeConfig = useModeConfig();
-  const { mode, uploadedImages, selectedTemplate, generatedImages, taskId } = location.state || {};
+  const { mode, uploadedImages, generatedImages, taskId, fromHistory } = location.state || {};
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showFireworks, setShowFireworks] = useState(true);
 
-  // 如果没有生成的图片，返回上传页
+  // 如果没有生成的图片，根据来源返回不同页面
+  useEffect(() => {
+    if (!generatedImages || generatedImages.length === 0) {
+      // 如果是从历史记录进入但没有数据，返回模式首页
+      if (fromHistory) {
+        const targetPath = modeConfig ? modeConfig.slug : '/';
+        navigate(targetPath, { replace: true });
+      } else {
+        // 否则返回上传页
+        const targetPath = modeConfig ? `${modeConfig.slug}/upload` : '/upload';
+        navigate(targetPath, { replace: true });
+      }
+    }
+  }, [generatedImages, modeConfig, navigate, fromHistory]);
+
+  // 如果只有一张图片，自动选中
+  useEffect(() => {
+    if (generatedImages && generatedImages.length === 1 && !selectedImage) {
+      setSelectedImage(generatedImages[0]);
+    }
+  }, [generatedImages, selectedImage]);
+
+  // 如果没有数据，显示加载状态而不是直接返回 null
   if (!generatedImages || generatedImages.length === 0) {
-    const targetPath = modeConfig ? `${modeConfig.slug}/upload` : '/upload';
-    navigate(targetPath);
-    return null;
+    return (
+      <PageTransition>
+        <CornerBackground>
+          <div className="min-h-screen w-full flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="text-4xl mb-4">🏮</div>
+              <p>正在加载...</p>
+            </div>
+          </div>
+        </CornerBackground>
+      </PageTransition>
+    );
   }
 
   const handleBack = () => {
+    // 如果是从历史记录进入的，返回到模式首页
+    if (fromHistory) {
+      const targetPath = modeConfig ? modeConfig.slug : '/';
+      navigate(targetPath);
+      return;
+    }
+    
+    // 否则返回到模板选择页
     const targetPath = modeConfig ? `${modeConfig.slug}/template` : '/template';
     navigate(targetPath, { 
       state: { mode, uploadedImages } 
@@ -73,7 +112,8 @@ export default function ResultSelectorPage() {
       state: {
         selectedImage,
         historyItem,
-        hasLivePhoto: false // 可以根据实际情况设置
+        hasLivePhoto: false, // 可以根据实际情况设置
+        fromHistory // 传递历史记录标记
       }
     });
   };
@@ -163,8 +203,8 @@ export default function ResultSelectorPage() {
             />
           </div>
 
-          {/* 底部提示 */}
-          <motion.div
+          {/* 底部提示 - 暂时隐藏放大功能提示 */}
+          {/* <motion.div
             className="mt-6 text-center"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,7 +213,7 @@ export default function ResultSelectorPage() {
             <p className="text-white/70 text-sm">
               💡 点击图片可以放大查看细节
             </p>
-          </motion.div>
+          </motion.div> */}
         </main>
         </div>
       </CornerBackground>

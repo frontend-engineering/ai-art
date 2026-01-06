@@ -189,17 +189,43 @@ export default function GeneratingPage() {
         
         // 延迟跳转，让用户看到完成状态
         setTimeout(() => {
-          const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
-          logPage('跳转', `跳转到: ${targetPath}`);
-          navigate(targetPath, {
-            state: {
-              mode,
-              uploadedImages,
-              selectedTemplate,
-              generatedImages,
-              taskId
-            }
-          });
+          // 如果只有一张图片，直接跳转到结果页，跳过选择页
+          if (generatedImages.length === 1) {
+            const targetPath = mode ? `/${mode}/result` : '/result';
+            logPage('跳转', `只有1张图片，直接跳转到结果页: ${targetPath}`);
+            
+            // 创建历史记录项
+            const historyItem = {
+              id: taskId || Date.now().toString(),
+              originalImages: uploadedImages || [],
+              generatedImage: generatedImages[0],
+              createdAt: new Date().toISOString(),
+              isPaid: false,
+              regenerateCount: 3,
+              mode: mode
+            };
+            
+            navigate(targetPath, {
+              state: {
+                selectedImage: generatedImages[0],
+                historyItem,
+                hasLivePhoto: false
+              }
+            });
+          } else {
+            // 多张图片，跳转到选择页
+            const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
+            logPage('跳转', `跳转到选择页: ${targetPath}`);
+            navigate(targetPath, {
+              state: {
+                mode,
+                uploadedImages,
+                selectedTemplate,
+                generatedImages,
+                taskId
+              }
+            });
+          }
         }, 1000);
       },
       // 错误回调
@@ -265,16 +291,39 @@ export default function GeneratingPage() {
           const generatedImages = task.result?.images || [];
           
           setTimeout(() => {
-            const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
-            navigate(targetPath, {
-              state: {
-                mode,
-                uploadedImages,
-                selectedTemplate,
-                generatedImages,
-                taskId
-              }
-            });
+            // 如果只有一张图片，直接跳转到结果页
+            if (generatedImages.length === 1) {
+              const targetPath = mode ? `/${mode}/result` : '/result';
+              
+              const historyItem = {
+                id: taskId || Date.now().toString(),
+                originalImages: uploadedImages || [],
+                generatedImage: generatedImages[0],
+                createdAt: new Date().toISOString(),
+                isPaid: false,
+                regenerateCount: 3,
+                mode: mode
+              };
+              
+              navigate(targetPath, {
+                state: {
+                  selectedImage: generatedImages[0],
+                  historyItem,
+                  hasLivePhoto: false
+                }
+              });
+            } else {
+              const targetPath = mode ? `/${mode}/result-selector` : '/result-selector';
+              navigate(targetPath, {
+                state: {
+                  mode,
+                  uploadedImages,
+                  selectedTemplate,
+                  generatedImages,
+                  taskId
+                }
+              });
+            }
           }, 1000);
         },
         (errorMsg, task) => {

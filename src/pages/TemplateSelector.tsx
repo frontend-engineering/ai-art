@@ -447,7 +447,7 @@ export default function TemplateSelector() {
           </button>
         </motion.div>
 
-        {/* 模板预览弹窗 */}
+        {/* 模板预览弹窗 - 春节风格 */}
         <AnimatePresence>
           {showPreview && previewTemplate && (
             <motion.div
@@ -457,6 +457,13 @@ export default function TemplateSelector() {
               exit={{ opacity: 0 }}
               onClick={() => setShowPreview(false)}
             >
+              {/* 顶部装饰 */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
+              
+              {/* 装饰元素 */}
+              <div className="absolute top-6 left-6 text-3xl opacity-60">🏮</div>
+              <div className="absolute top-6 right-6 text-3xl opacity-60">🏮</div>
+              
               <motion.div
                 className="relative max-w-lg w-full"
                 initial={{ scale: 0.8, opacity: 0 }}
@@ -464,30 +471,38 @@ export default function TemplateSelector() {
                 exit={{ scale: 0.8, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
+                {/* 图片边框装饰 */}
+                <div className="absolute -inset-1 bg-gradient-to-br from-[#D4302B] via-[#FFD700] to-[#D4302B] rounded-2xl opacity-70" />
                 <img
                   src={previewTemplate.url}
                   alt={previewTemplate.name}
-                  className="w-full h-auto rounded-xl shadow-2xl"
+                  className="relative w-full h-auto rounded-xl shadow-2xl"
                 />
                 <button
                   onClick={() => setShowPreview(false)}
-                  className="absolute -top-3 -right-3 bg-white text-gray-700 rounded-full w-10 h-10 flex items-center justify-center hover:bg-gray-100 shadow-lg"
+                  className="absolute -top-3 -right-3 bg-gradient-to-br from-[#D4302B] to-[#B82820] text-white rounded-full w-10 h-10 flex items-center justify-center hover:shadow-lg shadow-md transition-all"
                 >
-                  <i className="fas fa-times"></i>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
                 </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent rounded-b-xl p-4">
-                  <p className="text-white font-medium text-lg">{previewTemplate.name}</p>
-                  <button
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent rounded-b-xl p-4">
+                  <p className="text-white font-bold text-lg mb-1">{previewTemplate.name}</p>
+                  <motion.button
                     onClick={() => {
                       handleTemplateSelect(previewTemplate);
                       setShowPreview(false);
                     }}
-                    className="mt-3 w-full py-3 bg-[#C8102E] text-white rounded-full font-medium"
+                    className="mt-3 w-full py-3 bg-gradient-to-r from-[#D4302B] to-[#B82820] text-white rounded-xl font-bold shadow-lg"
+                    whileTap={{ scale: 0.98 }}
                   >
-                    选择此模板
-                  </button>
+                    ✨ 选择此模板
+                  </motion.button>
                 </div>
               </motion.div>
+              
+              {/* 底部装饰 */}
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
             </motion.div>
           )}
         </AnimatePresence>

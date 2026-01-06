@@ -17,20 +17,43 @@ export default function ResultPage() {
   const modeConfig = useModeConfig();
   
   // 从路由状态获取选中的图片和历史记录信息
-  const { selectedImage, historyItem, hasLivePhoto } = location.state || {};
+  const { selectedImage, historyItem, hasLivePhoto, fromHistory } = location.state || {};
   
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProductRecommendation, setShowProductRecommendation] = useState(false);
-  const [isPaid, setIsPaid] = useState(historyItem?.isPaid || false);
   const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
-  // 如果没有图片数据，返回结果选择页或上传页
+  // 如果没有图片数据，根据来源返回不同页面
+  useEffect(() => {
+    if (!selectedImage) {
+      if (fromHistory) {
+        // 从历史记录进入但没有数据，返回模式首页
+        const targetPath = modeConfig ? modeConfig.slug : '/';
+        navigate(targetPath, { replace: true });
+      } else {
+        // 否则返回结果选择页
+        const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
+        navigate(targetPath, { replace: true });
+      }
+    }
+  }, [selectedImage, fromHistory, modeConfig, navigate]);
+  
+  // 如果没有图片数据，显示加载状态
   if (!selectedImage) {
-    const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
-    navigate(targetPath);
-    return null;
+    return (
+      <PageTransition>
+        <CornerBackground>
+          <div className="min-h-screen w-full flex items-center justify-center">
+            <div className="text-white text-center">
+              <div className="text-4xl mb-4">🏮</div>
+              <p>正在加载...</p>
+            </div>
+          </div>
+        </CornerBackground>
+      </PageTransition>
+    );
   }
   
   // 自动播放5秒微动态（如果有）
@@ -49,6 +72,13 @@ export default function ResultPage() {
   }, [hasLivePhoto]);
   
   const handleBack = () => {
+    // 如果是从历史记录进入的，返回到模式首页
+    if (fromHistory) {
+      const targetPath = modeConfig ? modeConfig.slug : '/';
+      navigate(targetPath);
+      return;
+    }
+    
     // 返回到结果选择页
     const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
     navigate(targetPath, {
@@ -56,21 +86,36 @@ export default function ResultPage() {
     });
   };
   
-  const handleDownload = () => {
-    if (!isPaid) {
-      setShowPaymentModal(true);
-      return;
+  // 检测是否为移动端
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  // 实际执行下载的函数
+  const doDownload = () => {
+    if (isMobile) {
+      // 移动端：提示用户长按图片保存
+      toast.success('💡 请长按上方图片，选择"保存图片"到相册', {
+        duration: 5000,
+        style: {
+          background: 'linear-gradient(135deg, #D4302B 0%, #B82820 100%)',
+          color: 'white',
+          border: '2px solid #FFD700',
+        }
+      });
+    } else {
+      // PC端：直接下载
+      const link = document.createElement('a');
+      link.href = selectedImage;
+      link.download = `团圆照相馆-${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('🎉 图片已保存');
     }
-    
-    // 下载图片
-    const link = document.createElement('a');
-    link.href = selectedImage;
-    link.download = `ai-family-photo-${Date.now()}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    toast.success('高清图已保存到相册');
+  };
+  
+  // 点击保存按钮 → 先弹出增值服务推荐
+  const handleDownload = () => {
+    setShowProductRecommendation(true);
   };
   
   const handleGenerateGreetingCard = () => {
@@ -147,15 +192,18 @@ export default function ResultPage() {
   };
   
   const handleLongPress = () => {
-    // 长按保存带水印预览图
-    if (!isPaid) {
-      const link = document.createElement('a');
-      link.href = selectedImage;
-      link.download = `ai-family-photo-preview-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
+    // 长按保存图片
+    if (isMobile) {
+      toast.success('💡 请长按图片，选择"保存图片"', {
+        duration: 3000,
+        style: {
+          background: 'linear-gradient(135deg, #D4302B 0%, #B82820 100%)',
+          color: 'white',
+          border: '2px solid #FFD700',
+        }
+      });
+    } else {
+      doDownload();
       setShowSaveSuccess(true);
       setTimeout(() => setShowSaveSuccess(false), 2000);
     }
@@ -163,11 +211,24 @@ export default function ResultPage() {
   
   const handleCompletePayment = () => {
     setShowPaymentModal(false);
-    setIsPaid(true);
-    toast.success('支付成功！您可以下载高清无水印照片了');
+    toast.success('🎉 支付成功！');
     
     // 支付成功后显示产品推荐
     setShowProductRecommendation(true);
+  };
+  
+  // 产品推荐关闭时的处理
+  const handleProductRecommendationClose = () => {
+    setShowProductRecommendation(false);
+  };
+  
+  // 用户选择"暂不购买"，执行下载
+  const handleSkipAndDownload = () => {
+    setShowProductRecommendation(false);
+    // 延迟一点执行下载，让弹窗先关闭
+    setTimeout(() => {
+      doDownload();
+    }, 300);
   };
   
   return (
@@ -210,9 +271,9 @@ export default function ResultPage() {
             className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
           >
             <i className="fas fa-arrow-left mr-1"></i>
-            <span>Back</span>
+            <span>返回</span>
           </button>
-          <h1 className="text-xl font-bold text-[#FFD700]">年节结果页</h1>
+          <h1 className="text-xl font-bold text-[#FFD700]">生成结果</h1>
           <div className="w-16"></div>
         </div>
       </header>
@@ -272,21 +333,7 @@ export default function ResultPage() {
                   AI团圆照相馆制作
                 </div>
                 
-                {/* 小程序码水印 */}
-                {!isPaid && (
-                  <motion.div 
-                    className="absolute bottom-4 right-4 w-16 h-16"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.5 }}
-                  >
-                    <div className="relative w-full h-full bg-white rounded-lg p-1 shadow-lg">
-                      <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
-                        <i className="fas fa-qrcode text-gray-400 text-2xl"></i>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
+                {/* 小程序码水印 - 免费版也不显示水印 */}
               </motion.div>
             </div>
           </div>
@@ -322,7 +369,7 @@ export default function ResultPage() {
                 <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
                   <span className="text-[#8B0000] text-base font-bold flex items-center">
                     <i className="fas fa-download mr-2"></i>
-                    下载高清图
+                    保存图片
                   </span>
                 </div>
               </div>
@@ -412,7 +459,8 @@ export default function ResultPage() {
         <ProductRecommendation
           isOpen={showProductRecommendation}
           selectedImage={selectedImage}
-          onClose={() => setShowProductRecommendation(false)}
+          onClose={handleProductRecommendationClose}
+          onSkipAndDownload={handleSkipAndDownload}
           onOrderProduct={handleOrderProduct}
         />
       )}

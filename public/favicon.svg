@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4302B"/>
+      <stop offset="100%" style="stop-color:#E84A3D"/>
+    </linearGradient>
+  </defs>
+  <!-- 灯笼主体 -->
+  <ellipse cx="50" cy="55" rx="30" ry="35" fill="url(#redGradient)"/>
+  <!-- 灯笼顶部 -->
+  <rect x="40" y="18" width="20" height="8" rx="2" fill="#D4AF37"/>
+  <!-- 灯笼底部 -->
+  <rect x="42" y="88" width="16" height="6" rx="2" fill="#D4AF37"/>
+  <!-- 灯笼穗子 -->
+  <path d="M46 94 L46 100 M50 94 L50 100 M54 94 L54 100" stroke="#D4AF37" stroke-width="2" stroke-linecap="round"/>
+  <!-- 灯笼横纹 -->
+  <ellipse cx="50" cy="45" rx="28" ry="8" fill="none" stroke="#B82820" stroke-width="1.5" opacity="0.6"/>
+  <ellipse cx="50" cy="65" rx="28" ry="8" fill="none" stroke="#B82820" stroke-width="1.5" opacity="0.6"/>
+  <!-- 福字 -->
+  <text x="50" y="62" font-size="24" fill="#D4AF37" text-anchor="middle" font-weight="bold" font-family="serif">福</text>
+</svg>

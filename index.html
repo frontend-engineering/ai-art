@@ -2,13 +2,64 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Artistic Photo Generator - 艺术照生成</title>
+    
+    <!-- 页面基础信息 -->
+    <title>团圆照相馆 - 时空拼图·富贵变身</title>
+    <meta name="description" content="团圆照相馆，时空拼图让跨越时空的家人同框，富贵变身让你秒变古装贵族。用AI定格幸福时光，让每一张照片都成为珍贵回忆。" />
+    <meta name="keywords" content="团圆照相馆,时空拼图,富贵变身,家庭照片,艺术照生成,春节照片,全家福" />
+    <meta name="author" content="团圆照相馆" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    
+    <!-- 移动端适配 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=1.0, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="团圆照相馆" />
+    <meta name="application-name" content="团圆照相馆" />
+    <meta name="format-detection" content="telephone=no, email=no, address=no" />
+    
+    <!-- 主题色 -->
+    <meta name="theme-color" content="#D4302B" />
+    <meta name="msapplication-TileColor" content="#D4302B" />
+    <meta name="msapplication-navbutton-color" content="#D4302B" />
+    
+    <!-- Open Graph / 社交分享 -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="团圆照相馆 - 时空拼图·富贵变身" />
+    <meta property="og:description" content="时空拼图让跨越时空的家人同框，富贵变身让你秒变古装贵族" />
+    <meta property="og:site_name" content="团圆照相馆" />
+    <meta property="og:locale" content="zh_CN" />
+    
+    <!-- 微信分享 -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="团圆照相馆 - 时空拼图·富贵变身" />
+    <meta name="twitter:description" content="时空拼图让跨越时空的家人同框，富贵变身让你秒变古装贵族" />
+    
+    <!-- 安全与兼容性 -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="renderer" content="webkit" />
+    <meta name="x5-orientation" content="portrait" />
+    <meta name="x5-fullscreen" content="true" />
+    <meta name="x5-page-mode" content="app" />
+    <meta name="screen-orientation" content="portrait" />
+    <meta name="full-screen" content="yes" />
+    
+    <!-- 禁用浏览器缓存（开发环境可选） -->
+    <!-- <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" /> -->
+    
+    <!-- 外部资源 -->
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
       crossorigin="anonymous"
     />
+    
+    <!-- DNS 预解析 -->
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com" />
   </head>
   <body class="bg-gradient-to-br from-purple-50 to-blue-50">
     <div id="root"></div>

@@ -30,13 +30,21 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
     <AnimatePresence>
       {isOpen && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-4 bg-black/90">
-          {/* 关闭按钮 */}
+          {/* 顶部装饰 */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
+          
+          {/* 关闭按钮 - 春节风格 */}
           <button
-            className="absolute top-4 right-4 text-white p-2 rounded-full bg-black/50"
+            className="absolute top-6 right-4 text-white p-3 rounded-full bg-gradient-to-br from-[#D4302B] to-[#B82820] shadow-lg hover:shadow-xl transition-all"
             onClick={onClose}
           >
-            <i className="fas fa-times text-xl"></i>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
+          
+          {/* 顶部装饰元素 */}
+          <div className="absolute top-6 left-4 text-3xl opacity-60">🏮</div>
           
           {/* 图片预览 */}
           <motion.div
@@ -45,14 +53,18 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
           >
-            <img 
-              src={imageUrl} 
-              alt="预览大图" 
-              className="max-w-full max-h-[70vh] object-contain"
-            />
+            <div className="relative">
+              {/* 图片边框装饰 */}
+              <div className="absolute -inset-2 bg-gradient-to-br from-[#D4302B] via-[#FFD700] to-[#D4302B] rounded-xl opacity-60" />
+              <img 
+                src={imageUrl} 
+                alt="预览大图" 
+                className="relative max-w-full max-h-[70vh] object-contain rounded-lg shadow-2xl"
+              />
+            </div>
           </motion.div>
           
-          {/* 底部操作栏 */}
+          {/* 底部操作栏 - 春节风格 */}
           <motion.div
             className="w-full mt-4 flex justify-center"
             initial={{ y: 50, opacity: 0 }}
@@ -60,14 +72,18 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({
             exit={{ y: 50, opacity: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <button
+            <motion.button
               onClick={handleSaveImage}
-              className="py-3 px-8 bg-white text-[#6B5CA5] rounded-lg font-medium flex items-center"
+              className="py-4 px-10 bg-gradient-to-r from-[#D4302B] to-[#B82820] text-white rounded-xl font-bold text-lg flex items-center shadow-lg"
+              whileTap={{ scale: 0.98 }}
             >
-              <i className="fas fa-download mr-2"></i>
+              <span className="mr-2">💾</span>
               <span>保存图片</span>
-            </button>
+            </motion.button>
           </motion.div>
+          
+          {/* 底部装饰 */}
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
         </div>
       )}
     </AnimatePresence>

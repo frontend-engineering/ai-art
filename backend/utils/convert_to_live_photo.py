@@ -117,16 +117,13 @@ def convert_to_live_photo(video_url, output_path=None):
 
 def main():
     """主函数"""
-    if len(sys.argv) < 2:
-        print(json.dumps({
-            'success': False,
-            'message': '缺少必要参数，需要提供视频URL或路径'
-        }))
-        sys.exit(1)
-    
     try:
-        # 解析参数
-        params = json.loads(sys.argv[1])
+        # 从命令行参数读取JSON，如果没有则从stdin读取
+        if len(sys.argv) > 1:
+            params = json.loads(sys.argv[1])
+        else:
+            params = json.load(sys.stdin)
+        
         video_url = params.get('video_url')
         output_path = params.get('output_path')
         
