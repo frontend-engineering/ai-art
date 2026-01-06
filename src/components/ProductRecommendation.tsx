@@ -2,6 +2,49 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
+// 图片加载组件
+const ImageWithLoading: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+}> = ({ src, alt, className = '' }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  return (
+    <div className="relative">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] z-10"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="text-3xl"
+            >
+              🏮
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        onLoad={() => setIsLoading(false)}
+      />
+    </div>
+  );
+};
+
 interface ProductRecommendationProps {
   isOpen: boolean;
   selectedImage: string;
@@ -176,7 +219,7 @@ const ProductRecommendation: React.FC<ProductRecommendationProps> = ({
                     {selectedProduct === 'crystal' ? (
                       <div className="relative">
                         <div className="border-8 border-white shadow-2xl rounded-lg overflow-hidden">
-                          <img
+                          <ImageWithLoading
                             src={selectedImage}
                             alt="晶瓷画预览"
                             className="w-full h-auto"
@@ -190,7 +233,7 @@ const ProductRecommendation: React.FC<ProductRecommendationProps> = ({
                       <div className="relative">
                         <div className="h-5 bg-gradient-to-r from-[#8B4513] via-[#D2691E] to-[#8B4513] rounded-t-lg shadow-md"></div>
                         <div className="bg-gradient-to-b from-[#FFF8DC] to-[#F5DEB3] p-4 shadow-xl border-x-4 border-[#D4AF37]/50">
-                          <img
+                          <ImageWithLoading
                             src={selectedImage}
                             alt="卷轴预览"
                             className="w-full h-auto rounded"
@@ -263,7 +306,7 @@ const ProductRecommendation: React.FC<ProductRecommendationProps> = ({
 
                 {/* 预览图片 */}
                 <div className="mb-6 rounded-xl overflow-hidden border-4 border-[#D4AF37]/50 shadow-lg">
-                  <img
+                  <ImageWithLoading
                     src={selectedImage}
                     alt="您的作品"
                     className="w-full h-48 object-cover"

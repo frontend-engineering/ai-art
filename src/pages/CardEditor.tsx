@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Background from '../components/Background';
 import PageTransition from '@/components/PageTransition';
@@ -34,6 +34,7 @@ export default function CardEditor() {
   const [customGreeting, setCustomGreeting] = useState('新春快乐，阖家欢乐！');
   const [selectedTemplate, setSelectedTemplate] = useState(CARD_TEMPLATES[0]);
   const [isSaving, setIsSaving] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   if (!selectedImage) {
     navigate('/generator');
@@ -149,11 +150,33 @@ export default function CardEditor() {
               
               {/* 照片 */}
               <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-48 h-48">
-                <img 
-                  src={selectedImage} 
-                  alt="Family Photo" 
-                  className="w-full h-full object-cover rounded-lg border-4 border-white shadow-lg"
-                />
+                <div className="relative w-full h-full">
+                  {/* Loading 状态 */}
+                  <AnimatePresence>
+                    {!imageLoaded && (
+                      <motion.div
+                        className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] rounded-lg border-4 border-white shadow-lg z-10"
+                        initial={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <motion.div
+                          animate={{ rotate: 360 }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                          className="text-3xl"
+                        >
+                          🏮
+                        </motion.div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <img 
+                    src={selectedImage} 
+                    alt="Family Photo" 
+                    className={`w-full h-full object-cover rounded-lg border-4 border-white shadow-lg transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                    onLoad={() => setImageLoaded(true)}
+                  />
+                </div>
               </div>
               
               {/* 祝福语 */}

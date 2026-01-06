@@ -7,6 +7,7 @@
 
 const { TaskStatus, updateTask, getTask } = require('./taskQueueService');
 const generationService = require('./generationService');
+const { uploadImagesFromUrlsToOSS, COS_DOMAIN } = require('./ossService');
 
 // 正在处理的任务集合（防止重复处理）
 const processingTasks = new Set();
@@ -177,6 +178,29 @@ async function executeArtPhotoTask(taskId, generateFn) {
     if (generatedImages.length === 0) {
       logWorker(taskId, '阶段5-结果处理', '❌ 未能获取生成的图片');
       throw new Error('未能获取生成的图片');
+    }
+    
+    // 阶段5.5: 转存图片到OSS（防止原始URL过期）
+    logWorker(taskId, '阶段5.5-OSS转存', '正在将图片转存到OSS...');
+    updateTask(taskId, {
+      progress: 85,
+      message: '正在保存图片...'
+    });
+    
+    // 检查是否需要转存（如果图片URL不是我们的OSS域名，则需要转存）
+    const needsTransfer = generatedImages.some(url => !url.includes(COS_DOMAIN || 'wms.webinfra.cloud'));
+    
+    if (needsTransfer) {
+      try {
+        const ossImages = await uploadImagesFromUrlsToOSS(generatedImages);
+        logWorker(taskId, '阶段5.5-OSS转存', `✅ 图片转存完成，${ossImages.length} 张图片已保存到OSS`);
+        generatedImages = ossImages;
+      } catch (ossError) {
+        logWorker(taskId, '阶段5.5-OSS转存', `⚠️ 图片转存失败，使用原始URL: ${ossError.message}`);
+        // 转存失败不影响主流程，继续使用原始URL
+      }
+    } else {
+      logWorker(taskId, '阶段5.5-OSS转存', '图片已在OSS上，跳过转存');
     }
     
     // 阶段6: 任务完成

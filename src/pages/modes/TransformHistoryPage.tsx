@@ -1,10 +1,53 @@
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import PageTransition from '@/components/PageTransition';
 import { useUser } from '@/contexts/UserContext';
 import { API_ENDPOINTS, apiFetch } from '@/lib/apiConfig';
 import launchBg2 from '@/assets/launch-bg2.png';
+
+// 带 loading 的图片组件
+const ImageWithLoading: React.FC<{
+  src: string;
+  alt: string;
+  className?: string;
+}> = ({ src, alt, className = '' }) => {
+  const [isLoading, setIsLoading] = useState(true);
+  
+  return (
+    <div className="relative w-full h-full">
+      <AnimatePresence>
+        {isLoading && (
+          <motion.div
+            className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] z-10"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+              className="text-2xl"
+            >
+              🏮
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <img
+        src={src}
+        alt={alt}
+        className={`${className} ${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300`}
+        onLoad={() => setIsLoading(false)}
+      />
+    </div>
+  );
+};
 
 interface HistoryRecord {
   id: string;
@@ -150,15 +193,15 @@ export default function TransformHistoryPage() {
                   }`}
                 >
                   {/* 图片预览 */}
-                  <div className="aspect-square bg-gray-100 relative">
+                  <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {record.selected_image_url || record.generated_image_urls?.[0] ? (
-                      <img
+                      <ImageWithLoading
                         src={record.selected_image_url || record.generated_image_urls[0]}
                         alt="生成结果"
                         className="w-full h-full object-cover"
                       />
                     ) : record.original_image_urls?.[0] ? (
-                      <img
+                      <ImageWithLoading
                         src={record.original_image_urls[0]}
                         alt="原图"
                         className="w-full h-full object-cover opacity-50"

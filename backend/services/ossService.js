@@ -81,6 +81,102 @@ async function uploadImageToOSS(base64Image) {
 }
 
 /**
+ * 从URL下载图片并上传到腾讯云OSS
+ * @param imageUrl 图片URL
+ * @returns 上传后的OSS URL
+ */
+async function uploadImageFromUrlToOSS(imageUrl) {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const cosInstance = initCOS();
+      
+      if (!cosInstance || !COS_BUCKET || !COS_REGION || !COS_DOMAIN) {
+        throw new Error('腾讯云OSS配置未设置，请检查.env文件中的配置');
+      }
+      
+      console.log(`[OSS] 开始从URL下载图片: ${imageUrl.substring(0, 100)}...`);
+      
+      // 下载图片
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`下载图片失败，状态码: ${response.status}`);
+      }
+      
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // 获取Content-Type
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+      
+      // 根据Content-Type确定文件扩展名
+      let fileExtension = 'jpg';
+      if (contentType.includes('png')) {
+        fileExtension = 'png';
+      } else if (contentType.includes('gif')) {
+        fileExtension = 'gif';
+      } else if (contentType.includes('webp')) {
+        fileExtension = 'webp';
+      }
+      
+      // 生成文件名
+      const fileName = `art-photos/${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExtension}`;
+      
+      console.log(`[OSS] 图片下载完成，大小: ${buffer.length} 字节，准备上传到: ${fileName}`);
+      
+      // 上传到COS
+      cosInstance.putObject({
+        Bucket: COS_BUCKET,
+        Region: COS_REGION,
+        Key: fileName,
+        Body: buffer,
+        ContentType: contentType
+      }, function(err, data) {
+        if (err) {
+          console.error('[OSS] 上传失败:', err);
+          reject(new Error('图片上传失败，请稍后重试'));
+        } else {
+          const url = `https://${COS_DOMAIN}/${fileName}`;
+          console.log('[OSS] 上传成功:', url);
+          resolve(url);
+        }
+      });
+    } catch (error) {
+      console.error('[OSS] 从URL上传图片失败:', error);
+      reject(error);
+    }
+  });
+}
+
+/**
+ * 批量从URL下载图片并上传到OSS
+ * @param imageUrls 图片URL数组
+ * @returns 上传后的OSS URL数组
+ */
+async function uploadImagesFromUrlsToOSS(imageUrls) {
+  if (!imageUrls || imageUrls.length === 0) {
+    return [];
+  }
+  
+  console.log(`[OSS] 开始批量转存 ${imageUrls.length} 张图片到OSS`);
+  
+  const results = [];
+  for (let i = 0; i < imageUrls.length; i++) {
+    try {
+      const ossUrl = await uploadImageFromUrlToOSS(imageUrls[i]);
+      results.push(ossUrl);
+      console.log(`[OSS] 第 ${i + 1}/${imageUrls.length} 张图片转存成功`);
+    } catch (error) {
+      console.error(`[OSS] 第 ${i + 1}/${imageUrls.length} 张图片转存失败:`, error.message);
+      // 如果转存失败，保留原始URL
+      results.push(imageUrls[i]);
+    }
+  }
+  
+  console.log(`[OSS] 批量转存完成，成功: ${results.filter(url => url.includes(COS_DOMAIN)).length}/${imageUrls.length}`);
+  return results;
+}
+
+/**
  * 上传视频到腾讯云OSS
  * @param base64Video Base64编码的视频数据
  * @param mimeType 视频MIME类型
@@ -128,6 +224,8 @@ async function uploadVideoToOSS(base64Video, mimeType = 'video/mp4') {
 module.exports = {
   initCOS,
   uploadImageToOSS,
+  uploadImageFromUrlToOSS,
+  uploadImagesFromUrlsToOSS,
   uploadVideoToOSS,
   COS_BUCKET,
   COS_REGION,

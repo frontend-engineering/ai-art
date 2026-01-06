@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import CornerBackground from '@/components/CornerBackground';
 import PaymentModal from '../components/PaymentModal';
@@ -23,6 +23,7 @@ export default function ResultPage() {
   const [showProductRecommendation, setShowProductRecommendation] = useState(false);
   const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false);
   const [showSaveSuccess, setShowSaveSuccess] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
   // 如果没有图片数据，根据来源返回不同页面
@@ -317,14 +318,43 @@ export default function ResultPage() {
                 }}
               >
                 <div className="relative p-0.5 rounded-lg bg-gradient-to-br from-[#FFD700] to-[#D4AF37]">
-                  <img 
-                    ref={imageRef}
-                    src={selectedImage} 
-                    alt="Generated Art Photo" 
-                    className={`w-full h-auto object-contain rounded-lg ${
-                      isPlayingLivePhoto ? 'animate-pulse' : ''
-                    }`}
-                  />
+                  <div className="relative w-full overflow-hidden rounded-lg bg-[#FFF8DC]">
+                    {/* Loading 状态 */}
+                    <AnimatePresence>
+                      {!imageLoaded && (
+                        <motion.div
+                          className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] z-10 min-h-[200px]"
+                          initial={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                        >
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
+                            animate={{ x: ['-100%', '100%'] }}
+                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                          />
+                          <motion.div
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                            className="text-5xl sm:text-6xl"
+                          >
+                            🏮
+                          </motion.div>
+                          <p className="text-[#8B4513] text-sm font-medium mt-3">图片加载中...</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                    
+                    <img 
+                      ref={imageRef}
+                      src={selectedImage} 
+                      alt="Generated Art Photo" 
+                      className={`w-full h-auto block rounded-lg transition-opacity duration-300 ${
+                        isPlayingLivePhoto ? 'animate-pulse' : ''
+                      } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                      onLoad={() => setImageLoaded(true)}
+                    />
+                  </div>
                 </div>
                 
                 {/* AI团圆照相馆制作标识 */}
