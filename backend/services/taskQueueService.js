@@ -189,12 +189,13 @@ async function getTask(taskId) {
 }
 
 /**
- * 持久化任务到文件（带写入锁，防止并发写入）
+ * 持久化任务到文件（带写入锁和原子写入，防止并发写入导致文件损坏）
  * @param {Object} task 任务对象
  */
 async function persistTask(task) {
   const taskId = task.id;
   const filePath = path.join(TASK_STORAGE_DIR, `${taskId}.json`);
+  const tempFilePath = path.join(TASK_STORAGE_DIR, `${taskId}.json.tmp`);
   
   // 等待之前的写入完成
   const existingLock = writeLocks.get(taskId);
@@ -206,7 +207,17 @@ async function persistTask(task) {
   const writePromise = (async () => {
     try {
       const jsonStr = JSON.stringify(task, null, 2);
-      await fs.writeFile(filePath, jsonStr, 'utf-8');
+      // 原子写入：先写入临时文件，再重命名
+      await fs.writeFile(tempFilePath, jsonStr, 'utf-8');
+      await fs.rename(tempFilePath, filePath);
+    } catch (error) {
+      // 清理临时文件
+      try {
+        await fs.unlink(tempFilePath);
+      } catch (e) {
+        // 忽略清理错误
+      }
+      throw error;
     } finally {
       writeLocks.delete(taskId);
     }
@@ -226,6 +237,14 @@ async function loadTask(taskId) {
     const filePath = path.join(TASK_STORAGE_DIR, `${taskId}.json`);
     let data = await fs.readFile(filePath, 'utf-8');
     
+    // 检查文件是否为空或内容不完整
+    data = data.trim();
+    if (!data || data.length < 2) {
+      logQueue(taskId, '加载', '⚠️ 文件内容为空或不完整，删除损坏文件');
+      await fs.unlink(filePath).catch(() => {});
+      return null;
+    }
+    
     // 尝试解析 JSON
     try {
       return JSON.parse(data);
@@ -234,9 +253,16 @@ async function loadTask(taskId) {
       logQueue(taskId, '加载', `⚠️ JSON 解析失败，尝试修复: ${parseError.message}`);
       
       // 修复末尾多余的 } 问题
-      data = data.trim();
       while (data.endsWith('}}') && !data.endsWith('"}}')) {
         data = data.slice(0, -1);
+      }
+      
+      // 修复末尾截断问题（尝试补全）
+      if (!data.endsWith('}')) {
+        // 文件被截断，无法修复
+        logQueue(taskId, '加载', `❌ 文件被截断，无法修复，删除损坏文件`);
+        await fs.unlink(filePath).catch(() => {});
+        return null;
       }
       
       try {
@@ -246,7 +272,8 @@ async function loadTask(taskId) {
         logQueue(taskId, '加载', '✅ JSON 修复成功');
         return task;
       } catch (retryError) {
-        logQueue(taskId, '加载', `❌ JSON 修复失败: ${retryError.message}`);
+        logQueue(taskId, '加载', `❌ JSON 修复失败: ${retryError.message}，删除损坏文件`);
+        await fs.unlink(filePath).catch(() => {});
         return null;
       }
     }
@@ -345,39 +372,50 @@ async function recoverPendingTasks(executeTaskFn) {
     logQueue(null, '恢复', `发现 ${taskFiles.length} 个任务文件`);
     
     for (const file of taskFiles) {
-      try {
-        const filePath = path.join(TASK_STORAGE_DIR, file);
-        const data = await fs.readFile(filePath, 'utf-8');
-        const task = JSON.parse(data);
+      const taskId = file.replace('.json', '');
+      
+      // 跳过临时文件
+      if (file.endsWith('.tmp')) {
+        logQueue(null, '恢复', `跳过临时文件: ${file}`);
+        continue;
+      }
+      
+      // 使用 loadTask 函数加载任务（带容错处理）
+      const task = await loadTask(taskId);
+      
+      if (!task) {
+        logQueue(null, '恢复', `⚠️ 无法加载任务文件: ${file}，已跳过`);
+        continue;
+      }
         
-        // 检查是否是需要恢复的任务（pending 或 processing 状态）
-        if (task.status === TaskStatus.PENDING || task.status === TaskStatus.PROCESSING) {
-          logQueue(task.id, '恢复', `发现未完成任务`, {
-            status: task.status,
-            mode: task.meta?.mode,
-            createdAt: task.createdAt
-          });
-          
-          // 检查任务是否过期（超过1小时的任务标记为超时）
-          const taskAge = Date.now() - new Date(task.createdAt).getTime();
-          const maxAge = 60 * 60 * 1000; // 1小时
-          
-          if (taskAge > maxAge) {
-            logQueue(task.id, '恢复', `任务已过期 (${Math.round(taskAge / 60000)} 分钟)，标记为超时`);
-            task.status = TaskStatus.TIMEOUT;
-            task.message = '任务超时，服务器重启后未能恢复';
-            task.updatedAt = new Date().toISOString();
-            task.completedAt = new Date().toISOString();
-            await persistTask(task);
-            taskQueue.set(task.id, task);
-            continue;
-          }
-          
-          // 将任务加载到内存队列
+      // 检查是否是需要恢复的任务（pending 或 processing 状态）
+      if (task.status === TaskStatus.PENDING || task.status === TaskStatus.PROCESSING) {
+        logQueue(task.id, '恢复', `发现未完成任务`, {
+          status: task.status,
+          mode: task.meta?.mode,
+          createdAt: task.createdAt
+        });
+        
+        // 检查任务是否过期（超过1小时的任务标记为超时）
+        const taskAge = Date.now() - new Date(task.createdAt).getTime();
+        const maxAge = 60 * 60 * 1000; // 1小时
+        
+        if (taskAge > maxAge) {
+          logQueue(task.id, '恢复', `任务已过期 (${Math.round(taskAge / 60000)} 分钟)，标记为超时`);
+          task.status = TaskStatus.TIMEOUT;
+          task.message = '任务超时，服务器重启后未能恢复';
+          task.updatedAt = new Date().toISOString();
+          task.completedAt = new Date().toISOString();
+          await persistTask(task);
           taskQueue.set(task.id, task);
-          
-          // 重置为 pending 状态（如果是 processing 状态）
-          if (task.status === TaskStatus.PROCESSING) {
+          continue;
+        }
+        
+        // 将任务加载到内存队列
+        taskQueue.set(task.id, task);
+        
+        // 重置为 pending 状态（如果是 processing 状态）
+        if (task.status === TaskStatus.PROCESSING) {
             task.status = TaskStatus.PENDING;
             task.progress = 0;
             task.message = '任务恢复中，准备重新执行...';
@@ -385,14 +423,11 @@ async function recoverPendingTasks(executeTaskFn) {
             await persistTask(task);
           }
           
-          recoveredTasks.push(task);
-          logQueue(task.id, '恢复', `✅ 任务已加入恢复队列`);
-        } else {
-          // 已完成/失败的任务也加载到内存（用于查询）
-          taskQueue.set(task.id, task);
-        }
-      } catch (err) {
-        logQueue(null, '恢复', `❌ 读取任务文件失败: ${file}, 错误: ${err.message}`);
+        recoveredTasks.push(task);
+        logQueue(task.id, '恢复', `✅ 任务已加入恢复队列`);
+      } else {
+        // 已完成/失败的任务也加载到内存（用于查询）
+        taskQueue.set(task.id, task);
       }
     }
     

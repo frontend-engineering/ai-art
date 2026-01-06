@@ -4,10 +4,31 @@
  * 
  * 注意：模板图片必须是可公开访问的URL，供火山方舟API下载
  * 模板图片已上传到OSS: https://wms.webinfra.cloud/art-photos/templates/
+ * 
+ * 【重要】富贵变身 Prompt 设计原则：
+ * 1. 图1为用户上传的人物照片，图2为模板背景图
+ * 2. 完整保留人物的面部、表情、姿态、服装
+ * 3. 将模板背景自然融入人物照片，光影协调
+ * 4. 避免"专业影棚打光"等不自然的效果
+ * 5. 【关键】如果人物是半身照，必须保持完整构图，绝不能出现下半身被截断的效果
  */
 
 // OSS域名配置
 const OSS_DOMAIN = 'wms.webinfra.cloud';
+
+/**
+ * 通用的背景融合 Prompt 前缀
+ * 用于确保所有模板都遵循相同的基础规则
+ */
+const TRANSFORM_PROMPT_PREFIX = `参考图分工：图1为用户上传的人物照片，图2为背景参考图。
+
+【核心要求】
+1. 完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，不做任何修改
+2. 将图2的背景场景自然融入图1，替换原有背景
+3. 保持人物与新背景的光影协调一致，色彩过渡自然柔和
+4. 【重要】如果原图是半身照或特写，必须保持原有构图比例，确保人物完整呈现，绝对禁止出现人物下半身被截断、腿部缺失或身体不完整的情况，这在中国文化中是大忌
+
+【画面效果】`;
 
 /**
  * Transform模式（富贵变身）模板配置
@@ -24,21 +45,24 @@ const TRANSFORM_TEMPLATES = {
     id: 'transform-custom-1',
     name: '富贵团圆',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/fHPym5Te7.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的富贵团圆场景，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格，专业影棚打光效果，细节丰富清晰',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的富贵团圆场景，营造温馨祥和的家庭氛围，背景与人物自然融合，光线柔和均匀，整体画面和谐统一，呈现真实自然的合影效果，高清画质，细节清晰`,
     category: 'chinese'
   },
   'transform-custom-2': {
     id: 'transform-custom-2',
     name: '豪门盛宴',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/fHPyN0b67.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的豪门宴会场景，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格，专业影棚打光效果，细节丰富清晰',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的豪门宴会场景，呈现高雅尊贵的氛围，背景与人物自然融合，室内光线温暖柔和，整体画面协调统一，呈现真实自然的合影效果，高清画质，细节清晰`,
     category: 'luxury'
   },
   'transform-custom-3': {
     id: 'transform-custom-3',
     name: '雅致居所',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/fHPyoUXXv.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的雅致居所场景，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格，自然光线柔和，细节丰富清晰',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的雅致居所场景，呈现简约大方的现代风格，背景与人物自然融合，自然光线柔和通透，整体画面清新舒适，呈现真实自然的居家合影效果，高清画质，细节清晰`,
     category: 'modern'
   },
   // 备选模板
@@ -46,28 +70,32 @@ const TRANSFORM_TEMPLATES = {
     id: 'transform-1',
     name: '欧式豪华客厅',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/luxury-european.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的欧式豪华客厅场景，水晶吊灯璀璨，奢华典雅氛围，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的欧式豪华客厅场景，水晶吊灯璀璨，呈现奢华典雅的氛围，背景与人物自然融合，室内光线温暖柔和，整体画面协调统一，呈现真实自然的合影效果，高清画质，细节清晰`,
     category: 'luxury'
   },
   'transform-2': {
     id: 'transform-2',
     name: '中式豪宅大厅',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/luxury-chinese.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的中式豪宅大厅场景，红木家具陈设，富贵大气氛围，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的中式豪宅大厅场景，红木家具陈设，呈现富贵大气的中式风格，背景与人物自然融合，室内光线温暖柔和，整体画面协调统一，呈现真实自然的合影效果，高清画质，细节清晰`,
     category: 'chinese'
   },
   'transform-3': {
     id: 'transform-3',
     name: '现代轻奢客厅',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/modern-luxury.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的现代轻奢客厅场景，简约时尚风格，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的现代轻奢客厅场景，简约时尚风格，背景与人物自然融合，自然光线柔和通透，整体画面清新大方，呈现真实自然的居家合影效果，高清画质，细节清晰`,
     category: 'modern'
   },
   'transform-4': {
     id: 'transform-4',
     name: '古典宫廷',
     imageUrl: `https://${OSS_DOMAIN}/art-photos/templates/transform/classical-palace.jpg`,
-    prompt: '参考图分工：图1为人物参考图，图2为背景参考图。严格要求：完整保留图1中所有人物的面部特征、表情神态、肢体姿势和原始服装，精准替换背景为图2所示的古典宫廷场景，皇家气派庄严，保持人物与新背景的光影协调一致，色彩过渡自然，超高清8K写实摄影风格',
+    prompt: `${TRANSFORM_PROMPT_PREFIX}
+将背景替换为图2所示的古典宫廷场景，呈现皇家气派庄严的氛围，背景与人物自然融合，室内光线温暖柔和，整体画面协调统一，呈现真实自然的合影效果，高清画质，细节清晰`,
     category: 'luxury'
   }
 };

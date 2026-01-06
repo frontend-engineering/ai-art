@@ -1808,9 +1808,35 @@ app.get('/api/history/all', async (req, res) => {
         `SELECT * FROM generation_history ORDER BY created_at DESC LIMIT ${limitNum}`
       );
       
+      // 解析JSON字段，保持与 generationService 一致的格式
+      const parseJsonField = (field) => {
+        if (!field) return null;
+        if (typeof field === 'string') {
+          try {
+            return JSON.parse(field);
+          } catch (e) {
+            return null;
+          }
+        }
+        return field;
+      };
+      
+      const formattedRows = rows.map(record => ({
+        id: record.id,
+        user_id: record.user_id,
+        task_ids: parseJsonField(record.task_ids),
+        original_image_urls: parseJsonField(record.original_image_urls),
+        template_url: record.template_url,
+        generated_image_urls: parseJsonField(record.generated_image_urls),
+        selected_image_url: record.selected_image_url,
+        status: record.status,
+        created_at: record.created_at,
+        updated_at: record.updated_at
+      }));
+      
       res.json({ 
         success: true, 
-        data: rows 
+        data: formattedRows 
       });
     } finally {
       connection.release();
@@ -1842,9 +1868,23 @@ app.get('/api/history/user/:userId', async (req, res) => {
       limit ? parseInt(limit) : 10
     );
     
+    // 转换为 snake_case 格式，与前端接口一致
+    const formattedRecords = historyRecords.map(record => ({
+      id: record.id,
+      user_id: record.userId,
+      task_ids: record.taskIds,
+      original_image_urls: record.originalImageUrls,
+      template_url: record.templateUrl,
+      generated_image_urls: record.generatedImageUrls,
+      selected_image_url: record.selectedImageUrl,
+      status: record.status,
+      created_at: record.createdAt,
+      updated_at: record.updatedAt
+    }));
+    
     res.json({ 
       success: true, 
-      data: historyRecords 
+      data: formattedRecords 
     });
   } catch (error) {
     console.error('获取用户历史记录失败:', error);

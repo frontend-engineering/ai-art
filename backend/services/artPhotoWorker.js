@@ -6,6 +6,7 @@
  */
 
 const { TaskStatus, updateTask, getTask } = require('./taskQueueService');
+const generationService = require('./generationService');
 
 // 正在处理的任务集合（防止重复处理）
 const processingTasks = new Set();
@@ -191,6 +192,23 @@ async function executeArtPhotoTask(taskId, generateFn) {
       completedAt: new Date().toISOString()
     });
     
+    // 同步更新数据库中的生成历史记录
+    try {
+      const historyRecord = await generationService.getGenerationHistoryByTaskId(taskId);
+      if (historyRecord) {
+        await generationService.updateGenerationHistory(historyRecord.id, {
+          generatedImageUrls: generatedImages,
+          status: 'completed'
+        });
+        logWorker(taskId, '阶段6-完成', `✅ 数据库历史记录已更新，记录ID: ${historyRecord.id}`);
+      } else {
+        logWorker(taskId, '阶段6-完成', '⚠️ 未找到对应的历史记录，跳过数据库更新');
+      }
+    } catch (historyError) {
+      logWorker(taskId, '阶段6-完成', `⚠️ 更新历史记录失败: ${historyError.message}`);
+      // 不影响主流程
+    }
+    
     const totalDuration = Date.now() - startTime;
     logWorker(taskId, '阶段6-完成', `✅ 任务执行成功！`, {
       imageCount: generatedImages.length,
@@ -231,6 +249,19 @@ async function executeArtPhotoTask(taskId, generateFn) {
         error: error.message,
         completedAt: new Date().toISOString()
       });
+      
+      // 同步更新数据库中的生成历史记录为失败状态
+      try {
+        const historyRecord = await generationService.getGenerationHistoryByTaskId(taskId);
+        if (historyRecord) {
+          await generationService.updateGenerationHistory(historyRecord.id, {
+            status: 'failed'
+          });
+          logWorker(taskId, '错误处理', `✅ 数据库历史记录已更新为失败状态`);
+        }
+      } catch (historyError) {
+        logWorker(taskId, '错误处理', `⚠️ 更新历史记录失败: ${historyError.message}`);
+      }
     }
     logWorker(taskId, '错误', '========== 任务执行结束(失败) ==========\n');
     
