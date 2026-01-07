@@ -260,22 +260,22 @@ export default function TemplateSelector() {
           }}
         />
         
-        {/* 深色渐变遮罩 - 增强可读性 */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40" />
+        {/* 深色渐变遮罩 */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/50" />
 
-        {/* 顶部导航栏 - 透明风格 */}
-        <header className="relative z-30 w-full px-4 py-3 pt-safe">
-          <div className="flex items-center justify-between">
+        {/* 顶部导航栏 */}
+        <header className="relative z-30 w-full backdrop-blur-md bg-[#8B0000]/80 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30">
+          <div className="flex items-center justify-between max-w-md mx-auto">
             <button 
               onClick={handleBack} 
-              className="flex items-center justify-center w-10 h-10 rounded-full bg-black/30 backdrop-blur-sm text-white"
+              className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 text-[#FFD700] hover:bg-black/30 transition-colors"
             >
-              <i className="fas fa-arrow-left text-lg"></i>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
             </button>
-            <h1 className="text-xl font-bold text-white drop-shadow-lg">
-              选择模板
-            </h1>
-            <div className="w-10" /> {/* 占位保持居中 */}
+            <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">选择模板</h1>
+            <div className="w-10" />
           </div>
         </header>
 
@@ -290,10 +290,10 @@ export default function TemplateSelector() {
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                 <button
                   onClick={() => setSelectedCategory('all')}
-                  className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
+                  className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all border ${
                     selectedCategory === 'all'
-                      ? 'bg-[#C8102E] text-white shadow-lg'
-                      : 'bg-white/80 text-gray-700 hover:bg-white'
+                      ? 'bg-gradient-to-r from-[#D4302B] to-[#8B0000] text-[#FFD700] border-[#FFD700]/50 shadow-lg'
+                      : 'bg-black/30 backdrop-blur-sm text-white/90 border-white/20 hover:bg-black/40'
                   }`}
                 >
                   全部
@@ -302,10 +302,10 @@ export default function TemplateSelector() {
                   <button
                     key={cat.id}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-5 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all ${
+                    className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all border ${
                       selectedCategory === cat.id
-                        ? 'bg-[#C8102E] text-white shadow-lg'
-                        : 'bg-white/80 text-gray-700 hover:bg-white'
+                        ? 'bg-gradient-to-r from-[#D4302B] to-[#8B0000] text-[#FFD700] border-[#FFD700]/50 shadow-lg'
+                        : 'bg-black/30 backdrop-blur-sm text-white/90 border-white/20 hover:bg-black/40'
                     }`}
                   >
                     {cat.icon} {cat.name}
@@ -325,8 +325,14 @@ export default function TemplateSelector() {
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-3 border-b-3 border-[#C8102E] mx-auto mb-3"></div>
-                  <p className="text-white/80 text-sm">加载模板中...</p>
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    className="text-5xl mb-3"
+                  >
+                    🏮
+                  </motion.div>
+                  <p className="text-[#FFD700] text-sm">加载模板中...</p>
                 </div>
               </div>
             ) : (
@@ -344,8 +350,8 @@ export default function TemplateSelector() {
                     <div
                       className={`relative cursor-pointer rounded-xl overflow-hidden transition-all duration-300 ${
                         selectedTemplate?.id === template.id
-                          ? 'ring-3 ring-[#C8102E] shadow-xl scale-[1.02]'
-                          : 'ring-1 ring-white/30 hover:ring-white/60 hover:shadow-lg'
+                          ? 'ring-2 ring-[#FFD700] shadow-xl shadow-[#FFD700]/20 scale-[1.02]'
+                          : 'ring-1 ring-white/20 hover:ring-[#FFD700]/50 hover:shadow-lg'
                       }`}
                       onClick={() => handleTemplateSelect(template)}
                       style={{ aspectRatio: '3/4' }}
@@ -360,17 +366,19 @@ export default function TemplateSelector() {
                       {/* 选中标记 */}
                       {selectedTemplate?.id === template.id && (
                         <motion.div
-                          className="absolute top-2 right-2 bg-[#C8102E] text-white rounded-full w-7 h-7 flex items-center justify-center shadow-lg"
+                          className="absolute top-2 right-2 w-7 h-7 bg-gradient-to-br from-[#D4302B] to-[#8B0000] rounded-full flex items-center justify-center shadow-lg border-2 border-[#FFD700]"
                           initial={{ scale: 0 }}
                           animate={{ scale: 1 }}
                           transition={{ type: 'spring', stiffness: 500, damping: 15 }}
                         >
-                          <i className="fas fa-check text-xs"></i>
+                          <svg className="w-3.5 h-3.5 text-[#FFD700]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
                         </motion.div>
                       )}
                       
-                      {/* 模板名称 - 底部渐变 */}
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-3 pt-8">
+                      {/* 模板名称 */}
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3 pt-8">
                         <p className="text-white font-medium text-sm truncate">{template.name}</p>
                       </div>
                       
@@ -382,7 +390,9 @@ export default function TemplateSelector() {
                         }}
                         className="absolute top-2 left-2 bg-black/50 backdrop-blur-sm text-white rounded-full w-7 h-7 flex items-center justify-center hover:bg-black/70 transition-colors"
                       >
-                        <i className="fas fa-expand text-xs"></i>
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                        </svg>
                       </button>
                     </div>
                   </motion.div>
@@ -400,18 +410,18 @@ export default function TemplateSelector() {
           </motion.div>
         </main>
 
-        {/* 底部操作区 - 固定在屏幕底部 */}
+        {/* 底部操作区 */}
         <motion.div
-          className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-3 pb-safe bg-gradient-to-t from-black/80 via-black/60 to-transparent"
+          className="fixed bottom-0 left-0 right-0 z-20 px-4 pt-4 pb-safe bg-gradient-to-t from-[#8B0000] via-[#8B0000]/95 to-transparent"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
           {/* 当前选中提示 */}
           {selectedTemplate && (
-            <div className="mb-2 text-center">
-              <p className="text-white/90 text-sm">
-                已选择：<span className="text-white font-medium">{selectedTemplate.name}</span>
+            <div className="mb-3 text-center">
+              <p className="text-white/80 text-sm">
+                已选择：<span className="text-[#FFD700] font-medium">{selectedTemplate.name}</span>
               </p>
             </div>
           )}
@@ -425,83 +435,93 @@ export default function TemplateSelector() {
             }`}
           >
             {selectedTemplate ? (
-              <div className="w-full h-full bg-gradient-to-r from-[#C8102E] to-[#E31837] rounded-full flex items-center justify-center shadow-lg">
-                <span className="text-white text-lg font-bold flex items-center">
-                  <i className="fas fa-magic mr-2"></i>
-                  立即生成
-                </span>
-                {/* 光效动画 */}
+              <>
+                <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                  <div className="w-full h-full bg-gradient-to-r from-[#D4302B] to-[#8B0000] rounded-full flex items-center justify-center">
+                    <span className="text-[#FFD700] text-lg font-bold flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                      </svg>
+                      立即生成
+                    </span>
+                  </div>
+                </div>
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent rounded-full"
                   animate={{ x: ['-100%', '200%'] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 />
-              </div>
+              </>
             ) : (
-              <div className="w-full h-full bg-gray-400/80 rounded-full flex items-center justify-center">
-                <span className="text-white/80 text-lg font-medium">
-                  请先选择模板
-                </span>
+              <div className="w-full h-full bg-gray-500/50 rounded-full flex items-center justify-center">
+                <span className="text-white/70 text-lg font-medium">请先选择模板</span>
               </div>
             )}
           </button>
         </motion.div>
 
-        {/* 模板预览弹窗 - 春节风格 */}
+        {/* 模板预览弹窗 */}
         <AnimatePresence>
           {showPreview && previewTemplate && (
             <motion.div
-              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowPreview(false)}
             >
-              {/* 顶部装饰 */}
+              {/* 顶部装饰线 */}
               <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
               
-              {/* 装饰元素 */}
-              <div className="absolute top-6 left-6 text-3xl opacity-60">🏮</div>
-              <div className="absolute top-6 right-6 text-3xl opacity-60">🏮</div>
+              {/* 装饰灯笼 */}
+              <div className="absolute top-6 left-6 text-2xl opacity-60">🏮</div>
+              <div className="absolute top-6 right-6 text-2xl opacity-60">🏮</div>
               
               <motion.div
                 className="relative max-w-lg w-full"
-                initial={{ scale: 0.8, opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
+                exit={{ scale: 0.9, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                {/* 图片边框装饰 */}
-                <div className="absolute -inset-1 bg-gradient-to-br from-[#D4302B] via-[#FFD700] to-[#D4302B] rounded-2xl opacity-70" />
-                <img
-                  src={previewTemplate.url}
-                  alt={previewTemplate.name}
-                  className="relative w-full h-auto rounded-xl shadow-2xl"
-                />
-                <button
-                  onClick={() => setShowPreview(false)}
-                  className="absolute -top-3 -right-3 bg-gradient-to-br from-[#D4302B] to-[#B82820] text-white rounded-full w-10 h-10 flex items-center justify-center hover:shadow-lg shadow-md transition-all"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent rounded-b-xl p-4">
-                  <p className="text-white font-bold text-lg mb-1">{previewTemplate.name}</p>
-                  <motion.button
-                    onClick={() => {
-                      handleTemplateSelect(previewTemplate);
-                      setShowPreview(false);
-                    }}
-                    className="mt-3 w-full py-3 bg-gradient-to-r from-[#D4302B] to-[#B82820] text-white rounded-xl font-bold shadow-lg"
-                    whileTap={{ scale: 0.98 }}
+                {/* 金色边框 */}
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-[#FFD700] via-[#D4AF37] to-[#FFD700] rounded-2xl opacity-80" />
+                
+                <div className="relative rounded-2xl overflow-hidden">
+                  <img
+                    src={previewTemplate.url}
+                    alt={previewTemplate.name}
+                    className="w-full h-auto"
+                  />
+                  
+                  {/* 关闭按钮 */}
+                  <button
+                    onClick={() => setShowPreview(false)}
+                    className="absolute -top-2 -right-2 w-10 h-10 bg-gradient-to-br from-[#D4302B] to-[#8B0000] text-[#FFD700] rounded-full flex items-center justify-center shadow-lg border-2 border-[#FFD700] hover:scale-105 transition-transform"
                   >
-                    ✨ 选择此模板
-                  </motion.button>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                  
+                  {/* 底部信息和按钮 */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 pt-12">
+                    <p className="text-[#FFD700] font-bold text-lg mb-3">{previewTemplate.name}</p>
+                    <motion.button
+                      onClick={() => {
+                        handleTemplateSelect(previewTemplate);
+                        setShowPreview(false);
+                      }}
+                      className="w-full py-3 bg-gradient-to-r from-[#D4302B] to-[#8B0000] text-[#FFD700] rounded-xl font-bold shadow-lg border border-[#FFD700]/30 active:scale-[0.98] transition-transform"
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      ✨ 选择此模板
+                    </motion.button>
+                  </div>
                 </div>
               </motion.div>
               
-              {/* 底部装饰 */}
+              {/* 底部装饰线 */}
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-[#D4302B] via-[#FFD700] to-[#D4302B]" />
             </motion.div>
           )}

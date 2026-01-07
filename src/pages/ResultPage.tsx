@@ -236,265 +236,259 @@ export default function ResultPage() {
     <PageTransition>
       <CornerBackground>
         <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
-      {/* 装饰背景元素 */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* 祥云装饰 */}
-        <motion.div
-          className="absolute top-20 left-10 text-4xl opacity-10"
-          animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-        >
-          ☁️
-        </motion.div>
-        <motion.div
-          className="absolute bottom-40 right-10 text-4xl opacity-10"
-          animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        >
-          ☁️
-        </motion.div>
-        
-        {/* 金币装饰 */}
-        <motion.div
-          className="absolute top-32 right-16 text-2xl opacity-30"
-          animate={{ rotate: [0, 360] }}
-          transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-        >
-          🪙
-        </motion.div>
-      </div>
-      
-      {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3">
-        <div className="flex items-center justify-between">
-          <button 
-            onClick={handleBack} 
-            className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
-          >
-            <i className="fas fa-arrow-left mr-1"></i>
-            <span>返回</span>
-          </button>
-          <h1 className="text-xl font-bold text-[#FFD700]">生成结果</h1>
-          <div className="w-16"></div>
-        </div>
-      </header>
-
-      <main className="flex-1 z-10 flex flex-col">
-        {/* 高清图展示区 - 金色相框 */}
-        <div className="relative p-4">
-          <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
-            <div className="relative bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-4">
-              {/* Live Photo标识 */}
-              {hasLivePhoto && (
-                <motion.div 
-                  className="absolute top-6 left-6 z-20 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-lg flex items-center"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                  <span className="text-xs font-semibold text-gray-800">Live</span>
-                </motion.div>
-              )}
-              
-              {/* 高清图片 - 金色内边框 */}
-              <motion.div
-                className="relative"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                onContextMenu={(e) => e.preventDefault()}
-                onTouchStart={() => {
-                  const longPressTimer = setTimeout(() => {
-                    handleLongPress();
-                  }, 800);
-                  
-                  const handleTouchEnd = () => {
-                    clearTimeout(longPressTimer);
-                    document.removeEventListener('touchend', handleTouchEnd);
-                  };
-                  
-                  document.addEventListener('touchend', handleTouchEnd);
-                }}
-              >
-                <div className="relative p-0.5 rounded-lg bg-gradient-to-br from-[#FFD700] to-[#D4AF37]">
-                  <div className="relative w-full overflow-hidden rounded-lg bg-[#FFF8DC]">
-                    {/* Loading 状态 */}
-                    <AnimatePresence>
-                      {!imageLoaded && (
-                        <motion.div
-                          className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#FFF8DC] to-[#F4E4C1] z-10 min-h-[200px]"
-                          initial={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                        >
-                          <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30"
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                          />
-                          <motion.div
-                            animate={{ rotate: 360 }}
-                            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                            className="text-5xl sm:text-6xl"
-                          >
-                            🏮
-                          </motion.div>
-                          <p className="text-[#8B4513] text-sm font-medium mt-3">图片加载中...</p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                    
-                    <img 
-                      ref={imageRef}
-                      src={selectedImage} 
-                      alt="Generated Art Photo" 
-                      className={`w-full h-auto block rounded-lg transition-opacity duration-300 ${
-                        isPlayingLivePhoto ? 'animate-pulse' : ''
-                      } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                      onLoad={() => setImageLoaded(true)}
-                    />
-                  </div>
-                </div>
-                
-                {/* AI团圆照相馆制作标识 */}
-                <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-xs flex items-center">
-                  <i className="fas fa-robot mr-1"></i>
-                  AI团圆照相馆制作
-                </div>
-                
-                {/* 小程序码水印 - 免费版也不显示水印 */}
-              </motion.div>
-            </div>
+          {/* 装饰背景元素 */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute top-24 left-6 text-2xl opacity-20"
+              animate={{ y: [0, -10, 0], rotate: [0, 5, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              🏮
+            </motion.div>
+            <motion.div
+              className="absolute bottom-40 right-6 text-2xl opacity-20"
+              animate={{ y: [0, 8, 0], rotate: [0, -5, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              🏮
+            </motion.div>
           </div>
           
-          {/* 保存成功提示 */}
-          {showSaveSuccess && (
-            <motion.div
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 text-white px-6 py-3 rounded-lg"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-            >
-              <i className="fas fa-check-circle mr-2"></i>
-              保存成功
-            </motion.div>
+          {/* 顶部导航栏 */}
+          <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30">
+            <div className="flex items-center justify-between max-w-md mx-auto">
+              <button 
+                onClick={handleBack} 
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 text-[#FFD700] hover:bg-black/30 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">生成结果</h1>
+              <div className="w-10" />
+            </div>
+          </header>
+
+          <main className="flex-1 z-10 flex flex-col">
+            {/* 高清图展示区 */}
+            <div className="relative p-4">
+              {/* 金色外边框 */}
+              <div className="relative p-0.5 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+                <div className="relative bg-gradient-to-br from-[#8B0000]/95 to-[#6B0000]/95 rounded-2xl p-3">
+                  {/* Live Photo标识 */}
+                  {hasLivePhoto && (
+                    <motion.div 
+                      className="absolute top-5 left-5 z-20 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center border border-[#FFD700]/30"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.3 }}
+                    >
+                      <div className="w-2 h-2 bg-[#FFD700] rounded-full mr-2 animate-pulse" />
+                      <span className="text-xs font-medium text-[#FFD700]">Live</span>
+                    </motion.div>
+                  )}
+                  
+                  {/* 高清图片 */}
+                  <motion.div
+                    className="relative"
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.4 }}
+                    onContextMenu={(e) => e.preventDefault()}
+                    onTouchStart={() => {
+                      const longPressTimer = setTimeout(() => {
+                        handleLongPress();
+                      }, 800);
+                      
+                      const handleTouchEnd = () => {
+                        clearTimeout(longPressTimer);
+                        document.removeEventListener('touchend', handleTouchEnd);
+                      };
+                      
+                      document.addEventListener('touchend', handleTouchEnd);
+                    }}
+                  >
+                    {/* 内层金色边框 */}
+                    <div className="relative p-0.5 rounded-xl bg-gradient-to-br from-[#FFD700]/80 to-[#D4AF37]/80">
+                      <div className="relative w-full overflow-hidden rounded-xl bg-[#FFF8DC]">
+                        {/* Loading 状态 */}
+                        <AnimatePresence>
+                          {!imageLoaded && (
+                            <motion.div
+                              className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-[#8B0000] to-[#6B0000] z-10 min-h-[200px]"
+                              initial={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 0.3 }}
+                            >
+                              <motion.div
+                                className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/10 to-transparent"
+                                animate={{ x: ['-100%', '100%'] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                              />
+                              <motion.div
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                className="text-5xl"
+                              >
+                                🏮
+                              </motion.div>
+                              <p className="text-[#FFD700] text-sm font-medium mt-3">图片加载中...</p>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                        
+                        <img 
+                          ref={imageRef}
+                          src={selectedImage} 
+                          alt="Generated Art Photo" 
+                          className={`w-full h-auto block rounded-xl transition-opacity duration-300 ${
+                            isPlayingLivePhoto ? 'animate-pulse' : ''
+                          } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                          onLoad={() => setImageLoaded(true)}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* AI团圆照相馆制作标识 */}
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-[#FFD700] px-3 py-1.5 rounded-lg text-xs flex items-center border border-[#FFD700]/20">
+                      <svg className="w-3.5 h-3.5 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                      </svg>
+                      AI团圆照相馆
+                    </div>
+                  </motion.div>
+                </div>
+              </div>
+              
+              {/* 保存成功提示 */}
+              <AnimatePresence>
+                {showSaveSuccess && (
+                  <motion.div
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-sm text-[#FFD700] px-6 py-3 rounded-xl border border-[#FFD700]/30"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                  >
+                    <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    保存成功
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* 功能按钮区 */}
+            <div className="flex-1 px-4 py-4">
+              <div className="max-w-md mx-auto space-y-3">
+                {/* 下载高清图按钮 */}
+                <motion.button
+                  onClick={handleDownload}
+                  className="relative w-full h-12 rounded-full overflow-hidden active:scale-[0.98] transition-transform"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                    <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center">
+                      <span className="text-[#8B0000] text-base font-bold flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        保存图片
+                      </span>
+                    </div>
+                  </div>
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-full"
+                    animate={{ x: ['-100%', '200%'] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  />
+                </motion.button>
+
+                {/* 生成拜年贺卡按钮 */}
+                <motion.button
+                  onClick={handleGenerateGreetingCard}
+                  className="relative w-full h-12 rounded-full overflow-hidden active:scale-[0.98] transition-transform"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.15 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                    <div className="w-full h-full bg-gradient-to-r from-[#D4302B] to-[#8B0000] rounded-full flex items-center justify-center">
+                      <span className="text-[#FFD700] text-base font-bold flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        生成拜年贺卡
+                      </span>
+                    </div>
+                  </div>
+                </motion.button>
+
+                {/* 定制晶瓷画按钮 */}
+                <motion.button
+                  onClick={() => setShowProductRecommendation(true)}
+                  className="relative w-full h-12 rounded-full overflow-hidden active:scale-[0.98] transition-transform"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
+                    <div className="w-full h-full bg-gradient-to-r from-[#8B5CF6] to-[#6D28D9] rounded-full flex items-center justify-center">
+                      <span className="text-white text-base font-bold flex items-center">
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        定制晶瓷画
+                      </span>
+                    </div>
+                  </div>
+                </motion.button>
+
+                {/* 分享家族群按钮 */}
+                <motion.button
+                  onClick={handleShare}
+                  className="relative w-full h-12 rounded-full overflow-hidden active:scale-[0.98] transition-transform"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.25 }}
+                >
+                  <div className="w-full h-full bg-white/10 backdrop-blur-sm border border-[#FFD700]/30 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+                    <span className="text-[#FFD700] text-base font-medium flex items-center">
+                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                      分享家族群
+                    </span>
+                  </div>
+                </motion.button>
+              </div>
+            </div>
+          </main>
+
+          {/* 支付弹窗 */}
+          {showPaymentModal && (
+            <PaymentModal 
+              isOpen={showPaymentModal}
+              onClose={() => setShowPaymentModal(false)} 
+              onComplete={handleCompletePayment}
+              generationId={historyItem?.id}
+            />
+          )}
+          
+          {/* 产品推荐弹窗 */}
+          {showProductRecommendation && (
+            <ProductRecommendation
+              isOpen={showProductRecommendation}
+              selectedImage={selectedImage}
+              onClose={handleProductRecommendationClose}
+              onSkipAndDownload={handleSkipAndDownload}
+              onOrderProduct={handleOrderProduct}
+            />
           )}
         </div>
-
-        {/* 功能按钮区 */}
-        <div className="flex-1 px-6 py-6">
-          <div className="max-w-md mx-auto space-y-3">
-            {/* 下载高清图按钮 - 金色渐变 */}
-            <motion.button
-              onClick={handleDownload}
-              className="relative w-full h-12 rounded-full overflow-hidden"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
-                  <span className="text-[#8B0000] text-base font-bold flex items-center">
-                    <i className="fas fa-download mr-2"></i>
-                    保存图片
-                  </span>
-                </div>
-              </div>
-              {/* 光效动画 */}
-              <motion.div
-                className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
-                animate={{ x: ['-100%', '200%'] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              />
-            </motion.button>
-
-            {/* 生成拜年贺卡按钮 - 红色渐变 */}
-            <motion.button
-              onClick={handleGenerateGreetingCard}
-              className="relative w-full h-12 rounded-full overflow-hidden"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                <div className="w-full h-full bg-gradient-to-r from-[#D4302B] to-[#E84A3D] rounded-full flex items-center justify-center hover:from-[#C02820] hover:to-[#D74D3A] transition-all duration-300">
-                  <span className="text-white text-base font-bold flex items-center">
-                    <i className="fas fa-envelope mr-2"></i>
-                    生成拜年贺卡
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-
-            {/* 定制晶瓷画按钮 - 紫色渐变 */}
-            <motion.button
-              onClick={() => setShowProductRecommendation(true)}
-              className="relative w-full h-12 rounded-full overflow-hidden"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                <div className="w-full h-full bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] rounded-full flex items-center justify-center hover:from-[#7C3AED] hover:to-[#8B5CF6] transition-all duration-300">
-                  <span className="text-white text-base font-bold flex items-center">
-                    <i className="fas fa-image mr-2"></i>
-                    定制晶瓷画
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-
-            {/* 分享家族群按钮 - 灰色渐变 */}
-            <motion.button
-              onClick={handleShare}
-              className="relative w-full h-12 rounded-full overflow-hidden"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                <div className="w-full h-full bg-gradient-to-r from-gray-500 to-gray-600 rounded-full flex items-center justify-center hover:from-gray-600 hover:to-gray-700 transition-all duration-300">
-                  <span className="text-white text-base font-bold flex items-center">
-                    <i className="fas fa-users mr-2"></i>
-                    分享家族群
-                  </span>
-                </div>
-              </div>
-            </motion.button>
-          </div>
-        </div>
-      </main>
-
-      {/* 支付弹窗 */}
-      {showPaymentModal && (
-        <PaymentModal 
-          isOpen={showPaymentModal}
-          onClose={() => setShowPaymentModal(false)} 
-          onComplete={handleCompletePayment}
-          generationId={historyItem?.id}
-        />
-      )}
-      
-      {/* 产品推荐弹窗 */}
-      {showProductRecommendation && (
-        <ProductRecommendation
-          isOpen={showProductRecommendation}
-          selectedImage={selectedImage}
-          onClose={handleProductRecommendationClose}
-          onSkipAndDownload={handleSkipAndDownload}
-          onOrderProduct={handleOrderProduct}
-        />
-      )}
-      </div>
       </CornerBackground>
     </PageTransition>
   );

@@ -355,106 +355,121 @@ export default function GeneratingPage() {
           {/* 装饰背景元素 */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
             <motion.div
-              className="absolute top-20 left-10 text-4xl opacity-10"
-              animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute top-20 left-10 text-3xl opacity-20"
+              animate={{ y: [0, -15, 0], rotate: [0, 5, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
             >
-              ☁️
+              🏮
             </motion.div>
             <motion.div
-              className="absolute bottom-40 right-10 text-4xl opacity-10"
-              animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
-              transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute bottom-32 right-10 text-3xl opacity-20"
+              animate={{ y: [0, 10, 0], rotate: [0, -5, 0] }}
+              transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
             >
-              ☁️
+              🏮
+            </motion.div>
+            <motion.div
+              className="absolute top-1/3 right-1/4 text-2xl opacity-10"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.2, 0.1] }}
+              transition={{ duration: 4, repeat: Infinity }}
+            >
+              ✨
             </motion.div>
           </div>
       
           <div className="z-10 w-full max-w-md px-2 sm:px-0 flex flex-col items-center">
-            {/* 旋转灯笼动画 */}
+            {/* 主灯笼动画 */}
             <motion.div
-              className="flex justify-center mb-4 sm:mb-8"
-              animate={{
-                y: [0, -10, 0],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
+              className="relative mb-6"
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut" }}
             >
-              <div className="text-6xl sm:text-8xl">🏮</div>
+              {/* 灯笼光晕 */}
+              <motion.div
+                className="absolute inset-0 rounded-full bg-[#FFD700]/20 blur-xl"
+                animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
+              />
+              <div className="text-7xl sm:text-8xl relative">🏮</div>
             </motion.div>
 
             {/* 标题 */}
             <motion.h1
-              className="text-xl sm:text-2xl font-bold text-center text-[#FFD700] mb-4 sm:mb-6"
+              className="text-xl sm:text-2xl font-bold text-center text-[#FFD700] mb-5"
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
             >
               AI艺术照生成中
             </motion.h1>
 
-            {/* 进度条 - 金色渐变 */}
-            <div className="mb-4 sm:mb-6">
-              <div className="relative">
-                <div className="relative p-0.5 rounded-full bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
-                  <div className="w-full h-3 sm:h-4 bg-[#8B0000] rounded-full overflow-hidden">
+            {/* 进度条容器 */}
+            <div className="w-full mb-5">
+              {/* 金色边框进度条 */}
+              <div className="relative p-0.5 rounded-full bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+                <div className="w-full h-3 bg-[#8B0000]/80 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#D4AF37] relative"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {/* 进度条光效 */}
                     <motion.div
-                      className="h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430]"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.3 }}
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent"
+                      animate={{ x: ['-100%', '100%'] }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                     />
-                  </div>
+                  </motion.div>
                 </div>
               </div>
           
               {/* 进度百分比和文案 */}
               <motion.div
-                className="mt-3 sm:mt-4 text-center"
+                className="mt-4 text-center"
                 key={currentStage}
-                initial={{ opacity: 0, y: -10 }}
+                initial={{ opacity: 0, y: -5 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <p className="text-2xl sm:text-3xl font-bold text-[#FFD700] mb-1 sm:mb-2">
+                <p className="text-3xl sm:text-4xl font-bold text-[#FFD700] mb-2">
                   {Math.round(progress)}%
                 </p>
-                <div className="flex items-center justify-center text-white/90">
-                  <span className="text-base sm:text-lg">～ {currentStage}...{getBlessingText(currentStage)} ～</span>
+                <div className="flex items-center justify-center">
+                  <span className="text-white/90 text-base">
+                    {currentStage}...
+                    <span className="text-[#FFD700] ml-2">{getBlessingText(currentStage)}</span>
+                  </span>
                 </div>
                 {taskMessage && (
-                  <p className="text-xs sm:text-sm text-white/70 mt-1 sm:mt-2">{taskMessage}</p>
+                  <p className="text-sm text-white/60 mt-2">{taskMessage}</p>
                 )}
               </motion.div>
             </div>
 
-            {/* 任务状态提示 */}
+            {/* 任务状态提示卡片 */}
             <AnimatePresence>
               {taskInfo && !error && taskInfo.status !== TaskStatus.COMPLETED && (
                 <motion.div
-                  className="relative mb-3 sm:mb-4"
+                  className="w-full mb-4"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                 >
-                  <div className="relative bg-gradient-to-r from-[#F4E4C1] via-[#FFF8DC] to-[#F4E4C1] rounded-lg p-3 sm:p-4 border-2 border-[#D4AF37] shadow-lg">
-                    <div className="absolute top-2 left-2 text-[#D4AF37] text-xs">🎋</div>
-                    <div className="absolute top-2 right-2 text-[#D4AF37] text-xs">🎋</div>
-                
-                    <p className="text-[#8B4513] text-center text-sm sm:text-base mb-1 sm:mb-2">
-                      {getTaskStatusText(taskInfo.status)}
-                    </p>
-                    <p className="text-center text-xs sm:text-sm text-[#8B4513]/80">
-                      AI正在为您精心创作，请耐心等待...
-                    </p>
-                    {taskInfo.retryCount > 0 && (
-                      <p className="text-center text-xs text-[#D4302B] mt-1 sm:mt-2">
-                        已重试 {taskInfo.retryCount} 次
+                  <div className="relative p-0.5 rounded-xl bg-gradient-to-r from-[#FFD700]/50 via-[#FFC700]/50 to-[#FFD700]/50">
+                    <div className="bg-[#8B0000]/90 backdrop-blur-sm rounded-xl p-4">
+                      <p className="text-[#FFD700] text-center text-sm mb-1 font-medium">
+                        {getTaskStatusText(taskInfo.status)}
                       </p>
-                    )}
+                      <p className="text-center text-xs text-white/70">
+                        AI正在为您精心创作，请耐心等待...
+                      </p>
+                      {taskInfo.retryCount > 0 && (
+                        <p className="text-center text-xs text-[#FFD700]/80 mt-2">
+                          已重试 {taskInfo.retryCount} 次
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               )}
@@ -464,29 +479,23 @@ export default function GeneratingPage() {
             <AnimatePresence>
               {error && (
                 <motion.div
-                  className="relative"
-                  initial={{ opacity: 0, scale: 0.9 }}
+                  className="w-full"
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
                 >
-                  <div className="relative p-1 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
-                    <div className="bg-gradient-to-br from-[#8B0000] to-[#B8001F] rounded-xl p-4 sm:p-6 text-center">
-                      <div className="text-4xl sm:text-5xl mb-2 sm:mb-3">⚠️</div>
-                      <h3 className="text-base sm:text-lg font-bold text-[#FFD700] mb-1 sm:mb-2">生成失败</h3>
-                      <p className="text-sm sm:text-base text-white/90 mb-3 sm:mb-4">{error}</p>
+                  <div className="relative p-0.5 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
+                    <div className="bg-gradient-to-br from-[#8B0000] to-[#6B0000] rounded-2xl p-5 text-center">
+                      <div className="text-4xl mb-3">⚠️</div>
+                      <h3 className="text-lg font-bold text-[#FFD700] mb-2">生成失败</h3>
+                      <p className="text-sm text-white/90 mb-4">{error}</p>
                       {taskInfo && canRetryTask(taskInfo) && (
                         <button
                           onClick={handleRetry}
                           disabled={isRetrying}
-                          className="relative w-full h-10 sm:h-12 rounded-full overflow-hidden disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full h-11 rounded-full bg-gradient-to-r from-[#FFD700] to-[#D4AF37] text-[#8B0000] font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
                         >
-                          <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] p-0.5 rounded-full">
-                            <div className="w-full h-full bg-gradient-to-r from-[#D4AF37] to-[#F4C430] rounded-full flex items-center justify-center hover:from-[#F4C430] hover:to-[#D4AF37] transition-all duration-300">
-                              <span className="text-[#8B0000] text-base sm:text-lg font-bold">
-                                {isRetrying ? '重试中...' : '点击重试'}
-                              </span>
-                            </div>
-                          </div>
+                          {isRetrying ? '重试中...' : '点击重试'}
                         </button>
                       )}
                     </div>
@@ -495,16 +504,19 @@ export default function GeneratingPage() {
               )}
             </AnimatePresence>
 
-            {/* 查看案例按钮 - 老年模式下隐藏 */}
+            {/* 查看案例按钮 */}
             {!error && taskInfo && !isElderMode && (
               <motion.button
                 onClick={handleViewExamples}
-                className="w-full mt-3 sm:mt-4 bg-white/20 backdrop-blur-sm text-white py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg text-sm sm:text-base font-medium hover:bg-white/30 transition-all border border-white/30"
+                className="w-full mt-4 bg-white/10 backdrop-blur-sm text-white/90 py-3 px-6 rounded-xl text-sm font-medium hover:bg-white/20 transition-all border border-white/20"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1 }}
               >
-                <i className="fas fa-eye mr-2"></i>
+                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
                 先看别人的作品
               </motion.button>
             )}
@@ -512,7 +524,7 @@ export default function GeneratingPage() {
             {/* 温馨提示 */}
             {!error && (
               <motion.p
-                className="mt-4 sm:mt-6 text-center text-xs sm:text-sm text-white/70"
+                className="mt-5 text-center text-xs text-white/50"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 1.5 }}

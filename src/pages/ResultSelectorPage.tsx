@@ -122,99 +122,85 @@ export default function ResultSelectorPage() {
     <PageTransition>
       <CornerBackground>
         <div className="min-h-screen w-full flex flex-col relative overflow-hidden">
-        {/* 烟花动画 */}
-        <FireworksAnimation 
-          isVisible={showFireworks}
-          onComplete={() => setShowFireworks(false)} 
-        />
+          {/* 烟花动画 */}
+          <FireworksAnimation 
+            isVisible={showFireworks}
+            onComplete={() => setShowFireworks(false)} 
+          />
 
-        {/* 装饰背景元素 */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          {/* 祥云装饰 */}
-          <motion.div
-            className="absolute top-20 left-10 text-4xl opacity-10"
-            animate={{ x: [0, 20, 0], y: [0, -10, 0] }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          >
-            ☁️
-          </motion.div>
-          <motion.div
-            className="absolute bottom-40 right-10 text-4xl opacity-10"
-            animate={{ x: [0, -15, 0], y: [0, 10, 0] }}
-            transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          >
-            ☁️
-          </motion.div>
+          {/* 装饰背景元素 */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute top-24 left-8 text-2xl opacity-20"
+              animate={{ y: [0, -10, 0], rotate: [0, 5, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            >
+              🏮
+            </motion.div>
+            <motion.div
+              className="absolute bottom-32 right-8 text-2xl opacity-20"
+              animate={{ y: [0, 8, 0], rotate: [0, -5, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            >
+              🏮
+            </motion.div>
+            <motion.div
+              className="absolute top-1/3 right-12 text-xl opacity-15"
+              animate={{ scale: [1, 1.2, 1], opacity: [0.15, 0.25, 0.15] }}
+              transition={{ duration: 3, repeat: Infinity }}
+            >
+              ✨
+            </motion.div>
+          </div>
           
-          {/* 金币装饰 */}
-          <motion.div
-            className="absolute top-32 right-16 text-2xl opacity-30"
-            animate={{ rotate: [0, 360] }}
-            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-          >
-            🪙
-          </motion.div>
-        </div>
-        
-        {/* 顶部导航栏 */}
-        <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={handleBack} 
-              className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
+          {/* 顶部导航栏 */}
+          <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30">
+            <div className="flex items-center justify-between max-w-md mx-auto">
+              <button 
+                onClick={handleBack} 
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 text-[#FFD700] hover:bg-black/30 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">
+                {modeConfig?.name || '选择结果'}
+              </h1>
+              <div className="w-10" />
+            </div>
+          </header>
+
+          <main className="flex-1 z-10 flex flex-col px-4 py-5">
+            {/* 标题和说明 */}
+            <motion.div
+              className="mb-5 text-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              <i className="fas fa-arrow-left mr-1"></i>
-              <span>返回</span>
-            </button>
-            <h1 className="text-xl font-bold text-[#FFD700]">
-              {modeConfig?.name || '选择结果'}
-            </h1>
-            <div className="w-16"></div>
-          </div>
-        </header>
+              <motion.h2
+                className="text-2xl font-bold text-[#FFD700] mb-2"
+                initial={{ scale: 0.9 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 200, damping: 15 }}
+              >
+                🎉 生成完成！
+              </motion.h2>
+              <p className="text-white/80 text-sm">
+                请选择您最满意的一张作品
+              </p>
+            </motion.div>
 
-        <main className="flex-1 z-10 flex flex-col px-4 py-6">
-          {/* 标题和说明 */}
-          <motion.div
-            className="mb-6 text-center"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <motion.h2
-              className="text-2xl font-bold text-[#FFD700] mb-2"
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 10 }}
-            >
-              🎉 生成完成！
-            </motion.h2>
-            <p className="text-white/90 text-base">
-              请选择您最满意的一张作品
-            </p>
-          </motion.div>
-
-          {/* 4宫格选择器 */}
-          <div className="flex-1 flex items-center justify-center">
-            <FourGridSelector
-              images={generatedImages}
-              selectedImage={selectedImage}
-              onSelect={handleSelectImage}
-              onConfirm={handleConfirmSelection}
-            />
-          </div>
-
-          {/* 底部提示 - 暂时隐藏放大功能提示 */}
-          {/* <motion.div
-            className="mt-6 text-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <p className="text-white/70 text-sm">
-              💡 点击图片可以放大查看细节
-            </p>
-          </motion.div> */}
-        </main>
+            {/* 4宫格选择器 */}
+            <div className="flex-1 flex items-center justify-center">
+              <FourGridSelector
+                images={generatedImages}
+                selectedImage={selectedImage}
+                onSelect={handleSelectImage}
+                onConfirm={handleConfirmSelection}
+              />
+            </div>
+          </main>
         </div>
       </CornerBackground>
     </PageTransition>
