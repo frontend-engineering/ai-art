@@ -1,6 +1,7 @@
 <!--
   富贵变身模式结果页 - 复用原网页 ResultPage 样式
   Requirements: 2.3, 8.1-8.4
+  新增: Live Photo 微动态功能
 -->
 <view class="result-page {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
@@ -32,19 +33,39 @@
     <view class="image-section">
       <view class="image-frame">
         <view class="image-wrapper">
+          <!-- Live Photo 标识 -->
+          <view class="live-badge" wx:if="{{hasLivePhoto}}" bindtap="toggleLivePhoto">
+            <view class="live-dot {{isPlayingLivePhoto ? 'playing' : ''}}"></view>
+            <text class="live-text">Live</text>
+          </view>
+          
           <!-- 加载状态 -->
           <view class="loading-state" wx:if="{{!imageLoaded}}">
             <loading />
             <text class="loading-text">图片加载中...</text>
           </view>
           
-          <!-- 图片 -->
+          <!-- 静态图片 -->
           <image 
-            class="result-image {{imageLoaded ? 'loaded' : ''}}"
+            class="result-image {{imageLoaded ? 'loaded' : ''}} {{isPlayingLivePhoto ? 'hidden' : ''}}"
             src="{{selectedImage}}"
             mode="widthFix"
             show-menu-by-longpress
             bindload="onImageLoad"
+            wx:if="{{!isPlayingLivePhoto || !livePhotoUrl}}"
+          />
+          
+          <!-- Live Photo 视频播放 -->
+          <video 
+            wx:if="{{isPlayingLivePhoto && livePhotoUrl}}"
+            class="live-photo-video"
+            src="{{livePhotoUrl}}"
+            autoplay
+            loop
+            muted
+            show-center-play-btn="{{false}}"
+            controls="{{false}}"
+            object-fit="contain"
           />
           
           <!-- AI标识 -->
@@ -61,6 +82,21 @@
       </view>
     </view>
     
+    <!-- 微动态生成进度 -->
+    <view class="video-progress-section" wx:if="{{isGeneratingVideo}}">
+      <view class="progress-card">
+        <view class="progress-header">
+          <text class="progress-title">🎬 生成微动态中</text>
+        </view>
+        <view class="progress-bar-wrapper">
+          <view class="progress-bar">
+            <view class="progress-fill" style="width: {{videoProgress}}%"></view>
+          </view>
+          <text class="progress-text">{{videoProgressText}}</text>
+        </view>
+      </view>
+    </view>
+    
     <!-- 功能按钮区 -->
     <view class="action-section">
       <!-- 保存图片 -->
@@ -73,6 +109,18 @@
           <text class="btn-text">{{isSaving ? '保存中...' : '保存图片'}}</text>
         </view>
         <view class="btn-shine"></view>
+      </view>
+      
+      <!-- 生成微动态 / 保存微动态 -->
+      <view 
+        class="action-btn live-btn {{isGeneratingVideo ? 'loading' : ''}}"
+        bindtap="{{hasLivePhoto ? 'handleSaveLivePhoto' : 'handleGenerateLivePhoto'}}"
+      >
+        <view class="btn-inner {{hasLivePhoto ? 'green' : 'orange'}}">
+          <text class="btn-icon">{{hasLivePhoto ? '📹' : '✨'}}</text>
+          <text class="btn-text">{{hasLivePhoto ? '保存微动态' : (isGeneratingVideo ? '生成中...' : '生成微动态')}}</text>
+          <text class="premium-tag" wx:if="{{!hasLivePhoto && !isPremiumUser}}">尊享</text>
+        </view>
       </view>
       
       <!-- 生成贺卡 -->

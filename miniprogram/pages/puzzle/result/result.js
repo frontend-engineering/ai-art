@@ -5,10 +5,12 @@
  * 功能：
  * - 复用原网页 ResultPage 样式
  * - 实现保存图片、生成贺卡、定制产品、分享功能
+ * - Live Photo 微动态功能（尊享包用户）
  */
 
 const { getShareAppMessage, getShareTimeline, savePosterToAlbum } = require('../../../utils/share');
 const { saveHistory } = require('../../../utils/storage');
+const { videoAPI } = require('../../../utils/api');
 
 Page({
   data: {
@@ -17,16 +19,30 @@ Page({
     imageLoaded: false,
     showShareModal: false,
     showProductModal: false,
-    isSaving: false
+    isSaving: false,
+    // Live Photo 相关
+    hasLivePhoto: false,
+    isPlayingLivePhoto: false,
+    livePhotoUrl: '',
+    videoTaskId: '',
+    isGeneratingVideo: false,
+    videoProgress: 0,
+    videoProgressText: '',
+    isPremiumUser: false
   },
+
+  videoPollingTimer: null,
 
   onLoad(options) {
     const app = getApp();
+    const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+    
     this.setData({
-      isElderMode: app.globalData.isElderMode
+      isElderMode: app.globalData.isElderMode,
+      isPremiumUser: paymentStatus === 'premium',
+      hasLivePhoto: options.hasLivePhoto === 'true'
     });
     
-    // 获取图片URL
     let imageUrl = '';
     if (options.image) {
       imageUrl = decodeURIComponent(options.image);
@@ -46,11 +62,30 @@ Page({
     console.log('[PuzzleResult] 加载图片:', imageUrl);
     this.setData({ selectedImage: imageUrl });
     this.saveToHistory(imageUrl);
+    
+    if (options.livePhotoUrl) {
+      this.setData({ 
+        livePhotoUrl: decodeURIComponent(options.livePhotoUrl),
+        hasLivePhoto: true 
+      });
+      this.autoPlayLivePhoto();
+    }
   },
 
   onShow() {
     const app = getApp();
-    this.setData({ isElderMode: app.globalData.isElderMode });
+    const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+    this.setData({
+      isElderMode: app.globalData.isElderMode,
+      isPremiumUser: paymentStatus === 'premium'
+    });
+  },
+
+  onUnload() {
+    if (this.videoPollingTimer) {
+      clearInterval(this.videoPollingTimer);
+      this.videoPollingTimer = null;
+    }
   },
 
   saveToHistory(imageUrl) {
@@ -72,6 +107,205 @@ Page({
 
   onImageLoad() {
     this.setData({ imageLoaded: true });
+  },
+
+  autoPlayLivePhoto() {
+    if (!this.data.hasLivePhoto || !this.data.livePhotoUrl) return;
+    
+    setTimeout(() => {
+      this.setData({ isPlayingLivePhoto: true });
+      setTimeout(() => {
+        this.setData({ isPlayingLivePhoto: false });
+      }, 5000);
+    }, 500);
+  },
+
+  toggleLivePhoto() {
+    if (!this.data.hasLivePhoto || !this.data.livePhotoUrl) return;
+    this.setData({ isPlayingLivePhoto: !this.data.isPlayingLivePhoto });
+    wx.vibrateShort({ type: 'light' });
+  },
+
+  async handleGenerateLivePhoto() {
+    const { selectedImage, isGeneratingVideo, isPremiumUser } = this.data;
+    
+    if (isGeneratingVideo) return;
+    
+    if (!isPremiumUser) {
+      wx.showModal({
+        title: '尊享功能',
+        content: '微动态功能仅对尊享包用户开放，是否升级套餐？',
+        confirmText: '立即升级',
+        cancelText: '暂不需要',
+        success: (res) => {
+          if (res.confirm) {
+            this.triggerEvent('showPayment');
+          }
+        }
+      });
+      return;
+    }
+    
+    const userId = wx.getStorageSync('userId');
+    if (!userId) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
+    
+    this.setData({
+      isGeneratingVideo: true,
+      videoProgress: 0,
+      videoProgressText: '创建任务中...'
+    });
+    
+    try {
+      console.log('[LivePhoto] 开始生成微动态');
+      
+      const result = await videoAPI.generateVideo({
+        imageUrl: selectedImage,
+        userId: userId,
+        motionBucketId: 10,
+        fps: 10,
+        videoLength: 5,
+        dynamicType: 'festival'
+      });
+      
+      if (!result.success || !result.data?.taskId) {
+        throw new Error(result.message || '创建任务失败');
+      }
+      
+      const taskId = result.data.taskId;
+      console.log('[LivePhoto] 任务创建成功:', taskId);
+      
+      this.setData({
+        videoTaskId: taskId,
+        videoProgressText: '生成中...'
+      });
+      
+      this.startVideoPolling(taskId);
+      
+    } catch (err) {
+      console.error('[LivePhoto] 生成失败:', err);
+      this.setData({
+        isGeneratingVideo: false,
+        videoProgress: 0,
+        videoProgressText: ''
+      });
+      
+      wx.showToast({
+        title: err.message || '生成失败，请重试',
+        icon: 'none'
+      });
+    }
+  },
+
+  startVideoPolling(taskId) {
+    if (this.videoPollingTimer) {
+      clearInterval(this.videoPollingTimer);
+    }
+    
+    let pollCount = 0;
+    const maxPolls = 60;
+    
+    this.videoPollingTimer = setInterval(async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(this.videoPollingTimer);
+        this.videoPollingTimer = null;
+        this.setData({
+          isGeneratingVideo: false,
+          videoProgressText: ''
+        });
+        wx.showToast({ title: '生成超时，请重试', icon: 'none' });
+        return;
+      }
+      
+      try {
+        const result = await videoAPI.getVideoTaskStatus(taskId);
+        
+        if (!result.success) {
+          console.log('[LivePhoto] 查询状态失败，继续轮询');
+          return;
+        }
+        
+        const taskData = result.data?.Result?.data || {};
+        const status = taskData.status;
+        
+        if (status === 'running') {
+          const progress = Math.min(90, pollCount * 3);
+          this.setData({
+            videoProgress: progress,
+            videoProgressText: `生成中 ${progress}%`
+          });
+        }
+        
+        if (status === 'done' && taskData.video_url) {
+          clearInterval(this.videoPollingTimer);
+          this.videoPollingTimer = null;
+          
+          console.log('[LivePhoto] 视频生成完成:', taskData.video_url);
+          
+          this.setData({
+            videoProgress: 100,
+            videoProgressText: '转换中...'
+          });
+          
+          await this.convertToLivePhoto(taskData.video_url);
+        }
+        
+        if (status === 'failed') {
+          clearInterval(this.videoPollingTimer);
+          this.videoPollingTimer = null;
+          
+          this.setData({
+            isGeneratingVideo: false,
+            videoProgress: 0,
+            videoProgressText: ''
+          });
+          
+          wx.showToast({ title: '生成失败，请重试', icon: 'none' });
+        }
+        
+      } catch (err) {
+        console.error('[LivePhoto] 轮询出错:', err);
+      }
+    }, 2000);
+  },
+
+  async convertToLivePhoto(videoUrl) {
+    const userId = wx.getStorageSync('userId');
+    
+    try {
+      const result = await videoAPI.convertToLivePhoto(videoUrl, userId);
+      
+      if (!result.success || !result.data?.livePhotoUrl) {
+        throw new Error(result.message || '转换失败');
+      }
+      
+      console.log('[LivePhoto] 转换成功:', result.data.livePhotoUrl);
+      
+      this.setData({
+        isGeneratingVideo: false,
+        hasLivePhoto: true,
+        livePhotoUrl: result.data.livePhotoUrl,
+        videoProgress: 0,
+        videoProgressText: ''
+      });
+      
+      wx.showToast({ title: '微动态生成成功', icon: 'success' });
+      this.autoPlayLivePhoto();
+      
+    } catch (err) {
+      console.error('[LivePhoto] 转换失败:', err);
+      this.setData({
+        isGeneratingVideo: false,
+        videoProgress: 0,
+        videoProgressText: ''
+      });
+      
+      wx.showToast({ title: err.message || '转换失败', icon: 'none' });
+    }
   },
 
   async handleSaveImage() {
@@ -102,6 +336,51 @@ Page({
         wx.showModal({
           title: '提示',
           content: '需要您授权保存图片到相册',
+          confirmText: '去设置',
+          success: (res) => { if (res.confirm) wx.openSetting(); }
+        });
+      } else {
+        wx.showToast({ title: '保存失败，请重试', icon: 'none' });
+      }
+    } finally {
+      this.setData({ isSaving: false });
+    }
+  },
+
+  async handleSaveLivePhoto() {
+    const { livePhotoUrl, isSaving } = this.data;
+    if (!livePhotoUrl || isSaving) return;
+    
+    this.setData({ isSaving: true });
+    
+    try {
+      wx.showLoading({ title: '保存中...', mask: true });
+      
+      const downloadRes = await new Promise((resolve, reject) => {
+        wx.downloadFile({ url: livePhotoUrl, success: resolve, fail: reject });
+      });
+      
+      if (downloadRes.statusCode !== 200) throw new Error('下载视频失败');
+      
+      await new Promise((resolve, reject) => {
+        wx.saveVideoToPhotosAlbum({
+          filePath: downloadRes.tempFilePath,
+          success: resolve,
+          fail: reject
+        });
+      });
+      
+      wx.hideLoading();
+      wx.showToast({ title: '保存成功', icon: 'success' });
+      
+    } catch (err) {
+      console.error('[PuzzleResult] 保存Live Photo失败:', err);
+      wx.hideLoading();
+      
+      if (err.errMsg && err.errMsg.includes('auth deny')) {
+        wx.showModal({
+          title: '提示',
+          content: '需要您授权保存视频到相册',
           confirmText: '去设置',
           success: (res) => { if (res.confirm) wx.openSetting(); }
         });

@@ -4,30 +4,34 @@
  */
 
 .result-page {
+  position: relative;
+  width: 100%;
   min-height: 100vh;
   background: linear-gradient(180deg, #8B0000 0%, #6B0000 50%, #4B0000 100%);
-  position: relative;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .result-bg {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background: radial-gradient(circle at 50% 30%, rgba(255, 215, 0, 0.08) 0%, transparent 50%);
   z-index: 0;
+  pointer-events: none;
 }
 
 /* 装饰元素 */
 .decorations {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
   z-index: 1;
 }
@@ -49,6 +53,7 @@
 .nav-bar {
   position: relative;
   z-index: 100;
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -58,6 +63,7 @@
   background: rgba(139, 0, 0, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 2rpx solid rgba(255, 215, 0, 0.2);
+  box-sizing: border-box;
 }
 
 .back-btn, .home-btn {
@@ -91,10 +97,16 @@
   flex: 1;
   position: relative;
   z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 图片展示区 */
-.image-section { padding: 32rpx; }
+.image-section {
+  padding: 32rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
 
 .image-frame {
   position: relative;
@@ -173,9 +185,12 @@
 /* 功能按钮区 */
 .action-section {
   padding: 16rpx 32rpx 48rpx;
+  padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 24rpx;
+  box-sizing: border-box;
 }
 
 .action-btn {
@@ -260,3 +275,136 @@
 .elder-mode .btn-icon { font-size: 44rpx; }
 .elder-mode .btn-text { font-size: 38rpx; }
 .elder-mode .badge-text { font-size: 28rpx; }
+
+/* ========================================
+   Live Photo 微动态样式
+   ======================================== */
+
+/* Live Photo 标识 */
+.live-badge {
+  position: absolute;
+  top: 40rpx;
+  left: 40rpx;
+  z-index: 20;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+  padding: 12rpx 20rpx;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  border-radius: 24rpx;
+  border: 2rpx solid rgba(255, 215, 0, 0.3);
+}
+
+.live-dot {
+  width: 16rpx;
+  height: 16rpx;
+  background: var(--color-festival-gold);
+  border-radius: 50%;
+}
+
+.live-dot.playing {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.live-text {
+  font-size: 24rpx;
+  font-weight: bold;
+  color: var(--color-festival-gold);
+}
+
+/* Live Photo 视频播放器 */
+.live-photo-video {
+  width: 100%;
+  border-radius: 16rpx;
+  display: block;
+}
+
+/* 隐藏静态图片 */
+.result-image.hidden {
+  display: none;
+}
+
+/* 微动态生成进度 */
+.video-progress-section {
+  padding: 0 32rpx 24rpx;
+}
+
+.progress-card {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 24rpx;
+  padding: 24rpx;
+  border: 2rpx solid rgba(255, 215, 0, 0.2);
+}
+
+.progress-header {
+  margin-bottom: 16rpx;
+}
+
+.progress-title {
+  font-size: 28rpx;
+  color: var(--color-festival-gold);
+  font-weight: bold;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-festival-gold), #FFC700);
+  border-radius: 6rpx;
+  transition: width 0.3s ease;
+}
+
+.progress-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+}
+
+/* 微动态按钮样式 */
+.btn-inner.orange {
+  background: linear-gradient(135deg, #FF8C00, #FF6B00);
+  border: 4rpx solid var(--color-festival-gold);
+}
+
+.btn-inner.orange .btn-text {
+  color: #FFFFFF;
+}
+
+.btn-inner.green {
+  background: linear-gradient(135deg, #10B981, #059669);
+  border: 4rpx solid var(--color-festival-gold);
+}
+
+.btn-inner.green .btn-text {
+  color: #FFFFFF;
+}
+
+/* 尊享标签 */
+.premium-tag {
+  font-size: 20rpx;
+  color: #FFFFFF;
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  padding: 4rpx 12rpx;
+  border-radius: 16rpx;
+  margin-left: 8rpx;
+}

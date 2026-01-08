@@ -311,6 +311,50 @@ const productAPI = {
 };
 
 /**
+ * 视频/微动态 API
+ */
+const videoAPI = {
+  /**
+   * 生成微动态视频
+   * @param {Object} data 生成参数
+   * @param {string} data.imageUrl 图片URL
+   * @param {string} data.userId 用户ID
+   * @param {number} [data.motionBucketId=10] 运动幅度
+   * @param {number} [data.fps=10] 帧率
+   * @param {number} [data.videoLength=5] 视频时长(秒)
+   * @param {string} [data.dynamicType='festival'] 动态类型
+   * @returns {Promise<Object>} 任务信息
+   */
+  generateVideo: (data) => post('/api/generate-video', data, {
+    showLoading: true,
+    loadingText: '创建微动态任务...',
+    timeout: 60000
+  }),
+
+  /**
+   * 查询视频生成任务状态
+   * @param {string} taskId 任务ID
+   * @returns {Promise<Object>} 任务状态
+   */
+  getVideoTaskStatus: (taskId) => get(`/api/video-task-status/${taskId}`, null, {
+    showError: false
+  }),
+
+  /**
+   * 转换为 Live Photo 格式
+   * @param {string} videoUrl 视频URL
+   * @param {string} userId 用户ID
+   * @returns {Promise<Object>} Live Photo URL
+   */
+  convertToLivePhoto: (videoUrl, userId) => 
+    post('/api/convert-to-live-photo', { videoUrl, userId }, {
+      showLoading: true,
+      loadingText: '转换Live Photo...',
+      timeout: 120000
+    })
+};
+
+/**
  * 微信登录 API（需要后端新增）
  */
 const wechatAPI = {
@@ -341,5 +385,6 @@ module.exports = {
   templateAPI,
   greetingCardAPI,
   productAPI,
+  videoAPI,
   wechatAPI
 };

@@ -4,27 +4,32 @@
  */
 
 .card-editor-page {
+  position: relative;
+  width: 100%;
   min-height: 100vh;
   background: linear-gradient(180deg, #8B0000 0%, #6B0000 50%, #4B0000 100%);
-  position: relative;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .editor-bg {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background: radial-gradient(circle at 50% 30%, rgba(255, 215, 0, 0.08) 0%, transparent 50%);
   z-index: 0;
+  pointer-events: none;
 }
 
 /* 顶部导航栏 */
 .nav-bar {
   position: relative;
   z-index: 100;
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -33,6 +38,7 @@
   padding-top: calc(24rpx + env(safe-area-inset-top));
   background: rgba(139, 0, 0, 0.95);
   backdrop-filter: blur(10px);
+  box-sizing: border-box;
 }
 
 .back-btn {
@@ -68,21 +74,38 @@
   flex: 1;
   position: relative;
   z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 预览区域 */
 .preview-section {
   padding: 32rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .preview-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 3/4;
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
   border: 4rpx solid var(--color-festival-gold);
+}
+
+.preview-card-inner {
+  position: relative;
+  width: 100%;
+  padding-top: 133.33%; /* 3:4 宽高比 */
+}
+
+.preview-card-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .card-bg {
@@ -155,6 +178,8 @@
 /* 区块样式 */
 .section {
   padding: 24rpx 32rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-title {
@@ -194,8 +219,21 @@
 
 .template-thumb {
   width: 100%;
-  aspect-ratio: 3/4;
   display: block;
+}
+
+.template-thumb-wrapper {
+  position: relative;
+  width: 100%;
+  padding-top: 133.33%; /* 3:4 宽高比 */
+}
+
+.template-thumb-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .template-name {
@@ -257,6 +295,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 16rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .preset-item {
@@ -284,9 +324,12 @@
 /* 操作按钮 */
 .action-section {
   padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  width: 100%;
   display: flex;
   flex-direction: row;
   gap: 24rpx;
+  box-sizing: border-box;
 }
 
 .preview-btn,
@@ -395,11 +438,24 @@
 .full-preview-card {
   position: relative;
   width: 100%;
-  aspect-ratio: 3/4;
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.5);
   border: 4rpx solid var(--color-festival-gold);
+}
+
+.full-preview-card-inner {
+  position: relative;
+  width: 100%;
+  padding-top: 133.33%; /* 3:4 宽高比 */
+}
+
+.full-preview-card-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .save-btn {

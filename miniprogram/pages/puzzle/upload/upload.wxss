@@ -4,36 +4,41 @@
  */
 
 .upload-page {
+  position: relative;
+  width: 100%;
   min-height: 100vh;
   background: linear-gradient(180deg, #FFF8F0 0%, #FFE4E1 50%, #FFF0F0 100%);
-  position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .upload-bg {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  right: 0;
-  bottom: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(180deg, 
     rgba(212, 48, 43, 0.03) 0%, 
     rgba(255, 248, 240, 0.9) 30%,
     rgba(255, 240, 240, 1) 100%
   );
   z-index: 0;
+  pointer-events: none;
 }
 
 /* 顶部导航栏 */
 .nav-bar {
   position: relative;
   z-index: 100;
+  width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   padding: 24rpx 32rpx;
   padding-top: calc(24rpx + env(safe-area-inset-top));
+  box-sizing: border-box;
 }
 
 .back-btn {
@@ -69,10 +74,13 @@
 .upload-content {
   position: relative;
   z-index: 10;
+  width: 100%;
   padding: 32rpx 48rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
+  box-sizing: border-box;
 }
 
 /* 标题说明 */
@@ -99,6 +107,7 @@
 .selected-images {
   width: 100%;
   margin-bottom: 32rpx;
+  box-sizing: border-box;
 }
 
 .image-grid {
@@ -106,18 +115,29 @@
   flex-wrap: wrap;
   gap: 16rpx;
   justify-content: flex-start;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .image-item {
   width: calc(33.33% - 12rpx);
-  aspect-ratio: 1;
   position: relative;
   border-radius: 16rpx;
   overflow: hidden;
   box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.image-item-inner {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* 1:1 宽高比 */
 }
 
 .preview-image {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -163,10 +183,29 @@
 
 .add-more-btn {
   width: calc(33.33% - 12rpx);
-  aspect-ratio: 1;
   background: rgba(255, 255, 255, 0.8);
   border: 4rpx dashed var(--color-chinese-red);
   border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  box-sizing: border-box;
+}
+
+.add-more-btn-inner {
+  position: relative;
+  width: 100%;
+  padding-top: 100%; /* 1:1 宽高比 */
+}
+
+.add-more-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,7 +235,6 @@
 /* 上传区域 */
 .upload-area {
   width: 100%;
-  aspect-ratio: 4/3;
   max-height: 600rpx;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 32rpx;
@@ -208,6 +246,24 @@
   overflow: hidden;
   box-shadow: 0 8rpx 32rpx rgba(212, 48, 43, 0.1);
   transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.upload-area-inner {
+  position: relative;
+  width: 100%;
+  padding-top: 75%; /* 4:3 宽高比 */
+}
+
+.upload-area-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .upload-area-hover {
@@ -375,6 +431,7 @@
 .action-section {
   width: 100%;
   margin-top: 32rpx;
+  box-sizing: border-box;
 }
 
 .start-btn {
