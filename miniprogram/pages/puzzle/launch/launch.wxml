@@ -24,7 +24,6 @@
     </view>
     <view class="toolbar-right">
       <elder-mode-toggle />
-      <music-toggle />
     </view>
   </view>
   

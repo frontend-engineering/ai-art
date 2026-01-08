@@ -5,6 +5,8 @@
  * 
  * 注意：此组件为纯装饰层，使用 fixed 定位，不占用布局空间
  */
+const { getAssetUrl } = require('../../utils/oss-assets');
+
 Component({
   properties: {
     // 是否显示中心渐变叠加层
@@ -14,7 +16,13 @@ Component({
     }
   },
   
-  data: {},
+  data: {
+    // OSS 图片 URL
+    topLeftUrl: getAssetUrl('images/bg-corners/top-left.png'),
+    topRightUrl: getAssetUrl('images/bg-corners/top-right.png'),
+    bottomLeftUrl: getAssetUrl('images/bg-corners/bottom-left.png'),
+    bottomRightUrl: getAssetUrl('images/bg-corners/bottom-right.png'),
+  },
   
   methods: {}
 });

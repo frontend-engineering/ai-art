@@ -16,8 +16,6 @@ import TransformHistoryPage from "@/pages/modes/TransformHistoryPage";
 import ResultSelectorPage from "@/pages/ResultSelectorPage";
 import { UserProvider } from "@/contexts/UserContext";
 import { ElderModeProvider } from "@/contexts/ElderModeContext";
-import { MusicProvider } from "@/contexts/MusicContext";
-import MusicToggle from "@/components/MusicToggle";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 function AnimatedRoutes() {
@@ -68,12 +66,7 @@ export default function App() {
     <ErrorBoundary>
       <UserProvider>
         <ElderModeProvider>
-          <MusicProvider>
-            <AnimatedRoutes />
-            
-            {/* 全局音乐控制按钮 */}
-            <MusicToggle />
-          </MusicProvider>
+          <AnimatedRoutes />
         </ElderModeProvider>
       </UserProvider>
     </ErrorBoundary>

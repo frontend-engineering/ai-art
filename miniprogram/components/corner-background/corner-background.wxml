@@ -2,22 +2,22 @@
 <view class="corner-bg-container">
   <!-- 左上角 -->
   <view class="corner corner-top-left">
-    <image class="corner-image" src="/assets/images/bg-corners/top-left.png" mode="scaleToFill" />
+    <image class="corner-image" src="{{topLeftUrl}}" mode="scaleToFill" />
   </view>
   
   <!-- 右上角 -->
   <view class="corner corner-top-right">
-    <image class="corner-image" src="/assets/images/bg-corners/top-right.png" mode="scaleToFill" />
+    <image class="corner-image" src="{{topRightUrl}}" mode="scaleToFill" />
   </view>
   
   <!-- 左下角 -->
   <view class="corner corner-bottom-left">
-    <image class="corner-image" src="/assets/images/bg-corners/bottom-left.png" mode="scaleToFill" />
+    <image class="corner-image" src="{{bottomLeftUrl}}" mode="scaleToFill" />
   </view>
   
   <!-- 右下角 -->
   <view class="corner corner-bottom-right">
-    <image class="corner-image" src="/assets/images/bg-corners/bottom-right.png" mode="scaleToFill" />
+    <image class="corner-image" src="{{bottomRightUrl}}" mode="scaleToFill" />
   </view>
   
   <!-- 中心渐变叠加层 - 进一步柔化边缘 -->

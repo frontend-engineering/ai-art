@@ -8,13 +8,14 @@
  */
 
 const { generationAPI } = require('../../../utils/api');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 // 富贵变身模板配置
 const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-custom-1',
     name: '富贵团圆',
-    url: '/assets/templates/transform/fHPym5Te7.jpg',
+    url: getAssetUrl('templates/transform/fHPym5Te7.jpg'),
     category: 'chinese',
     tags: ['中式', '团圆', '喜庆', '富贵'],
     description: '中国风富贵团圆背景，喜庆大气',
@@ -24,7 +25,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-custom-2',
     name: '豪门盛宴',
-    url: '/assets/templates/transform/fHPyN0b67.jpg',
+    url: getAssetUrl('templates/transform/fHPyN0b67.jpg'),
     category: 'luxury',
     tags: ['豪宅', '奢华', '宴会', '高端'],
     description: '豪门宴会背景，高端大气',
@@ -33,7 +34,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-custom-3',
     name: '雅致居所',
-    url: '/assets/templates/transform/fHPyoUXXv.jpg',
+    url: getAssetUrl('templates/transform/fHPyoUXXv.jpg'),
     category: 'modern',
     tags: ['雅致', '温馨', '家庭', '舒适'],
     description: '雅致温馨的家庭背景',
@@ -42,7 +43,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-1',
     name: '欧式豪华客厅',
-    url: '/assets/templates/transform/luxury-european.jpg',
+    url: getAssetUrl('templates/transform/luxury-european.jpg'),
     category: 'luxury',
     tags: ['欧式', '豪宅', '奢华', '客厅'],
     description: '欧式宫廷风格，水晶吊灯，奢华典雅',
@@ -51,7 +52,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-2',
     name: '中式豪宅大厅',
-    url: '/assets/templates/transform/luxury-chinese.jpg',
+    url: getAssetUrl('templates/transform/luxury-chinese.jpg'),
     category: 'chinese',
     tags: ['中式', '传统', '富贵', '红木'],
     description: '传统中式建筑风格，红木家具，富贵大气',
@@ -60,7 +61,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-3',
     name: '现代轻奢客厅',
-    url: '/assets/templates/transform/modern-luxury.jpg',
+    url: getAssetUrl('templates/transform/modern-luxury.jpg'),
     category: 'modern',
     tags: ['现代', '简约', '时尚', '轻奢'],
     description: '现代简约风格，时尚大气',
@@ -69,7 +70,7 @@ const TRANSFORM_TEMPLATES = [
   {
     id: 'transform-4',
     name: '古典宫廷',
-    url: '/assets/templates/transform/classical-palace.jpg',
+    url: getAssetUrl('templates/transform/classical-palace.jpg'),
     category: 'luxury',
     tags: ['宫殿', '古典', '奢华', '皇家'],
     description: '古典宫廷风格，皇家气派',

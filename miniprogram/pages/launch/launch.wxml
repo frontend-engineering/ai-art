@@ -20,7 +20,6 @@
   <!-- 顶部工具栏 -->
   <view class="toolbar">
     <elder-mode-toggle />
-    <music-toggle />
   </view>
   
   <!-- 主内容区 -->

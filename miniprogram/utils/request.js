@@ -4,7 +4,7 @@
  */
 
 // API 基础地址 - 根据环境配置
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'https://art.webinfra.cloud';
 
 // 错误消息映射
 const ERROR_MESSAGES = {

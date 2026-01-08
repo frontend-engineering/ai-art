@@ -6,7 +6,6 @@
   "disableScroll": true,
   "usingComponents": {
     "corner-background": "/components/corner-background/corner-background",
-    "music-toggle": "/components/music-toggle/music-toggle",
     "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle"
   }
 }

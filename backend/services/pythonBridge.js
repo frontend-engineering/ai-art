@@ -5,8 +5,18 @@
 
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
-const PYTHON_PATH = path.join(__dirname, '..', 'venv', 'bin', 'python3');
+// Python 路径优先级：环境变量 > venv > 系统 python3
+const getDefaultPythonPath = () => {
+  const venvPath = path.join(__dirname, '..', 'venv', 'bin', 'python3');
+  if (fs.existsSync(venvPath)) {
+    return venvPath;
+  }
+  return 'python3'; // 回退到系统 Python
+};
+
+const PYTHON_PATH = process.env.PYTHON_PATH || getDefaultPythonPath();
 const UTILS_PATH = path.join(__dirname, '..', 'utils');
 
 /**
