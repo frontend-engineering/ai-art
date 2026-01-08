@@ -1,0 +1,198 @@
+<!-- 产品推荐组件 -->
+<view class="product-modal {{visible ? 'show' : ''}}" catchtouchmove="preventBubble">
+  <!-- 遮罩层 -->
+  <view class="modal-mask" bindtap="handleClose"></view>
+  
+  <!-- 弹窗内容 -->
+  <view class="modal-content">
+    <!-- 顶部装饰条 -->
+    <view class="top-decoration"></view>
+    
+    <!-- 顶部装饰元素 -->
+    <view class="decor-left">🏮</view>
+    <view class="decor-right">🏮</view>
+    
+    <!-- 预览界面 -->
+    <view wx:if="{{showPreview}}" class="modal-body">
+      <view class="header-with-back">
+        <view class="back-btn" bindtap="handleBack">
+          <text class="back-icon">←</text>
+          <text>返回</text>
+        </view>
+        <text class="section-title">✨ 产品预览</text>
+      </view>
+      
+      <!-- 产品预览图 -->
+      <view class="preview-container">
+        <view class="preview-wrapper">
+          <!-- 晶瓷画预览 -->
+          <view wx:if="{{selectedProduct === 'crystal'}}" class="crystal-preview">
+            <view class="crystal-frame">
+              <image src="{{selectedImage}}" mode="aspectFill" class="preview-image" />
+            </view>
+            <view class="size-tag">30×40cm</view>
+          </view>
+          
+          <!-- 卷轴预览 -->
+          <view wx:if="{{selectedProduct === 'scroll'}}" class="scroll-preview">
+            <view class="scroll-top"></view>
+            <view class="scroll-body">
+              <image src="{{selectedImage}}" mode="aspectFill" class="preview-image" />
+            </view>
+            <view class="scroll-bottom"></view>
+            <view class="size-tag">40×60cm</view>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 产品信息 -->
+      <view class="product-info-box">
+        <view class="info-header">
+          <text class="product-name">{{selectedProduct === 'crystal' ? '晶瓷画' : '卷轴'}}</text>
+          <text class="product-price">¥{{selectedProduct === 'crystal' ? '199' : '149'}}</text>
+        </view>
+        <text class="product-desc">{{selectedProduct === 'crystal' ? '高端晶瓷材质，色彩鲜艳，永不褪色' : '传统卷轴工艺，古典雅致，适合中式装修'}}</text>
+        <view class="feature-list">
+          <text wx:for="{{selectedProduct === 'crystal' ? ['30x40cm尺寸', '晶瓷材质', '防水防潮', '赠送挂钩'] : ['40x60cm尺寸', '绸缎材质', '实木轴头', '赠送挂绳']}}" wx:key="*this" class="feature-item">
+            <text class="check-mark">✓</text> {{item}}
+          </text>
+        </view>
+      </view>
+      
+      <!-- 操作按钮 -->
+      <view class="action-buttons">
+        <button class="primary-btn" bindtap="handleOrder">🎁 立即下单</button>
+        <button class="secondary-btn" bindtap="handleBack">返回选择</button>
+      </view>
+    </view>
+    
+    <!-- 订单表单界面 -->
+    <view wx:elif="{{showOrderForm}}" class="modal-body">
+      <view class="header-with-back">
+        <view class="back-btn" bindtap="handleBack">
+          <text class="back-icon">←</text>
+          <text>返回</text>
+        </view>
+        <text class="section-title">📦 填写收货信息</text>
+      </view>
+      
+      <!-- 选中的产品信息 -->
+      <view class="selected-product-box">
+        <view class="selected-info">
+          <text class="selected-name">{{selectedProduct === 'crystal' ? '晶瓷画' : '卷轴'}}</text>
+          <text class="selected-desc">{{selectedProduct === 'crystal' ? '高端晶瓷材质，色彩鲜艳，永不褪色' : '传统卷轴工艺，古典雅致，适合中式装修'}}</text>
+        </view>
+        <text class="selected-price">¥{{selectedProduct === 'crystal' ? '199' : '149'}}</text>
+      </view>
+      
+      <!-- 收货信息表单 -->
+      <view class="form-group">
+        <view class="form-item">
+          <text class="form-label">收货人姓名 <text class="required">*</text></text>
+          <input 
+            type="text" 
+            value="{{shippingInfo.name}}"
+            bindinput="onInputName"
+            placeholder="请输入收货人姓名"
+            class="form-input"
+          />
+        </view>
+        
+        <view class="form-item">
+          <text class="form-label">联系电话 <text class="required">*</text></text>
+          <input 
+            type="number" 
+            value="{{shippingInfo.phone}}"
+            bindinput="onInputPhone"
+            placeholder="请输入11位手机号"
+            maxlength="11"
+            class="form-input"
+          />
+        </view>
+        
+        <view class="form-item">
+          <text class="form-label">收货地址 <text class="required">*</text></text>
+          <textarea 
+            value="{{shippingInfo.address}}"
+            bindinput="onInputAddress"
+            placeholder="请输入详细收货地址（省市区+街道+门牌号）"
+            class="form-textarea"
+          />
+        </view>
+      </view>
+      
+      <!-- 提交按钮 -->
+      <button 
+        class="submit-btn {{isSubmitting ? 'disabled' : ''}}"
+        bindtap="handleSubmitOrder"
+        disabled="{{isSubmitting}}"
+      >
+        <view wx:if="{{isSubmitting}}" class="btn-loading">
+          <view class="loading-spinner"></view>
+          <text>提交中...</text>
+        </view>
+        <text wx:else>🎁 提交订单</text>
+      </button>
+      
+      <!-- 说明文字 -->
+      <view class="form-notice">
+        <text>提交订单后，我们将在1-2个工作日内与您联系确认</text>
+        <text>制作周期约7-10个工作日，春节期间可能延长</text>
+      </view>
+    </view>
+    
+    <!-- 产品选择界面 -->
+    <view wx:else class="modal-body">
+      <view class="modal-header">
+        <text class="modal-title">🎊 新春特惠</text>
+        <text class="modal-subtitle">将您的艺术照制作成精美实物，挂在家中更有年味</text>
+      </view>
+      
+      <!-- 预览图片 -->
+      <view class="image-preview">
+        <image src="{{selectedImage}}" mode="aspectFill" class="preview-thumb" />
+      </view>
+      
+      <!-- 产品列表 -->
+      <view class="products-list">
+        <view 
+          wx:for="{{products}}" 
+          wx:key="type"
+          class="product-item {{selectedProduct === item.type ? 'selected' : ''}}"
+          bindtap="handleSelectProduct"
+          data-type="{{item.type}}"
+        >
+          <!-- 选中标记 -->
+          <view wx:if="{{selectedProduct === item.type}}" class="selected-mark">
+            <text>✓</text>
+          </view>
+          
+          <view class="product-content">
+            <view class="product-main">
+              <text class="product-name">{{item.name}}</text>
+              <text class="product-desc">{{item.description}}</text>
+            </view>
+            <text class="product-price">¥{{item.price}}</text>
+          </view>
+          
+          <view class="product-features">
+            <text wx:for="{{item.features}}" wx:for-item="feature" wx:key="*this" class="feature-tag">{{feature}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 操作按钮 -->
+      <view class="action-buttons">
+        <button 
+          class="primary-btn {{selectedProduct ? '' : 'disabled'}}"
+          bindtap="handlePreview"
+          disabled="{{!selectedProduct}}"
+        >{{selectedProduct ? '👀 预览效果' : '请先选择产品'}}</button>
+        <button class="skip-btn" bindtap="handleSkip">暂不需要，直接保存图片</button>
+      </view>
+    </view>
+    
+    <!-- 底部装饰 -->
+    <view class="bottom-decoration"></view>
+  </view>
+</view>

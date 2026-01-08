@@ -1,0 +1,120 @@
+<!--
+  时空拼图模式结果页 - 复用原网页 ResultPage 样式
+  Requirements: 2.2, 8.1-8.4
+-->
+<view class="result-page {{isElderMode ? 'elder-mode' : ''}}">
+  <!-- 四角装饰背景 -->
+  <corner-background />
+  
+  <!-- 背景 -->
+  <view class="result-bg"></view>
+  
+  <!-- 装饰元素 -->
+  <view class="decorations">
+    <text class="decoration lantern-1 animate-float">🏮</text>
+    <text class="decoration lantern-2 animate-float-delay">🏮</text>
+  </view>
+  
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <text class="nav-title">生成结果</text>
+    <view class="home-btn" bindtap="goHome">
+      <text class="home-icon">🏠</text>
+    </view>
+  </view>
+  
+  <!-- 主内容区 -->
+  <scroll-view class="result-content" scroll-y>
+    <!-- 图片展示区 -->
+    <view class="image-section">
+      <view class="image-frame">
+        <view class="image-wrapper">
+          <!-- 加载状态 -->
+          <view class="loading-state" wx:if="{{!imageLoaded}}">
+            <loading />
+            <text class="loading-text">图片加载中...</text>
+          </view>
+          
+          <!-- 图片 -->
+          <image 
+            class="result-image {{imageLoaded ? 'loaded' : ''}}"
+            src="{{selectedImage}}"
+            mode="widthFix"
+            show-menu-by-longpress
+            bindload="onImageLoad"
+          />
+          
+          <!-- AI标识 -->
+          <view class="ai-badge">
+            <text class="badge-icon">✓</text>
+            <text class="badge-text">AI团圆照相馆</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 长按提示 -->
+      <view class="longpress-tip">
+        <text class="tip-text">💡 长按图片可保存到相册</text>
+      </view>
+    </view>
+    
+    <!-- 功能按钮区 -->
+    <view class="action-section">
+      <!-- 保存图片 -->
+      <view 
+        class="action-btn save-btn {{isSaving ? 'loading' : ''}}"
+        bindtap="handleSaveImage"
+      >
+        <view class="btn-inner gold">
+          <text class="btn-icon">📥</text>
+          <text class="btn-text">{{isSaving ? '保存中...' : '保存图片'}}</text>
+        </view>
+        <view class="btn-shine"></view>
+      </view>
+      
+      <!-- 生成贺卡 -->
+      <view class="action-btn card-btn" bindtap="handleGenerateCard">
+        <view class="btn-inner red">
+          <text class="btn-icon">💌</text>
+          <text class="btn-text">生成拜年贺卡</text>
+        </view>
+      </view>
+      
+      <!-- 定制产品 -->
+      <view class="action-btn product-btn" bindtap="handleOrderProduct">
+        <view class="btn-inner purple">
+          <text class="btn-icon">🖼️</text>
+          <text class="btn-text">定制晶瓷画</text>
+        </view>
+      </view>
+      
+      <!-- 分享 -->
+      <button 
+        class="action-btn share-btn"
+        open-type="share"
+      >
+        <view class="btn-inner transparent">
+          <text class="btn-icon">👨‍👩‍👧‍👦</text>
+          <text class="btn-text">分享家族群</text>
+        </view>
+      </button>
+    </view>
+  </scroll-view>
+  
+  <!-- 产品推荐弹窗 -->
+  <product-recommendation 
+    visible="{{showProductModal}}"
+    imageUrl="{{selectedImage}}"
+    bind:close="closeProductModal"
+  />
+  
+  <!-- 分享弹窗 -->
+  <share-modal 
+    visible="{{showShareModal}}"
+    imageUrl="{{selectedImage}}"
+    bind:close="closeShareModal"
+  />
+</view>

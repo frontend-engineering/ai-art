@@ -1,0 +1,196 @@
+/* 音乐开关组件样式 - 复用原网页 MusicToggle 样式 */
+.music-toggle {
+  position: fixed;
+  z-index: 40;
+}
+
+/* 位置样式 */
+.music-toggle.bottom-right {
+  bottom: 32rpx;
+  right: 32rpx;
+}
+
+.music-toggle.bottom-left {
+  bottom: 32rpx;
+  left: 32rpx;
+}
+
+.music-toggle.top-right {
+  top: 32rpx;
+  right: 32rpx;
+}
+
+.music-toggle.top-left {
+  top: 32rpx;
+  left: 32rpx;
+}
+
+/* 主按钮 */
+.toggle-btn {
+  position: relative;
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8B0000, #D4302B, #B8860B);
+  box-shadow: 0 8rpx 24rpx rgba(139, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4rpx solid rgba(212, 175, 55, 0.6);
+  transition: all 0.3s;
+}
+
+.music-toggle.disabled .toggle-btn {
+  opacity: 0.75;
+  filter: grayscale(30%);
+}
+
+/* 内圈装饰 */
+.inner-ring {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  right: 12rpx;
+  bottom: 12rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(212, 175, 55, 0.4);
+}
+
+/* 图标区域 */
+.icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 音符图标 */
+.note-icon {
+  font-size: 48rpx;
+  color: #FFFFFF;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.3);
+}
+
+.note-icon.playing {
+  animation: note-bounce 0.8s ease-in-out infinite;
+}
+
+@keyframes note-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4rpx); }
+}
+
+.note-icon.muted {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* 静音斜线 */
+.muted-icon {
+  position: relative;
+}
+
+.mute-line {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 64rpx;
+  height: 4rpx;
+  background: rgba(255, 255, 255, 0.8);
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 2rpx;
+}
+
+/* 音波效果 */
+.sound-waves {
+  position: absolute;
+  right: -8rpx;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.wave {
+  width: 8rpx;
+  background: #D4AF37;
+  border-radius: 4rpx;
+  animation: wave-pulse 0.5s ease-in-out infinite;
+}
+
+.wave-1 {
+  animation-delay: 0s;
+}
+
+.wave-2 {
+  animation-delay: 0.12s;
+}
+
+.wave-3 {
+  animation-delay: 0.24s;
+}
+
+@keyframes wave-pulse {
+  0%, 100% {
+    height: 6rpx;
+    opacity: 0.6;
+  }
+  50% {
+    height: 16rpx;
+    opacity: 1;
+  }
+}
+
+/* 光晕效果 */
+.glow-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  border: 4rpx solid rgba(212, 175, 55, 0.5);
+  animation: glow-expand 1.5s ease-out infinite;
+}
+
+.glow-1 {
+  animation-delay: 0s;
+}
+
+.glow-2 {
+  border-color: rgba(212, 48, 43, 0.4);
+  animation-delay: 0.4s;
+}
+
+@keyframes glow-expand {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* 状态标签 */
+.status-label {
+  position: absolute;
+  bottom: -8rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  font-size: 18rpx;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.status-label.enabled {
+  background: #D4AF37;
+  color: #8B0000;
+}
+
+.status-label.disabled {
+  background: #6B7280;
+  color: #FFFFFF;
+}

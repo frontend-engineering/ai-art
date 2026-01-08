@@ -1,0 +1,96 @@
+<!-- 四宫格选择器组件 -->
+<view class="selector-wrapper">
+  <!-- 标题区域 -->
+  <view class="header">
+    <text class="title">🎊 {{images.length === 1 ? '您的生成结果' : '选择您最满意的一张'}}</text>
+    <text class="subtitle">{{images.length === 1 ? '点击确认后可以保存或重新生成' : '点击图片进行选择'}}</text>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view wx:if="{{isLoading || images.length === 0}}" class="grid-container">
+    <view wx:for="{{[1,2,3,4]}}" wx:key="index" class="grid-item loading-item">
+      <view class="loading-content">
+        <view class="shimmer-bg"></view>
+        <loading size="medium" text="生成中..." />
+        <text class="option-label">选项 {{index + 1}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 图片网格 -->
+  <view wx:else class="grid-container {{images.length === 1 ? 'single-image' : ''}}">
+    <view 
+      wx:for="{{images}}" 
+      wx:key="index"
+      class="grid-item {{selectedImage === item ? 'selected' : ''}}"
+      bindtap="handleSelect"
+      data-url="{{item}}"
+    >
+      <!-- 金色边框包装 -->
+      <view class="border-wrapper">
+        <!-- 图片 -->
+        <image 
+          src="{{item}}" 
+          mode="aspectFill"
+          class="grid-image {{revealStates[index] ? 'revealed' : ''}}"
+          bindload="handleImageLoad"
+          bindlongpress="handlePreview"
+          data-index="{{index}}"
+          data-url="{{item}}"
+        />
+        
+        <!-- 加载中遮罩 -->
+        <view wx:if="{{!imageLoadStates[index]}}" class="loading-mask">
+          <view class="lantern-spin">🏮</view>
+        </view>
+        
+        <!-- 揭幕遮罩 -->
+        <view wx:if="{{imageLoadStates[index] && !revealStates[index]}}" class="reveal-mask">
+          <view class="shimmer-effect"></view>
+        </view>
+        
+        <!-- 图片编号标签 -->
+        <view wx:if="{{revealStates[index]}}" class="option-tag">选项 {{index + 1}}</view>
+        
+        <!-- 选中遮罩 -->
+        <view wx:if="{{selectedImage === item}}" class="selected-overlay"></view>
+      </view>
+      
+      <!-- 选中标记 -->
+      <view class="check-mark-wrapper">
+        <view wx:if="{{selectedImage === item}}" class="check-mark selected">
+          <text class="check-icon">✓</text>
+        </view>
+        <view wx:else class="check-mark unselected">
+          <view class="check-circle"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 提示信息 -->
+  <view wx:if="{{selectedImage && showHint}}" class="hint-box">
+    <view class="hint-content">
+      <text class="hint-icon">✓</text>
+      <text class="hint-text">已选中，点击下方按钮确认</text>
+    </view>
+  </view>
+  
+  <!-- 确认按钮 -->
+  <view class="confirm-wrapper">
+    <button 
+      class="confirm-btn {{selectedImage ? 'active' : 'disabled'}}"
+      bindtap="handleConfirm"
+    >
+      <view wx:if="{{selectedImage}}" class="btn-inner active">
+        <text class="btn-icon">✓</text>
+        <text class="btn-text">确认选择</text>
+      </view>
+      <view wx:else class="btn-inner disabled">
+        <text class="btn-text">请先选择一张图片</text>
+      </view>
+      <!-- 光效动画 -->
+      <view wx:if="{{selectedImage}}" class="btn-shine"></view>
+    </button>
+  </view>
+</view>

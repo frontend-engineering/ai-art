@@ -1,0 +1,460 @@
+/**
+ * 时空拼图上传页样式 - 复用原网页 UploadPage 设计
+ * Requirements: 2.2, 6.1-6.5, 10.1-10.3
+ */
+
+.upload-page {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFE4E1 50%, #FFF0F0 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.upload-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    rgba(212, 48, 43, 0.03) 0%, 
+    rgba(255, 248, 240, 0.9) 30%,
+    rgba(255, 240, 240, 1) 100%
+  );
+  z-index: 0;
+}
+
+/* 顶部导航栏 */
+.nav-bar {
+  position: relative;
+  z-index: 100;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  padding-top: calc(24rpx + env(safe-area-inset-top));
+}
+
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.back-icon {
+  font-size: 48rpx;
+  color: var(--color-chinese-red);
+  font-weight: bold;
+  line-height: 1;
+  margin-right: 4rpx;
+}
+
+.nav-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: var(--color-chinese-red);
+}
+
+.nav-placeholder {
+  width: 64rpx;
+}
+
+/* 主内容区 */
+.upload-content {
+  position: relative;
+  z-index: 10;
+  padding: 32rpx 48rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* 标题说明 */
+.title-section {
+  text-align: center;
+  margin-bottom: 32rpx;
+}
+
+.title-text {
+  display: block;
+  font-size: 48rpx;
+  font-weight: bold;
+  color: var(--color-chinese-red);
+  margin-bottom: 12rpx;
+}
+
+.subtitle-text {
+  display: block;
+  font-size: 28rpx;
+  color: #8B4513;
+}
+
+/* 已选择的图片 */
+.selected-images {
+  width: 100%;
+  margin-bottom: 32rpx;
+}
+
+.image-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  justify-content: flex-start;
+}
+
+.image-item {
+  width: calc(33.33% - 12rpx);
+  aspect-ratio: 1;
+  position: relative;
+  border-radius: 16rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.preview-image {
+  width: 100%;
+  height: 100%;
+}
+
+.remove-btn {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 48rpx;
+  height: 48rpx;
+  background: rgba(239, 68, 68, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.remove-icon {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.upload-status {
+  position: absolute;
+  bottom: 8rpx;
+  right: 8rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(16, 185, 129, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-icon {
+  font-size: 24rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.add-more-btn {
+  width: calc(33.33% - 12rpx);
+  aspect-ratio: 1;
+  background: rgba(255, 255, 255, 0.8);
+  border: 4rpx dashed var(--color-chinese-red);
+  border-radius: 16rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+}
+
+.add-icon {
+  font-size: 48rpx;
+  color: var(--color-chinese-red);
+  font-weight: 300;
+}
+
+.add-text {
+  font-size: 24rpx;
+  color: var(--color-chinese-red);
+}
+
+.image-count {
+  display: block;
+  text-align: center;
+  font-size: 26rpx;
+  color: #6B7280;
+  margin-top: 16rpx;
+}
+
+/* 上传区域 */
+.upload-area {
+  width: 100%;
+  aspect-ratio: 4/3;
+  max-height: 600rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 32rpx;
+  border: 4rpx dashed var(--color-chinese-red);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8rpx 32rpx rgba(212, 48, 43, 0.1);
+  transition: all 0.3s ease;
+}
+
+.upload-area-hover {
+  transform: scale(0.98);
+  border-style: solid;
+  background: rgba(255, 240, 240, 0.95);
+}
+
+/* 上传提示 */
+.upload-prompt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32rpx;
+}
+
+.upload-icon-wrapper {
+  width: 140rpx;
+  height: 140rpx;
+  background: linear-gradient(135deg, var(--color-chinese-red) 0%, #E85A50 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24rpx;
+  box-shadow: 0 8rpx 24rpx rgba(212, 48, 43, 0.3);
+}
+
+.upload-icon {
+  font-size: 64rpx;
+}
+
+.upload-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--color-chinese-red);
+  margin-bottom: 8rpx;
+}
+
+.upload-hint {
+  font-size: 24rpx;
+  color: #9CA3AF;
+  margin-bottom: 24rpx;
+}
+
+/* 示例提示 */
+.example-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  background: rgba(212, 48, 43, 0.05);
+  padding: 20rpx 28rpx;
+  border-radius: 16rpx;
+}
+
+.tip-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.tip-icon {
+  font-size: 22rpx;
+  color: #10B981;
+  font-weight: bold;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+/* 上传中遮罩 */
+.uploading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.uploading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+  padding: 48rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 24rpx;
+}
+
+.loading-spinner {
+  width: 120rpx;
+  height: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+.progress-bar {
+  width: 400rpx;
+  height: 8rpx;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-chinese-red), #E85A50);
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
+}
+
+/* 错误提示 */
+.error-toast {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #FEF2F2;
+  border: 2rpx solid #FECACA;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.error-icon {
+  font-size: 32rpx;
+  margin-right: 12rpx;
+}
+
+.error-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #DC2626;
+}
+
+.error-close {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.close-icon {
+  font-size: 32rpx;
+  color: #9CA3AF;
+}
+
+/* 操作按钮区 */
+.action-section {
+  width: 100%;
+  margin-top: 32rpx;
+}
+
+.start-btn {
+  width: 100%;
+  height: 96rpx;
+  background: linear-gradient(135deg, var(--color-chinese-red) 0%, #B91C1C 100%);
+  border-radius: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(212, 48, 43, 0.3);
+}
+
+.btn-text {
+  font-size: 34rpx;
+  font-weight: bold;
+  color: #FFFFFF;
+}
+
+/* 底部提示 */
+.bottom-tips {
+  margin-top: 32rpx;
+  padding: 24rpx;
+}
+
+.tips-text {
+  font-size: 24rpx;
+  color: #9CA3AF;
+  text-align: center;
+}
+
+/* ========================================
+   老年模式适配
+   ======================================== */
+
+.elder-mode .nav-title {
+  font-size: 42rpx;
+}
+
+.elder-mode .title-text {
+  font-size: 56rpx;
+}
+
+.elder-mode .subtitle-text {
+  font-size: 34rpx;
+}
+
+.elder-mode .upload-icon-wrapper {
+  width: 180rpx;
+  height: 180rpx;
+}
+
+.elder-mode .upload-icon {
+  font-size: 80rpx;
+}
+
+.elder-mode .upload-text {
+  font-size: 38rpx;
+}
+
+.elder-mode .upload-hint {
+  font-size: 30rpx;
+}
+
+.elder-mode .tip-text {
+  font-size: 30rpx;
+}
+
+.elder-mode .status-text {
+  font-size: 38rpx;
+}
+
+.elder-mode .error-text {
+  font-size: 32rpx;
+}
+
+.elder-mode .btn-text {
+  font-size: 40rpx;
+}
+
+.elder-mode .tips-text {
+  font-size: 30rpx;
+}

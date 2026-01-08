@@ -1,0 +1,350 @@
+/**
+ * 启动页样式 - 复用原网页 LaunchScreen 设计
+ * Requirements: 2.1, 10.1-10.3
+ */
+
+/* 页面容器 - 固定一屏高度 */
+.launch-page {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* 背景渐变层 - 覆盖在 corner-background 之上 */
+.launch-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(180deg, 
+    rgba(255, 248, 240, 0.85) 0%, 
+    rgba(255, 248, 240, 0.9) 30%,
+    rgba(255, 229, 229, 0.95) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 背景装饰灯笼 */
+.bg-decorations {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.lantern {
+  position: absolute;
+  font-size: 72rpx;
+  opacity: 0.15;
+}
+
+.lantern-1 {
+  top: calc(60rpx + env(safe-area-inset-top));
+  left: 30rpx;
+  animation-delay: 0s;
+}
+
+.lantern-2 {
+  top: calc(120rpx + env(safe-area-inset-top));
+  right: 60rpx;
+  animation-delay: 1s;
+}
+
+.lantern-3 {
+  bottom: calc(200rpx + env(safe-area-inset-bottom));
+  left: 60rpx;
+  animation-delay: 2s;
+}
+
+.lantern-4 {
+  bottom: calc(120rpx + env(safe-area-inset-bottom));
+  right: 30rpx;
+  animation-delay: 1.5s;
+}
+
+/* 顶部工具栏 */
+.toolbar {
+  position: absolute;
+  top: calc(16rpx + env(safe-area-inset-top));
+  right: 32rpx;
+  display: flex;
+  flex-direction: row;
+  gap: 16rpx;
+  z-index: 100;
+}
+
+/* 主内容区 - 使用 flex 布局自适应一屏 */
+.launch-content {
+  position: absolute;
+  top: calc(88rpx + env(safe-area-inset-top));
+  left: 0;
+  right: 0;
+  bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+  padding: 16rpx 40rpx 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* 标题区域 */
+.title-section {
+  text-align: center;
+  margin-bottom: 16rpx;
+}
+
+.title-wrapper {
+  margin-bottom: 12rpx;
+}
+
+.main-title {
+  display: block;
+  font-size: 64rpx;
+  font-weight: bold;
+  color: var(--color-festival-red);
+  text-shadow: 0 4rpx 12rpx rgba(212, 48, 43, 0.25);
+  letter-spacing: 6rpx;
+}
+
+.sub-title {
+  display: block;
+  font-size: 36rpx;
+  color: var(--color-festival-gold);
+  font-weight: 600;
+  margin-top: 4rpx;
+  letter-spacing: 4rpx;
+}
+
+.slogan {
+  display: block;
+  font-size: 24rpx;
+  color: #6B7280;
+  margin-top: 8rpx;
+}
+
+/* 统计信息 */
+.stats-section {
+  margin-bottom: 24rpx;
+}
+
+.stats-badge {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6rpx;
+  background: rgba(212, 48, 43, 0.08);
+  padding: 12rpx 24rpx;
+  border-radius: 24rpx;
+}
+
+.stats-number {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--color-festival-red);
+}
+
+.stats-label {
+  font-size: 24rpx;
+  color: var(--color-festival-red);
+}
+
+/* 模式选择卡片 */
+.mode-cards {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  flex: 1;
+  justify-content: center;
+}
+
+.mode-card {
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+.mode-card-hover {
+  transform: scale(0.98);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.12);
+}
+
+/* 时空拼图卡片 */
+.puzzle-card {
+  background: linear-gradient(135deg, #FFE5E5 0%, #FFD6D6 100%);
+  border: 3rpx solid rgba(212, 48, 43, 0.3);
+}
+
+.puzzle-card:active {
+  border-color: var(--color-festival-red);
+}
+
+/* 富贵变身卡片 */
+.transform-card {
+  background: linear-gradient(135deg, #FFF9E5 0%, #FFF0CC 100%);
+  border: 3rpx solid rgba(212, 175, 55, 0.3);
+}
+
+.transform-card:active {
+  border-color: var(--color-festival-gold);
+}
+
+.mode-card-inner {
+  padding: 28rpx 24rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 20rpx;
+}
+
+/* 模式图标 */
+.mode-icon-wrapper {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.puzzle-icon {
+  background: linear-gradient(135deg, var(--color-festival-red) 0%, #E84A3D 100%);
+  box-shadow: 0 4rpx 12rpx rgba(212, 48, 43, 0.3);
+}
+
+.transform-icon {
+  background: linear-gradient(135deg, var(--color-festival-gold) 0%, #F4CF47 100%);
+  box-shadow: 0 4rpx 12rpx rgba(212, 175, 55, 0.3);
+}
+
+.mode-icon {
+  font-size: 40rpx;
+}
+
+/* 模式信息 */
+.mode-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.mode-name {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--color-festival-red);
+}
+
+.transform-name {
+  color: var(--color-festival-gold);
+}
+
+.mode-slogan {
+  font-size: 24rpx;
+  color: #374151;
+  font-weight: 500;
+}
+
+.transform-slogan {
+  color: #374151;
+}
+
+.mode-desc {
+  font-size: 20rpx;
+  color: #6B7280;
+  margin-top: 2rpx;
+}
+
+/* 箭头 */
+.mode-arrow {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.arrow-icon {
+  font-size: 48rpx;
+  color: var(--color-festival-red);
+  font-weight: bold;
+  line-height: 1;
+}
+
+.transform-arrow .arrow-icon {
+  color: var(--color-festival-gold);
+}
+
+/* 底部提示 */
+.bottom-tip {
+  margin-top: 16rpx;
+}
+
+.tip-text {
+  font-size: 22rpx;
+  color: #9CA3AF;
+}
+
+/* ========================================
+   老年模式适配
+   ======================================== */
+
+.elder-mode .main-title {
+  font-size: 76rpx;
+}
+
+.elder-mode .sub-title {
+  font-size: 44rpx;
+}
+
+.elder-mode .slogan {
+  font-size: 30rpx;
+}
+
+.elder-mode .stats-number {
+  font-size: 40rpx;
+}
+
+.elder-mode .stats-label {
+  font-size: 30rpx;
+}
+
+.elder-mode .mode-name {
+  font-size: 40rpx;
+}
+
+.elder-mode .mode-slogan {
+  font-size: 30rpx;
+}
+
+.elder-mode .mode-desc {
+  font-size: 26rpx;
+}
+
+.elder-mode .mode-icon-wrapper {
+  width: 100rpx;
+  height: 100rpx;
+}
+
+.elder-mode .mode-icon {
+  font-size: 48rpx;
+}
+
+.elder-mode .tip-text {
+  font-size: 28rpx;
+}

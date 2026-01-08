@@ -1,0 +1,89 @@
+/* 四角背景组件样式 - 作为页面背景层使用 */
+.corner-bg-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  /* 背景色从顶部 rgb(180, 56, 45) 渐变到底部 rgb(159, 40, 38) */
+  background: linear-gradient(to bottom, rgb(180, 56, 45) 0%, rgb(159, 40, 38) 100%);
+}
+
+/* 四角装饰基础样式 */
+.corner {
+  position: absolute;
+  width: 50vw;
+  height: 50vh;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* 角落图片样式 */
+.corner-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 左上角 */
+.corner-top-left {
+  top: 0;
+  left: 0;
+}
+
+.corner-top-left .corner-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 右上角 */
+.corner-top-right {
+  top: 0;
+  right: 0;
+}
+
+.corner-top-right .corner-image {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* 左下角 */
+.corner-bottom-left {
+  bottom: 0;
+  left: 0;
+}
+
+.corner-bottom-left .corner-image {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+
+/* 右下角 */
+.corner-bottom-right {
+  bottom: 0;
+  right: 0;
+}
+
+.corner-bottom-right .corner-image {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
+/* 中心渐变叠加层 - 进一步柔化边缘 */
+.center-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 60% at center, transparent 0%, rgba(180, 56, 45, 0.3) 100%);
+  opacity: 0.3;
+  z-index: 2;
+}

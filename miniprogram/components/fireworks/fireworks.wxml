@@ -1,0 +1,17 @@
+<!-- 烟花动画组件 -->
+<view class="fireworks-container {{visible ? 'show' : ''}}">
+  <!-- 烟花粒子 -->
+  <view 
+    wx:for="{{particles}}" 
+    wx:key="id"
+    class="particle"
+    style="left: {{item.x}}px; top: {{item.y}}px; --end-x: {{item.endX - item.x}}px; --end-y: {{item.endY - item.y}}px; --color: {{item.color}}; --delay: {{item.delay}}ms; --size: {{item.size}}px;"
+  ></view>
+  
+  <!-- 团圆成功文字 -->
+  <view class="success-text {{showText ? 'show' : ''}}">
+    <view class="text-box">
+      <text class="text-content">{{text}}</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "时空拼图",
+  "navigationBarBackgroundColor": "#D4302B",
+  "navigationBarTextStyle": "white",
+  "disableScroll": true,
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle",
+    "music-toggle": "/components/music-toggle/music-toggle"
+  }
+}

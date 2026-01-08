@@ -1,0 +1,133 @@
+/* 分享弹窗样式 */
+.share-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.share-modal.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 遮罩层 */
+.share-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* 弹窗内容 */
+.share-content {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(135deg, #FFF8F0, #FFFFFF);
+  border-radius: 32rpx 32rpx 0 0;
+  padding: 32rpx;
+  padding-bottom: calc(32rpx + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s;
+}
+
+.share-modal.show .share-content {
+  transform: translateY(0);
+}
+
+/* 顶部装饰 */
+.share-header {
+  text-align: center;
+  padding-bottom: 32rpx;
+  border-bottom: 2rpx solid #FFD700;
+}
+
+.share-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #D4302B;
+}
+
+/* 分享选项 */
+.share-options {
+  display: flex;
+  justify-content: space-around;
+  padding: 48rpx 0;
+}
+
+.share-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  border: none;
+  padding: 0;
+  line-height: normal;
+}
+
+.share-option::after {
+  border: none;
+}
+
+.option-icon {
+  width: 100rpx;
+  height: 100rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+}
+
+.wechat-icon {
+  background: linear-gradient(135deg, #07C160, #06AD56);
+}
+
+.moments-icon {
+  background: linear-gradient(135deg, #FFD700, #FFC700);
+}
+
+.poster-icon {
+  background: linear-gradient(135deg, #D4302B, #8B0000);
+}
+
+.save-icon {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+.icon-emoji {
+  font-size: 48rpx;
+}
+
+.option-text {
+  font-size: 26rpx;
+  color: #333;
+}
+
+/* 取消按钮 */
+.share-cancel {
+  text-align: center;
+  padding: 24rpx;
+  color: #666;
+  font-size: 32rpx;
+  border-top: 2rpx solid #F0F0F0;
+  margin-top: 16rpx;
+}
+
+/* 海报画布（隐藏） */
+.poster-canvas {
+  position: fixed;
+  left: -9999rpx;
+  top: -9999rpx;
+  width: 750rpx;
+  height: 1334rpx;
+}

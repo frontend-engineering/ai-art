@@ -42,6 +42,72 @@ async function createUser(userId = null) {
 }
 
 /**
+ * 创建带有微信openid的新用户
+ * @param {string} userId 用户ID
+ * @param {string} openid 微信openid
+ * @returns {Promise<Object>} 创建的用户对象
+ */
+async function createUserWithOpenid(userId, openid) {
+  try {
+    // 检查用户是否已存在
+    const existingUser = await getUserById(userId);
+    if (existingUser) {
+      console.log(`用户 ${userId} 已存在,返回现有用户`);
+      return existingUser;
+    }
+    
+    // 检查openid是否已被使用
+    const existingOpenidUser = await getUserByOpenid(openid);
+    if (existingOpenidUser) {
+      console.log(`openid ${openid} 已存在,返回现有用户`);
+      return existingOpenidUser;
+    }
+    
+    // 插入新用户
+    const sql = `
+      INSERT INTO users (id, openid, payment_status, regenerate_count)
+      VALUES (?, ?, 'free', 3)
+    `;
+    
+    await query(sql, [userId, openid]);
+    
+    console.log(`用户 ${userId} (openid: ${openid.substring(0, 8)}...) 创建成功`);
+    
+    // 返回创建的用户
+    return await getUserById(userId);
+  } catch (error) {
+    console.error('创建用户失败:', error);
+    throw new Error(`创建用户失败: ${error.message}`);
+  }
+}
+
+/**
+ * 根据微信openid获取用户
+ * @param {string} openid 微信openid
+ * @returns {Promise<Object|null>} 用户对象,如果不存在则返回null
+ */
+async function getUserByOpenid(openid) {
+  try {
+    const sql = `
+      SELECT id, openid, created_at, updated_at, payment_status, regenerate_count
+      FROM users
+      WHERE openid = ?
+    `;
+    
+    const rows = await query(sql, [openid]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    return rows[0];
+  } catch (error) {
+    console.error('根据openid查询用户失败:', error);
+    throw new Error(`根据openid查询用户失败: ${error.message}`);
+  }
+}
+
+/**
  * 根据ID获取用户
  * @param {string} userId 用户ID
  * @returns {Promise<Object|null>} 用户对象,如果不存在则返回null
@@ -49,7 +115,7 @@ async function createUser(userId = null) {
 async function getUserById(userId) {
   try {
     const sql = `
-      SELECT id, created_at, updated_at, payment_status, regenerate_count
+      SELECT id, openid, created_at, updated_at, payment_status, regenerate_count
       FROM users
       WHERE id = ?
     `;
@@ -177,7 +243,9 @@ async function getOrCreateUser(userId) {
 
 module.exports = {
   createUser,
+  createUserWithOpenid,
   getUserById,
+  getUserByOpenid,
   updateUserPaymentStatus,
   updateUserRegenerateCount,
   decrementRegenerateCount,

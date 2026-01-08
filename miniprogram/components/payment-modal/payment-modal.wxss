@@ -1,0 +1,395 @@
+/* 支付弹窗样式 - 复用原网页 PaymentModal 样式 */
+.payment-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  visibility: hidden;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.payment-modal.show {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* 遮罩层 */
+.modal-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+}
+
+/* 弹窗内容 */
+.modal-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 90%;
+  max-width: 680rpx;
+  max-height: 90vh;
+  background: linear-gradient(to bottom, #FFF8F0, #FFFFFF);
+  border-radius: 32rpx;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+
+.payment-modal.show .modal-content {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 顶部装饰条 */
+.top-decoration {
+  height: 12rpx;
+  background: linear-gradient(90deg, #D4302B, #FFD700, #D4302B);
+}
+
+/* 装饰元素 */
+.decor-left,
+.decor-right {
+  position: absolute;
+  top: 32rpx;
+  font-size: 48rpx;
+  opacity: 0.6;
+}
+
+.decor-left {
+  left: 32rpx;
+}
+
+.decor-right {
+  right: 32rpx;
+}
+
+/* 弹窗主体 */
+.modal-body {
+  padding: 80rpx 48rpx 48rpx;
+}
+
+/* 标题区域 */
+.modal-header {
+  text-align: center;
+  margin-bottom: 48rpx;
+}
+
+.modal-title {
+  display: block;
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #D4302B;
+  margin-bottom: 16rpx;
+}
+
+.modal-subtitle {
+  display: block;
+  font-size: 28rpx;
+  color: #666;
+}
+
+/* 套餐列表 */
+.packages-list {
+  margin-bottom: 32rpx;
+}
+
+.package-item {
+  position: relative;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  border-radius: 24rpx;
+  border: 4rpx solid #E5E5E5;
+  background: #FFFFFF;
+  transition: all 0.3s;
+}
+
+.package-item:last-child {
+  margin-bottom: 0;
+}
+
+.package-item.selected {
+  border-color: #FFD700;
+  box-shadow: 0 8rpx 32rpx rgba(255, 215, 0, 0.2);
+}
+
+.package-item.selected.free {
+  border-color: #D4302B;
+  background: #FFFFFF;
+}
+
+.package-item.selected.premium {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(255, 215, 0, 0.1));
+}
+
+.package-item.selected:not(.free):not(.premium) {
+  background: linear-gradient(135deg, rgba(212, 48, 43, 0.1), rgba(255, 107, 107, 0.05));
+}
+
+/* 推荐标签 */
+.recommend-tag {
+  position: absolute;
+  top: -16rpx;
+  right: -16rpx;
+  background: #D4302B;
+  color: #FFFFFF;
+  font-size: 22rpx;
+  font-weight: bold;
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+  box-shadow: 0 4rpx 12rpx rgba(212, 48, 43, 0.3);
+  border: 4rpx solid #FFFFFF;
+}
+
+/* 套餐内容 */
+.package-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.package-info {
+  flex: 1;
+}
+
+.package-name {
+  display: block;
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #8B0000;
+  margin-bottom: 16rpx;
+}
+
+.package-item.free .package-name {
+  color: #333;
+}
+
+.package-features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8rpx;
+}
+
+.feature-tag {
+  font-size: 22rpx;
+  color: #666;
+  background: #F5F5F5;
+  padding: 6rpx 16rpx;
+  border-radius: 20rpx;
+}
+
+/* 价格 */
+.package-price {
+  margin-left: 24rpx;
+}
+
+.price-text {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #D4302B;
+}
+
+.package-item.free .price-text {
+  color: #666;
+}
+
+/* 选中指示器 */
+.selected-indicator {
+  position: absolute;
+  top: 24rpx;
+  left: 24rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: #D4302B;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(212, 48, 43, 0.3);
+  animation: indicator-pop 0.3s ease-out;
+}
+
+@keyframes indicator-pop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.check-icon {
+  color: #FFFFFF;
+  font-size: 24rpx;
+  font-weight: bold;
+}
+
+/* 错误提示 */
+.error-box {
+  display: flex;
+  align-items: center;
+  padding: 24rpx;
+  margin-bottom: 24rpx;
+  background: #FEF2F2;
+  border: 2rpx solid #FECACA;
+  border-radius: 24rpx;
+}
+
+.error-icon {
+  font-size: 36rpx;
+  margin-right: 16rpx;
+}
+
+.error-text {
+  font-size: 26rpx;
+  color: #DC2626;
+}
+
+/* 成功提示 */
+.success-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  margin-bottom: 24rpx;
+  background: #F0FDF4;
+  border: 2rpx solid #BBF7D0;
+  border-radius: 24rpx;
+  animation: success-fade 0.3s ease-out;
+}
+
+@keyframes success-fade {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.success-icon {
+  font-size: 44rpx;
+  margin-right: 16rpx;
+}
+
+.success-text {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #16A34A;
+}
+
+/* 支付按钮 */
+.pay-btn {
+  width: 100%;
+  height: 96rpx;
+  border-radius: 24rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.15);
+  margin-bottom: 24rpx;
+}
+
+.pay-btn.free {
+  background: linear-gradient(135deg, #D4302B, #B82820);
+  color: #FFFFFF;
+}
+
+.pay-btn.paid {
+  background: linear-gradient(135deg, #D4AF37, #FFD700);
+  color: #8B0000;
+}
+
+.pay-btn.disabled {
+  background: #D1D5DB;
+  color: #6B7280;
+  box-shadow: none;
+}
+
+.pay-btn.retry {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: #FFFFFF;
+}
+
+.btn-loading,
+.btn-success,
+.btn-retry,
+.btn-normal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  width: 36rpx;
+  height: 36rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  margin-right: 16rpx;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.success-mark {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+}
+
+/* 取消按钮 */
+.cancel-btn {
+  width: 100%;
+  height: 80rpx;
+  border-radius: 24rpx;
+  background: #F3F4F6;
+  color: #4B5563;
+  font-size: 30rpx;
+  font-weight: 500;
+  border: none;
+  margin-bottom: 24rpx;
+}
+
+/* 支付说明 */
+.payment-notice {
+  text-align: center;
+  margin-bottom: 24rpx;
+}
+
+.payment-notice text {
+  display: block;
+  font-size: 22rpx;
+  color: #9CA3AF;
+}
+
+.order-id {
+  margin-top: 8rpx;
+}
+
+/* 安全标识 */
+.security-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 24rpx;
+  border-top: 2rpx solid #F3F4F6;
+}
+
+.lock-icon {
+  font-size: 28rpx;
+  margin-right: 8rpx;
+}
+
+.security-text {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+/* 底部装饰 */
+.bottom-decoration {
+  height: 8rpx;
+  background: linear-gradient(90deg, #D4302B, #FFD700, #D4302B);
+}

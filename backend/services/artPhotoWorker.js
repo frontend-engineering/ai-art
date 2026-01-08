@@ -15,12 +15,12 @@ const processingTasks = new Set();
 // Mock 模式配置
 const MOCK_ENABLED = process.env.MOCK_AI_ENABLED === 'true';
 
-// Mock 图片 URL（使用真实生成过的图片作为示例）
+// Mock 图片 URL（使用 picsum.photos 提供的随机图片服务）
 const MOCK_IMAGES = [
-  'https://wms.webinfra.cloud/art-photos/mock-result-1.jpg',
-  'https://wms.webinfra.cloud/art-photos/mock-result-2.jpg',
-  'https://wms.webinfra.cloud/art-photos/mock-result-3.jpg',
-  'https://wms.webinfra.cloud/art-photos/mock-result-4.jpg'
+  'https://picsum.photos/seed/art1/512/512',
+  'https://picsum.photos/seed/art2/512/512',
+  'https://picsum.photos/seed/art3/512/512',
+  'https://picsum.photos/seed/art4/512/512'
 ];
 
 /**

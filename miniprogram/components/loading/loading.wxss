@@ -1,0 +1,28 @@
+/* 加载组件样式 - 复用原网页灯笼旋转动画样式 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40rpx;
+}
+
+.loading-lantern {
+  animation: lantern-spin 2s linear infinite;
+}
+
+@keyframes lantern-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  color: #FFD700;
+  font-weight: 500;
+}

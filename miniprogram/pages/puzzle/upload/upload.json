@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "上传照片",
+  "navigationBarBackgroundColor": "#D4AF37",
+  "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "loading": "/components/loading/loading"
+  }
+}

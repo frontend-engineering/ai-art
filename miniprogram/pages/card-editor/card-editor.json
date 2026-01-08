@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "贺卡编辑",
+  "navigationBarBackgroundColor": "#8B0000",
+  "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "loading": "/components/loading/loading"
+  }
+}

@@ -1,0 +1,22 @@
+<!-- 老年模式切换组件 -->
+<view 
+  class="elder-toggle {{position}} {{isElderMode ? 'active' : ''}}"
+  bindtap="toggleElderMode"
+>
+  <view class="toggle-btn">
+    <!-- 图标 -->
+    <view class="icon-wrapper">
+      <text class="icon-text">{{isElderMode ? '大' : '小'}}</text>
+      <text class="icon-label">字</text>
+    </view>
+    
+    <!-- 状态指示器 -->
+    <view class="status-dot {{isElderMode ? 'on' : 'off'}}"></view>
+  </view>
+  
+  <!-- 提示文字 
+  <view class="toggle-label">
+    <text class="label-text">{{isElderMode ? '大字模式' : '标准模式'}}</text>
+  </view>
+  -->
+</view>

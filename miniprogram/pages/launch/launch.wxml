@@ -1,0 +1,87 @@
+<!--
+  启动页 - 复用原网页 LaunchScreen 样式
+  Requirements: 2.1, 2.5
+-->
+<view class="launch-page {{isElderMode ? 'elder-mode' : ''}}">
+  <!-- 四角装饰背景 -->
+  <corner-background />
+  
+  <!-- 背景渐变 -->
+  <view class="launch-bg"></view>
+  
+  <!-- 背景装饰灯笼 -->
+  <view class="bg-decorations">
+    <text class="lantern lantern-1 animate-pulse-slow">🏮</text>
+    <text class="lantern lantern-2 animate-pulse-slow">🏮</text>
+    <text class="lantern lantern-3 animate-pulse-slow">🏮</text>
+    <text class="lantern lantern-4 animate-pulse-slow">🏮</text>
+  </view>
+  
+  <!-- 顶部工具栏 -->
+  <view class="toolbar">
+    <elder-mode-toggle />
+    <music-toggle />
+  </view>
+  
+  <!-- 主内容区 -->
+  <view class="launch-content">
+    <!-- 标题区域 -->
+    <view class="title-section animate-fade-in">
+      <view class="title-wrapper">
+        <text class="main-title">AI全家福</text>
+        <text class="sub-title">团圆照相馆</text>
+      </view>
+      <text class="slogan">这个春节，让爱没有距离</text>
+    </view>
+    
+    <!-- 统计信息 -->
+    <view class="stats-section animate-fade-in">
+      <view class="stats-badge">
+        <text class="stats-number">{{userCount}}</text>
+        <text class="stats-label">个家庭已生成</text>
+      </view>
+    </view>
+    
+    <!-- 模式选择卡片 -->
+    <view class="mode-cards">
+      <!-- 时空拼图 -->
+      <view class="mode-card puzzle-card" bindtap="goToPuzzle" hover-class="mode-card-hover">
+        <view class="mode-card-inner">
+          <view class="mode-icon-wrapper puzzle-icon">
+            <text class="mode-icon">🧩</text>
+          </view>
+          <view class="mode-info">
+            <text class="mode-name">时空拼图</text>
+            <text class="mode-slogan">家人天各一方？拼出大团圆</text>
+            <text class="mode-desc">3张单人照 → 合成故宫全家福</text>
+          </view>
+          <view class="mode-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 富贵变身 -->
+      <view class="mode-card transform-card" bindtap="goToTransform" hover-class="mode-card-hover">
+        <view class="mode-card-inner">
+          <view class="mode-icon-wrapper transform-icon">
+            <text class="mode-icon">👑</text>
+          </view>
+          <view class="mode-info">
+            <text class="mode-name transform-name">富贵变身</text>
+            <text class="mode-slogan transform-slogan">背景太土？一秒变豪门</text>
+            <text class="mode-desc">杂乱餐桌 → 欧式豪宅背景</text>
+          </view>
+          <view class="mode-arrow transform-arrow">
+            <text class="arrow-icon">›</text>
+          </view>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 底部提示 -->
+    <view class="bottom-tip">
+      <text class="tip-text">选择一个模式开始制作</text>
+    </view>
+  </view>
+</view>

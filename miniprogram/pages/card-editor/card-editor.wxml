@@ -1,0 +1,166 @@
+<!--
+  贺卡编辑页 - 复用原网页 CardEditor 样式
+  Requirements: 2.4, 13.1-13.5
+-->
+<view class="card-editor-page {{isElderMode ? 'elder-mode' : ''}}">
+  <!-- 四角装饰背景 -->
+  <corner-background />
+  
+  <!-- 背景 -->
+  <view class="editor-bg"></view>
+  
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <text class="nav-title">制作拜年贺卡</text>
+    <view class="nav-placeholder"></view>
+  </view>
+  
+  <!-- 主内容区 -->
+  <scroll-view class="editor-content" scroll-y>
+    <!-- 预览区域 -->
+    <view class="preview-section">
+      <view class="preview-card">
+        <!-- 背景图 -->
+        <image 
+          class="card-bg" 
+          src="{{selectedTemplate.url}}" 
+          mode="aspectFill"
+          wx:if="{{selectedTemplate}}"
+        />
+        
+        <!-- 用户照片 -->
+        <view class="photo-area">
+          <image 
+            class="user-photo" 
+            src="{{imageUrl}}" 
+            mode="aspectFill"
+            wx:if="{{imageUrl}}"
+          />
+          <view class="photo-placeholder" wx:else>
+            <text class="placeholder-icon">📷</text>
+            <text class="placeholder-text">照片区域</text>
+          </view>
+        </view>
+        
+        <!-- 祝福语 -->
+        <view class="blessing-area {{selectedTemplate.textPosition}}">
+          <text 
+            class="blessing-text" 
+            style="color: {{selectedTemplate.textColor || '#FFD700'}}"
+          >{{blessing}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 模板选择 -->
+    <view class="section">
+      <text class="section-title">选择贺卡模板</text>
+      <scroll-view class="template-scroll" scroll-x enable-flex>
+        <view class="template-list">
+          <view 
+            wx:for="{{templates}}" 
+            wx:key="id"
+            class="template-item {{selectedTemplate.id === item.id ? 'selected' : ''}}"
+            bindtap="handleTemplateSelect"
+            data-template="{{item}}"
+          >
+            <image class="template-thumb" src="{{item.url}}" mode="aspectFill" />
+            <text class="template-name">{{item.name}}</text>
+            <view class="check-mark" wx:if="{{selectedTemplate.id === item.id}}">
+              <text class="check-icon">✓</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+    
+    <!-- 祝福语编辑 -->
+    <view class="section">
+      <text class="section-title">编辑祝福语</text>
+      
+      <!-- 输入框 -->
+      <view class="input-wrapper">
+        <textarea 
+          class="blessing-input"
+          value="{{blessing}}"
+          placeholder="输入您的祝福语..."
+          maxlength="50"
+          bindinput="handleBlessingInput"
+        />
+        <text class="char-count">{{blessing.length}}/50</text>
+      </view>
+      
+      <!-- 预设祝福语 -->
+      <view class="preset-list">
+        <view 
+          wx:for="{{presetBlessings}}" 
+          wx:key="index"
+          class="preset-item {{blessing === item ? 'selected' : ''}}"
+          bindtap="handleBlessingSelect"
+          data-blessing="{{item}}"
+        >
+          <text class="preset-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 操作按钮 -->
+    <view class="action-section">
+      <view class="preview-btn" bindtap="handlePreview">
+        <text class="btn-icon">👁️</text>
+        <text class="btn-text">预览贺卡</text>
+      </view>
+      
+      <button class="share-btn" open-type="share">
+        <text class="btn-icon">📤</text>
+        <text class="btn-text">分享贺卡</text>
+      </button>
+    </view>
+  </scroll-view>
+  
+  <!-- 预览弹窗 -->
+  <view class="preview-modal {{showPreview ? 'show' : ''}}" catchtouchmove="preventMove">
+    <view class="preview-mask" bindtap="closePreview"></view>
+    <view class="preview-content">
+      <!-- 关闭按钮 -->
+      <view class="close-btn" bindtap="closePreview">
+        <text class="close-icon">×</text>
+      </view>
+      
+      <!-- 贺卡预览 -->
+      <view class="full-preview-card">
+        <image 
+          class="card-bg" 
+          src="{{selectedTemplate.url}}" 
+          mode="aspectFill"
+          wx:if="{{selectedTemplate}}"
+        />
+        <view class="photo-area">
+          <image 
+            class="user-photo" 
+            src="{{imageUrl}}" 
+            mode="aspectFill"
+            wx:if="{{imageUrl}}"
+          />
+        </view>
+        <view class="blessing-area {{selectedTemplate.textPosition}}">
+          <text 
+            class="blessing-text" 
+            style="color: {{selectedTemplate.textColor || '#FFD700'}}"
+          >{{blessing}}</text>
+        </view>
+      </view>
+      
+      <!-- 保存按钮 -->
+      <view 
+        class="save-btn {{isSaving ? 'loading' : ''}}"
+        bindtap="handleSave"
+      >
+        <text class="save-text">{{isSaving ? '保存中...' : '保存到相册'}}</text>
+      </view>
+    </view>
+  </view>
+</view>

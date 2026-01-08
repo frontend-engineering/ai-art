@@ -1,0 +1,139 @@
+<!--
+  富贵变身模式历史记录页 - 复用原网页 TransformHistoryPage 样式
+  Requirements: 2.3, 11.1-11.4
+-->
+<view class="history-page {{isElderMode ? 'elder-mode' : ''}}">
+  <!-- 四角装饰背景 -->
+  <corner-background />
+  
+  <!-- 背景 -->
+  <view class="history-bg"></view>
+  
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <text class="nav-title">我的记录</text>
+    <view class="nav-placeholder"></view>
+  </view>
+  
+  <!-- 内容区域 -->
+  <scroll-view 
+    class="history-content" 
+    scroll-y
+    refresher-enabled
+    bindrefresherrefresh="onPullDownRefresh"
+  >
+    <!-- 加载中 -->
+    <view class="loading-state" wx:if="{{loading}}">
+      <loading />
+      <text class="loading-text">加载中...</text>
+    </view>
+    
+    <!-- 错误状态 -->
+    <view class="error-state" wx:elif="{{error}}">
+      <text class="error-icon">⚠️</text>
+      <text class="error-text">{{error}}</text>
+      <view class="retry-btn" bindtap="fetchHistory">
+        <text class="retry-text">重试</text>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view class="empty-state" wx:elif="{{records.length === 0}}">
+      <text class="empty-icon">📷</text>
+      <text class="empty-text">暂无生成记录</text>
+      <view class="create-btn" bindtap="goCreate">
+        <text class="create-text">去制作</text>
+      </view>
+    </view>
+    
+    <!-- 记录列表 -->
+    <view class="record-grid" wx:else>
+      <view 
+        wx:for="{{records}}" 
+        wx:key="id"
+        class="record-item {{item.status !== 'completed' ? 'disabled' : ''}}"
+        bindtap="handleRecordClick"
+        data-record="{{item}}"
+      >
+        <!-- 图片预览 -->
+        <view class="record-image-wrapper">
+          <image 
+            wx:if="{{item.generatedImage || (item.generatedImages && item.generatedImages[0])}}"
+            class="record-image"
+            src="{{item.generatedImage || item.generatedImages[0]}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <image 
+            wx:elif="{{item.originalImages && item.originalImages[0]}}"
+            class="record-image original"
+            src="{{item.originalImages[0]}}"
+            mode="aspectFill"
+            lazy-load
+          />
+          <view wx:else class="record-placeholder">
+            <text class="placeholder-icon">🖼️</text>
+          </view>
+          
+          <!-- 状态标签 -->
+          <view class="status-badge {{utils.getStatusClass(item.status)}}">
+            <text class="status-text">{{utils.getStatusText(item.status)}}</text>
+          </view>
+          
+          <!-- 删除按钮 -->
+          <view 
+            class="delete-btn" 
+            catchtap="handleDelete"
+            data-id="{{item.id}}"
+          >
+            <text class="delete-icon">×</text>
+          </view>
+        </view>
+        
+        <!-- 信息 -->
+        <view class="record-info">
+          <text class="record-date">{{utils.formatDate(item.createdAt)}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+</view>
+
+<!-- WXS 模块用于格式化 -->
+<wxs module="utils">
+module.exports = {
+  formatDate: function(dateStr) {
+    if (!dateStr) return '';
+    var date = getDate(dateStr);
+    var month = date.getMonth() + 1;
+    var day = date.getDate();
+    var hour = date.getHours();
+    var minute = date.getMinutes();
+    return (month < 10 ? '0' + month : month) + '/' + 
+           (day < 10 ? '0' + day : day) + ' ' + 
+           (hour < 10 ? '0' + hour : hour) + ':' + 
+           (minute < 10 ? '0' + minute : minute);
+  },
+  getStatusText: function(status) {
+    var map = {
+      pending: '等待中',
+      processing: '生成中',
+      completed: '已完成',
+      failed: '失败'
+    };
+    return map[status] || '已完成';
+  },
+  getStatusClass: function(status) {
+    var map = {
+      pending: 'status-pending',
+      processing: 'status-processing',
+      completed: 'status-completed',
+      failed: 'status-failed'
+    };
+    return map[status] || 'status-completed';
+  }
+}
+</wxs>

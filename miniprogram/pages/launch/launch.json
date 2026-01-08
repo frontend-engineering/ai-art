@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "AI全家福",
+  "navigationBarBackgroundColor": "#FFF8F0",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#FFF8F0",
+  "disableScroll": true,
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "music-toggle": "/components/music-toggle/music-toggle",
+    "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle"
+  }
+}

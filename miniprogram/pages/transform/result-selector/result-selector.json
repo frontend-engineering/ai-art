@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "选择结果",
+  "navigationBarBackgroundColor": "#8B0000",
+  "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "four-grid-selector": "/components/four-grid-selector/four-grid-selector"
+  }
+}

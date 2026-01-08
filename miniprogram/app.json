@@ -1,0 +1,29 @@
+{
+  "pages": [
+    "pages/launch/launch",
+    "pages/puzzle/launch/launch",
+    "pages/puzzle/upload/upload",
+    "pages/puzzle/template/template",
+    "pages/puzzle/generating/generating",
+    "pages/puzzle/result-selector/result-selector",
+    "pages/puzzle/result/result",
+    "pages/transform/launch/launch",
+    "pages/transform/upload/upload",
+    "pages/transform/template/template",
+    "pages/transform/generating/generating",
+    "pages/transform/result-selector/result-selector",
+    "pages/transform/result/result",
+    "pages/transform/history/history",
+    "pages/card-editor/card-editor"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#8B0000",
+    "navigationBarTitleText": "AI全家福",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFF8F0",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

@@ -1,0 +1,5 @@
+<!-- 加载组件 - 灯笼旋转动画 -->
+<view class="loading-container">
+  <view class="loading-lantern" style="font-size: {{lanternSize}};">🏮</view>
+  <text wx:if="{{showText}}" class="loading-text">{{text}}</text>
+</view>

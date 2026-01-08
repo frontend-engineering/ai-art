@@ -1,0 +1,136 @@
+<!--
+  时空拼图模式模板选择页 - 复用原网页 TemplateSelector 样式
+  Requirements: 2.2
+-->
+<view class="template-page {{isElderMode ? 'elder-mode' : ''}}">
+  <!-- 四角装饰背景 -->
+  <corner-background />
+  
+  <!-- 背景 -->
+  <view class="template-bg"></view>
+  
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+    <text class="nav-title">选择模板</text>
+    <view class="nav-placeholder"></view>
+  </view>
+  
+  <!-- 分类标签栏 -->
+  <scroll-view class="category-scroll" scroll-x enable-flex>
+    <view class="category-list">
+      <view 
+        wx:for="{{categories}}" 
+        wx:key="id"
+        class="category-item {{selectedCategory === item.id ? 'active' : ''}}"
+        bindtap="handleCategoryChange"
+        data-id="{{item.id}}"
+      >
+        <text class="category-icon">{{item.icon}}</text>
+        <text class="category-name">{{item.name}}</text>
+      </view>
+    </view>
+  </scroll-view>
+  
+  <!-- 模板网格 -->
+  <scroll-view class="template-scroll" scroll-y>
+    <view class="template-grid">
+      <view 
+        wx:for="{{filteredTemplates}}" 
+        wx:key="id"
+        class="template-item {{selectedTemplate.id === item.id ? 'selected' : ''}}"
+        bindtap="handleTemplateSelect"
+        data-template="{{item}}"
+      >
+        <!-- 模板图片 -->
+        <image 
+          class="template-image" 
+          src="{{item.url}}" 
+          mode="aspectFill"
+          lazy-load
+        />
+        
+        <!-- 选中标记 -->
+        <view wx:if="{{selectedTemplate.id === item.id}}" class="check-mark">
+          <text class="check-icon">✓</text>
+        </view>
+        
+        <!-- 预览按钮 -->
+        <view 
+          class="preview-btn" 
+          catchtap="handlePreview"
+          data-template="{{item}}"
+        >
+          <text class="preview-icon">🔍</text>
+        </view>
+        
+        <!-- 模板名称 -->
+        <view class="template-info">
+          <text class="template-name">{{item.name}}</text>
+        </view>
+        
+        <!-- 付费标记 -->
+        <view wx:if="{{item.isPremium}}" class="premium-badge">
+          <text class="premium-text">VIP</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 无模板提示 -->
+    <view wx:if="{{filteredTemplates.length === 0}}" class="empty-state">
+      <text class="empty-icon">🎨</text>
+      <text class="empty-text">该分类暂无模板</text>
+    </view>
+  </scroll-view>
+  
+  <!-- 底部操作区 -->
+  <view class="bottom-action">
+    <!-- 当前选中提示 -->
+    <view wx:if="{{selectedTemplate}}" class="selected-tip">
+      <text class="tip-label">已选择：</text>
+      <text class="tip-value">{{selectedTemplate.name}}</text>
+    </view>
+    
+    <!-- 生成按钮 -->
+    <view 
+      class="generate-btn {{selectedTemplate ? 'active' : 'disabled'}} {{isGenerating ? 'loading' : ''}}"
+      bindtap="handleGenerate"
+    >
+      <view class="btn-inner">
+        <text class="btn-icon" wx:if="{{!isGenerating}}">✨</text>
+        <loading wx:if="{{isGenerating}}" />
+        <text class="btn-text">{{isGenerating ? '生成中...' : '立即生成'}}</text>
+      </view>
+      <view class="btn-shine" wx:if="{{selectedTemplate && !isGenerating}}"></view>
+    </view>
+  </view>
+  
+  <!-- 模板预览弹窗 -->
+  <view class="preview-modal {{showPreview ? 'show' : ''}}" catchtouchmove="preventMove">
+    <view class="preview-mask" bindtap="closePreview"></view>
+    <view class="preview-content" wx:if="{{previewTemplate}}">
+      <!-- 关闭按钮 -->
+      <view class="close-btn" bindtap="closePreview">
+        <text class="close-icon">×</text>
+      </view>
+      
+      <!-- 预览图片 -->
+      <image 
+        class="preview-image" 
+        src="{{previewTemplate.url}}" 
+        mode="aspectFit"
+      />
+      
+      <!-- 底部信息 -->
+      <view class="preview-info">
+        <text class="preview-name">{{previewTemplate.name}}</text>
+        <text class="preview-desc">{{previewTemplate.description}}</text>
+        <view class="select-btn" bindtap="selectFromPreview">
+          <text class="select-text">✨ 选择此模板</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,56 @@
+<!-- 分享弹窗组件 -->
+<view class="share-modal {{visible ? 'show' : ''}}" catchtouchmove="preventBubble">
+  <!-- 遮罩层 -->
+  <view class="share-mask" bindtap="handleClose"></view>
+  
+  <!-- 弹窗内容 -->
+  <view class="share-content">
+    <!-- 顶部装饰 -->
+    <view class="share-header">
+      <text class="share-title">分享给家人朋友</text>
+    </view>
+    
+    <!-- 分享选项 -->
+    <view class="share-options">
+      <!-- 分享给好友 -->
+      <button class="share-option" open-type="share" bindtap="handleShareToFriend">
+        <view class="option-icon wechat-icon">
+          <text class="icon-emoji">💬</text>
+        </view>
+        <text class="option-text">微信好友</text>
+      </button>
+      
+      <!-- 分享到朋友圈 -->
+      <view class="share-option" bindtap="handleShareTimeline">
+        <view class="option-icon moments-icon">
+          <text class="icon-emoji">🌐</text>
+        </view>
+        <text class="option-text">朋友圈</text>
+      </view>
+      
+      <!-- 生成海报 -->
+      <view class="share-option" bindtap="handleSavePoster">
+        <view class="option-icon poster-icon">
+          <text class="icon-emoji">🖼️</text>
+        </view>
+        <text class="option-text">保存海报</text>
+      </view>
+      
+      <!-- 保存图片 -->
+      <view class="share-option" bindtap="handleSaveImage">
+        <view class="option-icon save-icon">
+          <text class="icon-emoji">💾</text>
+        </view>
+        <text class="option-text">保存图片</text>
+      </view>
+    </view>
+    
+    <!-- 取消按钮 -->
+    <view class="share-cancel" bindtap="handleClose">
+      <text>取消</text>
+    </view>
+  </view>
+  
+  <!-- 海报画布（隐藏） -->
+  <canvas canvas-id="posterCanvas" class="poster-canvas"></canvas>
+</view>

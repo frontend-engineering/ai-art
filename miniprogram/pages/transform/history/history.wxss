@@ -1,0 +1,310 @@
+/**
+ * 富贵变身历史记录页样式 - 复用原网页 TransformHistoryPage 设计
+ * Requirements: 2.3, 11.1-11.4, 10.1-10.3
+ */
+
+.history-page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(180deg, #FFF8DC 0%, #FFF9E5 50%, #FFF0CC 100%);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.history-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, 
+    rgba(212, 175, 55, 0.08) 0%, 
+    rgba(255, 248, 220, 0.9) 30%,
+    rgba(255, 240, 204, 1) 100%
+  );
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* 顶部导航栏 */
+.nav-bar {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 32rpx;
+  padding-top: calc(24rpx + env(safe-area-inset-top));
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  box-sizing: border-box;
+}
+
+.back-btn {
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.back-icon {
+  font-size: 48rpx;
+  color: #8B4513;
+  font-weight: bold;
+  line-height: 1;
+  margin-right: 4rpx;
+}
+
+.nav-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #8B4513;
+  flex: 1;
+  text-align: center;
+}
+
+.nav-placeholder {
+  width: 64rpx;
+  flex-shrink: 0;
+}
+
+/* 内容区域 */
+.history-content {
+  flex: 1;
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  padding: 24rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
+/* 加载状态 */
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500rpx;
+}
+
+.loading-text {
+  font-size: 28rpx;
+  color: #8B4513;
+  margin-top: 16rpx;
+}
+
+/* 错误状态 */
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500rpx;
+}
+
+.error-icon {
+  font-size: 80rpx;
+  margin-bottom: 16rpx;
+}
+
+.error-text {
+  font-size: 32rpx;
+  color: #EF4444;
+  margin-bottom: 32rpx;
+}
+
+.retry-btn {
+  padding: 16rpx 48rpx;
+  background: var(--color-festival-gold);
+  border-radius: 32rpx;
+}
+
+.retry-text {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: 500;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 500rpx;
+}
+
+.empty-icon {
+  font-size: 120rpx;
+  margin-bottom: 24rpx;
+}
+
+.empty-text {
+  font-size: 36rpx;
+  color: #8B4513;
+  margin-bottom: 32rpx;
+}
+
+.create-btn {
+  padding: 20rpx 64rpx;
+  background: linear-gradient(135deg, var(--color-festival-gold), #D4AF37);
+  border-radius: 40rpx;
+  box-shadow: 0 8rpx 24rpx rgba(212, 175, 55, 0.3);
+}
+
+.create-text {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 记录网格 */
+.record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+}
+
+.record-item {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 24rpx;
+  overflow: hidden;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.record-item.disabled {
+  opacity: 0.7;
+}
+
+.record-item:active {
+  transform: scale(0.98);
+}
+
+/* 图片预览 */
+.record-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  background: #F3F4F6;
+  overflow: hidden;
+}
+
+.record-image {
+  width: 100%;
+  height: 100%;
+}
+
+.record-image.original {
+  opacity: 0.5;
+}
+
+.record-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder-icon {
+  font-size: 80rpx;
+}
+
+/* 状态标签 */
+.status-badge {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 16rpx;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.status-text {
+  font-size: 22rpx;
+  font-weight: 500;
+}
+
+.status-pending .status-text {
+  color: #6B7280;
+}
+
+.status-processing .status-text {
+  color: #3B82F6;
+}
+
+.status-completed .status-text {
+  color: #10B981;
+}
+
+.status-failed .status-text {
+  color: #EF4444;
+}
+
+/* 删除按钮 */
+.delete-btn {
+  position: absolute;
+  top: 16rpx;
+  left: 16rpx;
+  width: 48rpx;
+  height: 48rpx;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-icon {
+  font-size: 32rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* 记录信息 */
+.record-info {
+  padding: 16rpx;
+}
+
+.record-date {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+/* ========================================
+   老年模式适配
+   ======================================== */
+
+.elder-mode .nav-title {
+  font-size: 42rpx;
+}
+
+.elder-mode .empty-text {
+  font-size: 42rpx;
+}
+
+.elder-mode .create-text {
+  font-size: 38rpx;
+}
+
+.elder-mode .status-text {
+  font-size: 26rpx;
+}
+
+.elder-mode .record-date {
+  font-size: 28rpx;
+}
