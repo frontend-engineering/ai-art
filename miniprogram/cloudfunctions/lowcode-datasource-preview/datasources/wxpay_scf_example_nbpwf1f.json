@@ -1,0 +1,52 @@
+{
+	"configuration":{},
+	"desc":"",
+	"id":"data-5hYJG8eHh",
+	"isNewDataSource":1,
+	"methods":[
+		{
+			"inParams":{
+				"additionalProperties":true,
+				"type":"object",
+				"properties":{},
+				"required":[]
+			},
+			"renderVersion":1,
+			"name":"method_371ff13766e6c12",
+			"title":"新方法 1",
+			"type":"scf",
+			"outParams":{
+				"additionalProperties":true,
+				"type":"object",
+				"properties":{
+					"requestID":{
+						"x-required":false,
+						"x-keyPath":"",
+						"x-id":"c285c4b3",
+						"format":"",
+						"description":"",
+						"type":"string",
+						"x-index":2,
+						"title":"requestID",
+						"x-unique":false,
+						"maxLength":4000
+					}
+				},
+				"required":[]
+			},
+			"intent":"create",
+			"calleeBody":{
+				"fnName":"wxpayFunctions",
+				"callee":"/**\n* 使用 npm 包 node-fetch 发送http请求, 详细使用文档可以参考\n*  https://github.com/node-fetch/node-fetch\n*/\nconst fetch = require('node-fetch');\n\nmodule.exports = async function (params, context) {\n  // 这里是方法入参\n  console.log(params);\n\n/**\n * 可以在这里编写业务逻辑，例如：\n * 1. 使用 node-fetch 通过 HTTP 方式请求外部数据，并对获取的数据进行加工；\n * 2. 使用 context.database API 来直接操作云开发云数据库；\n * 3. 使用 context.callModel 来操作其他数据模型数据；\n * 4. 使用 context.callConnector 来使用API；\n * 5. 使用 context.app.callFunction 来调用同环境的云开发云函数；\n */\n  const response = await fetch(`https://reqres.in/api/users?page=${params.page}&per_page=${params.per_page}`);\n  const result = await response.json();\n\n  // 这里返回数据，和出参结构映射\n  return result;\n};"
+			},
+			"isCollapse":true,
+			"uuid":"0fee2c94-a5ff-4403-b411-d6c568e99e9e",
+			"isShow":true
+		}
+	],
+	"name":"wxpay_scf_example_nbpwf1f",
+	"pkgId":"test-1g71tc7eb37627e2",
+	"templateCode":"empty",
+	"title":"wxpay-微信支付云模板云函数",
+	"type":"cloud-integration"
+}

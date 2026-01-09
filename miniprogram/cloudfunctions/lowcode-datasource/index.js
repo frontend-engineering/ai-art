@@ -1,0 +1,1 @@
+exports.main = require('@cloudbase/weda-node-server').main;

@@ -1,0 +1,23 @@
+{
+  "name": "lowcode-automation-preview",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {},
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cloudbase/manager-node": "4.2.0",
+    "@cloudbase/node-sdk": "2.10.0",
+    "@cloudbase/weda-scf-sdk": "0.1.17",
+    "lodash": "4.17.21",
+    "moment": "2.29.4",
+    "mysql2": "3.5.2",
+    "node-fetch": "2.6.11",
+    "numbro": "2.3.6",
+    "papaparse": "5.4.1",
+    "sequelize": "6.32.1",
+    "uuid": "9.0.0",
+    "xml-js": "1.6.11"
+  }
+}
