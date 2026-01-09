@@ -22,15 +22,7 @@
   <scroll-view class="editor-content" scroll-y>
     <!-- 预览区域 -->
     <view class="preview-section">
-      <view class="preview-card">
-        <!-- 背景图 -->
-        <image 
-          class="card-bg" 
-          src="{{selectedTemplate.url}}" 
-          mode="aspectFill"
-          wx:if="{{selectedTemplate}}"
-        />
-        
+      <view class="preview-card" style="background: {{selectedTemplate.bgColor}}">
         <!-- 用户照片 -->
         <view class="photo-area">
           <image 
@@ -67,7 +59,9 @@
             bindtap="handleTemplateSelect"
             data-template="{{item}}"
           >
-            <image class="template-thumb" src="{{item.url}}" mode="aspectFill" />
+            <view class="template-thumb" style="background: {{item.bgColor}}">
+              <text class="template-pattern">{{item.pattern === 'fireworks' ? '🎆' : item.pattern === 'lantern' ? '🏮' : item.pattern === 'blessing' ? '福' : '☁️'}}</text>
+            </view>
             <text class="template-name">{{item.name}}</text>
             <view class="check-mark" wx:if="{{selectedTemplate.id === item.id}}">
               <text class="check-icon">✓</text>
@@ -133,24 +127,13 @@
       <!-- 贺卡预览 -->
       <view class="full-preview-card">
         <image 
-          class="card-bg" 
-          src="{{selectedTemplate.url}}" 
-          mode="aspectFill"
-          wx:if="{{selectedTemplate}}"
+          class="preview-image" 
+          src="{{generatedCardUrl}}" 
+          mode="aspectFit"
+          wx:if="{{generatedCardUrl}}"
         />
-        <view class="photo-area">
-          <image 
-            class="user-photo" 
-            src="{{imageUrl}}" 
-            mode="aspectFill"
-            wx:if="{{imageUrl}}"
-          />
-        </view>
-        <view class="blessing-area {{selectedTemplate.textPosition}}">
-          <text 
-            class="blessing-text" 
-            style="color: {{selectedTemplate.textColor || '#FFD700'}}"
-          >{{blessing}}</text>
+        <view class="preview-loading" wx:else>
+          <text class="loading-text">生成中...</text>
         </view>
       </view>
       
@@ -163,4 +146,11 @@
       </view>
     </view>
   </view>
+  
+  <!-- 离屏Canvas用于生成贺卡 -->
+  <canvas 
+    type="2d" 
+    id="cardCanvas" 
+    class="card-canvas"
+  ></canvas>
 </view>

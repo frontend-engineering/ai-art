@@ -88,43 +88,26 @@
 .preview-card {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 4;
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.3);
   border: 4rpx solid var(--color-festival-gold);
-}
-
-.preview-card-inner {
-  position: relative;
-  width: 100%;
-  padding-top: 133.33%; /* 3:4 宽高比 */
-}
-
-.preview-card-content {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.card-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 48rpx 32rpx;
+  box-sizing: border-box;
 }
 
 .photo-area {
-  position: absolute;
-  top: 15%;
-  left: 15%;
   width: 70%;
-  height: 50%;
+  aspect-ratio: 3 / 4;
   border-radius: 16rpx;
   overflow: hidden;
   border: 4rpx solid rgba(255, 215, 0, 0.5);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .user-photo {
@@ -153,19 +136,20 @@
 }
 
 .blessing-area {
-  position: absolute;
-  left: 0;
-  right: 0;
+  width: 100%;
   padding: 24rpx;
   text-align: center;
 }
 
 .blessing-area.bottom {
-  bottom: 10%;
+  margin-top: auto;
 }
 
 .blessing-area.center {
+  position: absolute;
   top: 50%;
+  left: 0;
+  right: 0;
   transform: translateY(-50%);
 }
 
@@ -173,6 +157,7 @@
   font-size: 36rpx;
   font-weight: bold;
   text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.5);
+  line-height: 1.5;
 }
 
 /* 区块样式 */
@@ -219,21 +204,16 @@
 
 .template-thumb {
   width: 100%;
-  display: block;
-}
-
-.template-thumb-wrapper {
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   position: relative;
-  width: 100%;
-  padding-top: 133.33%; /* 3:4 宽高比 */
 }
 
-.template-thumb-inner {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+.template-pattern {
+  font-size: 64rpx;
+  opacity: 0.3;
 }
 
 .template-name {
@@ -438,24 +418,31 @@
 .full-preview-card {
   position: relative;
   width: 100%;
+  aspect-ratio: 3 / 4;
   border-radius: 24rpx;
   overflow: hidden;
   box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.5);
   border: 4rpx solid var(--color-festival-gold);
+  background: #000;
 }
 
-.full-preview-card-inner {
-  position: relative;
-  width: 100%;
-  padding-top: 133.33%; /* 3:4 宽高比 */
-}
-
-.full-preview-card-content {
-  position: absolute;
-  top: 0;
-  left: 0;
+.preview-image {
   width: 100%;
   height: 100%;
+}
+
+.preview-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: #FFFFFF;
 }
 
 .save-btn {
@@ -477,6 +464,15 @@
   font-size: 34rpx;
   font-weight: bold;
   color: #8B0000;
+}
+
+/* 离屏Canvas */
+.card-canvas {
+  position: fixed;
+  top: -9999rpx;
+  left: -9999rpx;
+  width: 750rpx;
+  height: 1000rpx;
 }
 
 /* ========================================

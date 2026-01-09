@@ -7,13 +7,14 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/connection');
 
-// 创建贺卡
-router.post('/create', async (req, res) => {
+// 创建贺卡（支持两种路径）
+router.post('/', async (req, res) => {
   try {
-    const { userId, imageUrl, greeting, templateStyle } = req.body;
+    const { userId, imageUrl, greeting, templateId } = req.body;
     
     if (!userId || !imageUrl || !greeting) {
       return res.status(400).json({
+        success: false,
         error: '缺少必要参数',
         message: '需要提供 userId, imageUrl 和 greeting 参数'
       });
@@ -27,7 +28,7 @@ router.post('/create', async (req, res) => {
         `INSERT INTO greeting_cards 
         (id, user_id, image_url, greeting_text, template_style, created_at, updated_at) 
         VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-        [cardId, userId, imageUrl, greeting, templateStyle || 'classic']
+        [cardId, userId, imageUrl, greeting, templateId || 'classic']
       );
       
       console.log(`创建贺卡成功: ${cardId}`);
@@ -35,8 +36,11 @@ router.post('/create', async (req, res) => {
       res.json({
         success: true,
         data: {
-          cardId, userId, imageUrl, greeting,
-          templateStyle: templateStyle || 'classic',
+          cardId, 
+          userId, 
+          imageUrl, 
+          greeting,
+          templateId: templateId || 'classic',
           message: '贺卡创建成功'
         }
       });
@@ -45,7 +49,58 @@ router.post('/create', async (req, res) => {
     }
   } catch (error) {
     console.error('创建贺卡失败:', error);
-    res.status(500).json({ error: '创建贺卡失败', message: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: '创建贺卡失败', 
+      message: error.message 
+    });
+  }
+});
+
+// 兼容旧路径
+router.post('/create', async (req, res) => {
+  try {
+    const { userId, imageUrl, greeting, templateStyle, templateId } = req.body;
+    
+    if (!userId || !imageUrl || !greeting) {
+      return res.status(400).json({
+        success: false,
+        error: '缺少必要参数',
+        message: '需要提供 userId, imageUrl 和 greeting 参数'
+      });
+    }
+    
+    const cardId = uuidv4();
+    const connection = await db.pool.getConnection();
+    
+    try {
+      await connection.execute(
+        `INSERT INTO greeting_cards 
+        (id, user_id, image_url, greeting_text, template_style, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+        [cardId, userId, imageUrl, greeting, templateId || templateStyle || 'classic']
+      );
+      
+      console.log(`创建贺卡成功: ${cardId}`);
+      
+      res.json({
+        success: true,
+        data: {
+          cardId, userId, imageUrl, greeting,
+          templateStyle: templateId || templateStyle || 'classic',
+          message: '贺卡创建成功'
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('创建贺卡失败:', error);
+    res.status(500).json({ 
+      success: false,
+      error: '创建贺卡失败', 
+      message: error.message 
+    });
   }
 });
 
@@ -56,7 +111,11 @@ router.get('/user/:userId', async (req, res) => {
     const { limit } = req.query;
     
     if (!userId) {
-      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 userId 参数' });
+      return res.status(400).json({ 
+        success: false,
+        error: '缺少必要参数', 
+        message: '需要提供 userId 参数' 
+      });
     }
     
     const connection = await db.pool.getConnection();
@@ -79,7 +138,11 @@ router.get('/user/:userId', async (req, res) => {
     }
   } catch (error) {
     console.error('获取用户贺卡列表失败:', error);
-    res.status(500).json({ error: '获取用户贺卡列表失败', message: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: '获取用户贺卡列表失败', 
+      message: error.message 
+    });
   }
 });
 
@@ -89,7 +152,11 @@ router.get('/:cardId', async (req, res) => {
     const { cardId } = req.params;
     
     if (!cardId) {
-      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 cardId 参数' });
+      return res.status(400).json({ 
+        success: false,
+        error: '缺少必要参数', 
+        message: '需要提供 cardId 参数' 
+      });
     }
     
     const connection = await db.pool.getConnection();
@@ -97,7 +164,11 @@ router.get('/:cardId', async (req, res) => {
       const [rows] = await connection.execute('SELECT * FROM greeting_cards WHERE id = ?', [cardId]);
       
       if (rows.length === 0) {
-        return res.status(404).json({ error: '贺卡不存在', message: '未找到对应的贺卡' });
+        return res.status(404).json({ 
+          success: false,
+          error: '贺卡不存在', 
+          message: '未找到对应的贺卡' 
+        });
       }
       
       const card = rows[0];
@@ -114,7 +185,11 @@ router.get('/:cardId', async (req, res) => {
     }
   } catch (error) {
     console.error('获取贺卡详情失败:', error);
-    res.status(500).json({ error: '获取贺卡详情失败', message: error.message });
+    res.status(500).json({ 
+      success: false,
+      error: '获取贺卡详情失败', 
+      message: error.message 
+    });
   }
 });
 
