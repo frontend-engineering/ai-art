@@ -81,6 +81,7 @@
     <!-- 底部提示 -->
     <view class="bottom-tip">
       <text class="tip-text">选择一个模式开始制作</text>
+      <text class="ai-notice">本服务为AI生成内容，结果仅供参考</text>
     </view>
   </view>
 </view>

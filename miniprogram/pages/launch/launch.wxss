@@ -348,3 +348,18 @@
 .elder-mode .tip-text {
   font-size: 28rpx;
 }
+
+/* AI生成提示（合规要求） */
+.ai-notice {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(255, 215, 0, 0.7);
+  text-align: center;
+  margin-top: 12rpx;
+  line-height: 1.5;
+}
+
+/* 老年模式 - AI提示 */
+.elder-mode .ai-notice {
+  font-size: 26rpx;
+}

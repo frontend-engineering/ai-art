@@ -107,3 +107,17 @@
 .elder-mode .tip-text {
   font-size: 32rpx;
 }
+
+/* AI生成提示（合规要求） */
+.ai-tip {
+  display: block;
+  font-size: 22rpx;
+  color: rgba(139, 0, 0, 0.8);
+  font-weight: 500;
+  margin-top: 8rpx;
+}
+
+/* 老年模式 - AI提示 */
+.elder-mode .ai-tip {
+  font-size: 26rpx;
+}

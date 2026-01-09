@@ -101,6 +101,24 @@
   box-sizing: border-box;
 }
 
+/* AI生成标识（合规要求） */
+.ai-label {
+  position: absolute;
+  top: 16rpx;
+  right: 16rpx;
+  padding: 6rpx 16rpx;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 20rpx;
+  backdrop-filter: blur(10rpx);
+  z-index: 10;
+}
+
+.ai-label-text {
+  font-size: 20rpx;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
 .photo-area {
   width: 70%;
   aspect-ratio: 3 / 4;
@@ -478,6 +496,11 @@
 /* ========================================
    老年模式适配
    ======================================== */
+
+/* 老年模式适配 */
+.elder-mode .ai-label-text {
+  font-size: 22rpx;
+}
 
 .elder-mode .nav-title {
   font-size: 42rpx;
