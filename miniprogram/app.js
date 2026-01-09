@@ -6,6 +6,7 @@
  * - userId: 用户ID
  * - openid: 微信openid
  * - isElderMode: 老年模式开关
+ * - useCloudBase: 是否使用云托管（默认 true）
  */
 App({
   /**
@@ -16,21 +17,49 @@ App({
     userInfo: null,      // 用户信息
     userId: '',          // 用户ID
     openid: '',          // 微信openid
-    isElderMode: false   // 老年模式
+    isElderMode: false,  // 老年模式
+    useCloudBase: true   // 使用云托管
   },
 
   /**
    * 小程序启动时执行
-   * 恢复设置、检查登录状态
+   * 恢复设置、检查登录状态、初始化云开发
    */
   onLaunch() {
     console.log('[App] 小程序启动');
+    
+    // 初始化云开发
+    this.initCloudBase();
     
     // 恢复老年模式设置
     this.restoreElderMode();
     
     // 检查登录状态
     this.checkLoginStatus();
+  },
+
+  /**
+   * 初始化云开发
+   * 配置云托管环境
+   */
+  initCloudBase() {
+    try {
+      // 初始化云开发
+      wx.cloud.init({
+        env: '', // 云开发环境 ID，留空使用默认环境
+        traceUser: true
+      });
+
+      // 设置云托管环境 ID
+      const cloudbaseRequest = require('./utils/cloudbase-request');
+      cloudbaseRequest.setEnvId(''); // 云开发环境 ID
+
+      console.log('[App] 云开发初始化成功');
+    } catch (err) {
+      console.error('[App] 云开发初始化失败:', err);
+      // 初始化失败时回退到传统 HTTP 请求
+      this.globalData.useCloudBase = false;
+    }
   },
 
   /**
