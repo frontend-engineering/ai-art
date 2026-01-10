@@ -33,6 +33,6 @@ db/
 # Python virtual environment
 backend/venv/
 
-
+.env.cloudbase
 
 AI中国风合照App设计
