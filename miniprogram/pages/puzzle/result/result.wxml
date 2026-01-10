@@ -164,4 +164,13 @@
     imageUrl="{{selectedImage}}"
     bind:close="closeShareModal"
   />
+  
+  <!-- 支付弹窗 -->
+  <payment-modal 
+    visible="{{showPaymentModal}}"
+    generationId="{{generationId}}"
+    currentPaymentStatus="{{paymentStatus}}"
+    bind:complete="onPaymentComplete"
+    bind:close="closePaymentModal"
+  />
 </view>

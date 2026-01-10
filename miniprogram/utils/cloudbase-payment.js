@@ -101,15 +101,27 @@ const callPaymentFunction = async (type, data = {}) => {
     
     log(`云函数返回: ${type}`, result);
     
-    if (result.result && result.result.code === 0) {
+    // 检查云函数是否返回了结果
+    if (!result.result) {
+      throw new Error('云函数返回结果为空');
+    }
+    
+    // 检查是否有错误信息
+    if (result.result.code === -1 || result.result.error) {
+      const errorMsg = result.result.msg || result.result.error || '云函数执行失败';
+      // 如果有详细数据，附加到错误信息
+      if (result.result.data) {
+        console.log('[CloudBase Payment] 错误详情:', result.result.data);
+      }
+      throw new Error(errorMsg);
+    }
+    
+    // 成功返回
+    if (result.result.code === 0) {
       return result.result;
     }
     
-    // 处理云函数返回的错误
-    if (result.result && result.result.code !== 0) {
-      throw new Error(result.result.msg || '云函数调用失败');
-    }
-    
+    // 其他情况，返回原始结果
     return result.result;
   } catch (error) {
     log(`云函数调用失败: ${type}`, error);

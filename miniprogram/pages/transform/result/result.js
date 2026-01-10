@@ -6,11 +6,13 @@
  * - 复用 puzzle/result 页面逻辑
  * - 实现保存图片、生成贺卡、定制产品、分享功能
  * - Live Photo 微动态功能（尊享包用户）
+ * - 付费下载功能
  */
 
 const { getShareAppMessage, getShareTimeline, savePosterToAlbum } = require('../../../utils/share');
 const { saveHistory } = require('../../../utils/storage');
 const { videoAPI } = require('../../../utils/api');
+const cloudbasePayment = require('../../../utils/cloudbase-payment');
 
 Page({
   data: {
@@ -19,6 +21,7 @@ Page({
     imageLoaded: false,
     showShareModal: false,
     showProductModal: false,
+    showPaymentModal: false,
     isSaving: false,
     // Live Photo 相关
     hasLivePhoto: false,
@@ -28,7 +31,10 @@ Page({
     isGeneratingVideo: false,
     videoProgress: 0,
     videoProgressText: '',
-    isPremiumUser: false
+    isPremiumUser: false,
+    // 付费状态
+    paymentStatus: 'free',
+    generationId: ''
   },
 
   // 视频轮询定时器
@@ -40,8 +46,10 @@ Page({
     
     this.setData({
       isElderMode: app.globalData.isElderMode,
-      isPremiumUser: paymentStatus === 'premium',
-      hasLivePhoto: options.hasLivePhoto === 'true'
+      isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
+      paymentStatus: paymentStatus,
+      hasLivePhoto: options.hasLivePhoto === 'true',
+      generationId: options.generationId || Date.now().toString()
     });
     
     // 获取图片URL
@@ -88,7 +96,8 @@ Page({
     const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
     this.setData({
       isElderMode: app.globalData.isElderMode,
-      isPremiumUser: paymentStatus === 'premium'
+      isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
+      paymentStatus: paymentStatus
     });
   },
 
@@ -378,10 +387,38 @@ Page({
   /**
    * 保存图片到相册
    * Requirements: 8.1
+   * 需要付费才能保存高清无水印图片
    */
   async handleSaveImage() {
-    const { selectedImage, isSaving } = this.data;
+    const { selectedImage, isSaving, paymentStatus } = this.data;
     if (!selectedImage || isSaving) return;
+    
+    // 未付费用户显示支付弹窗
+    if (paymentStatus === 'free') {
+      this.setData({ showPaymentModal: true });
+      return;
+    }
+    
+    // 已付费，直接保存
+    await this.doSaveImage();
+  },
+
+  /**
+   * 显示升级弹窗（已付费用户可升级到更高套餐）
+   */
+  showUpgradeModal() {
+    const { paymentStatus } = this.data;
+    // 只有非尊享用户可以升级
+    if (paymentStatus !== 'premium') {
+      this.setData({ showPaymentModal: true });
+    }
+  },
+
+  /**
+   * 执行保存图片
+   */
+  async doSaveImage() {
+    const { selectedImage } = this.data;
     
     this.setData({ isSaving: true });
     
@@ -432,6 +469,36 @@ Page({
     } finally {
       this.setData({ isSaving: false });
     }
+  },
+
+  /**
+   * 支付完成回调
+   */
+  onPaymentComplete(e) {
+    const { packageType } = e.detail;
+    console.log('[TransformResult] 支付完成:', packageType);
+    
+    // 更新付费状态
+    const newPaymentStatus = packageType;
+    wx.setStorageSync('paymentStatus', newPaymentStatus);
+    
+    this.setData({
+      showPaymentModal: false,
+      paymentStatus: newPaymentStatus,
+      isPremiumUser: newPaymentStatus === 'premium' || newPaymentStatus === 'basic'
+    });
+    
+    // 支付/选择完成后自动保存图片
+    setTimeout(() => {
+      this.doSaveImage();
+    }, 500);
+  },
+
+  /**
+   * 关闭支付弹窗
+   */
+  closePaymentModal() {
+    this.setData({ showPaymentModal: false });
   },
 
   /**

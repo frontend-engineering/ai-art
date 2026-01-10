@@ -6,11 +6,13 @@
  * - 复用原网页 ResultPage 样式
  * - 实现保存图片、生成贺卡、定制产品、分享功能
  * - Live Photo 微动态功能（尊享包用户）
+ * - 付费下载功能
  */
 
 const { getShareAppMessage, getShareTimeline, savePosterToAlbum } = require('../../../utils/share');
 const { saveHistory } = require('../../../utils/storage');
 const { videoAPI } = require('../../../utils/api');
+const cloudbasePayment = require('../../../utils/cloudbase-payment');
 
 Page({
   data: {
@@ -19,6 +21,7 @@ Page({
     imageLoaded: false,
     showShareModal: false,
     showProductModal: false,
+    showPaymentModal: false,
     isSaving: false,
     // Live Photo 相关
     hasLivePhoto: false,
@@ -28,7 +31,10 @@ Page({
     isGeneratingVideo: false,
     videoProgress: 0,
     videoProgressText: '',
-    isPremiumUser: false
+    isPremiumUser: false,
+    // 付费状态
+    paymentStatus: 'free',
+    generationId: ''
   },
 
   videoPollingTimer: null,
@@ -39,8 +45,10 @@ Page({
     
     this.setData({
       isElderMode: app.globalData.isElderMode,
-      isPremiumUser: paymentStatus === 'premium',
-      hasLivePhoto: options.hasLivePhoto === 'true'
+      isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
+      paymentStatus: paymentStatus,
+      hasLivePhoto: options.hasLivePhoto === 'true',
+      generationId: options.generationId || Date.now().toString()
     });
     
     let imageUrl = '';
@@ -77,7 +85,8 @@ Page({
     const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
     this.setData({
       isElderMode: app.globalData.isElderMode,
-      isPremiumUser: paymentStatus === 'premium'
+      isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
+      paymentStatus: paymentStatus
     });
   },
 
@@ -309,8 +318,28 @@ Page({
   },
 
   async handleSaveImage() {
-    const { selectedImage, isSaving } = this.data;
+    const { selectedImage, isSaving, paymentStatus } = this.data;
     if (!selectedImage || isSaving) return;
+    
+    // 未付费用户显示支付弹窗
+    if (paymentStatus === 'free') {
+      this.setData({ showPaymentModal: true });
+      return;
+    }
+    
+    // 已付费，直接保存
+    await this.doSaveImage();
+  },
+
+  showUpgradeModal() {
+    const { paymentStatus } = this.data;
+    if (paymentStatus !== 'premium') {
+      this.setData({ showPaymentModal: true });
+    }
+  },
+
+  async doSaveImage() {
+    const { selectedImage } = this.data;
     
     this.setData({ isSaving: true });
     
@@ -345,6 +374,29 @@ Page({
     } finally {
       this.setData({ isSaving: false });
     }
+  },
+
+  onPaymentComplete(e) {
+    const { packageType } = e.detail;
+    console.log('[PuzzleResult] 支付完成:', packageType);
+    
+    const newPaymentStatus = packageType;
+    wx.setStorageSync('paymentStatus', newPaymentStatus);
+    
+    this.setData({
+      showPaymentModal: false,
+      paymentStatus: newPaymentStatus,
+      isPremiumUser: newPaymentStatus === 'premium' || newPaymentStatus === 'basic'
+    });
+    
+    // 支付/选择完成后自动保存图片
+    setTimeout(() => {
+      this.doSaveImage();
+    }, 500);
+  },
+
+  closePaymentModal() {
+    this.setData({ showPaymentModal: false });
   },
 
   async handleSaveLivePhoto() {

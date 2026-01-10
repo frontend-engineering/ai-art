@@ -262,8 +262,9 @@ Page({
     const gradientMatch = template.bgColor.match(/linear-gradient\((\d+)deg,\s*([^,]+),\s*([^)]+)\)/);
     if (gradientMatch) {
       const angle = parseInt(gradientMatch[1]);
-      const color1 = gradientMatch[2].trim();
-      const color2 = gradientMatch[3].split('%')[0].trim();
+      // 提取颜色值，去除百分比部分
+      const color1 = gradientMatch[2].trim().split(/\s+/)[0];
+      const color2 = gradientMatch[3].trim().split(/\s+/)[0];
       
       // 创建渐变
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);

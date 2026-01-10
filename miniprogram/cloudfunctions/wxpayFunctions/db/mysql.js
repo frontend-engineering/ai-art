@@ -1,94 +1,71 @@
 /**
- * MySQL 数据库连接模块
- * 使用环境变量 DATABASE_URL 连接数据库
- * 
- * 环境变量配置格式：
- * DATABASE_URL="mysql://username:password@host:port/database"
+ * 云开发数据库连接模块
+ * 使用 @cloudbase/node-sdk 的 rdb() 方法
+ * 延迟初始化，避免模块加载时崩溃
  */
-const mysql = require('mysql2/promise');
 
-/**
- * 获取数据库连接
- * 每次调用创建新连接，使用完需要关闭
- */
-async function getConnection() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
-    throw new Error('DATABASE_URL 环境变量未配置');
+let _app = null;
+let _db = null;
+
+function getApp() {
+  if (!_app) {
+    try {
+      const cloudbase = require('@cloudbase/node-sdk');
+      _app = cloudbase.init({
+        env: 'test-1g71tc7eb37627e2',
+        region: 'ap-shanghai'
+      });
+    } catch (e) {
+      console.error('[DB] cloudbase SDK 初始化失败:', e.message);
+      return null;
+    }
   }
-  return mysql.createConnection(connectionString);
+  return _app;
 }
 
-/**
- * 执行查询并自动关闭连接
- */
-async function query(sql, params = []) {
-  const conn = await getConnection();
-  try {
-    const [rows] = await conn.execute(sql, params);
-    return rows;
-  } finally {
-    await conn.end();
+function getDb() {
+  if (!_db) {
+    const app = getApp();
+    if (app) {
+      try {
+        _db = app.rdb();
+      } catch (e) {
+        console.error('[DB] rdb() 初始化失败:', e.message);
+        return null;
+      }
+    }
   }
+  return _db;
 }
 
-/**
- * 插入数据
- */
-async function insert(table, data) {
-  const keys = Object.keys(data);
-  const values = Object.values(data);
-  const placeholders = keys.map(() => '?').join(', ');
-  const sql = `INSERT INTO ${table} (${keys.join(', ')}) VALUES (${placeholders})`;
+// 安全的数据库操作包装器
+const safeDb = {
+  async insert(table, data) {
+    const db = getDb();
+    if (!db) {
+      console.warn('[DB] 数据库不可用，跳过插入操作');
+      return { error: 'DB not available' };
+    }
+    return await db.from(table).insert(data);
+  },
   
-  const conn = await getConnection();
-  try {
-    const [result] = await conn.execute(sql, values);
-    return result;
-  } finally {
-    await conn.end();
-  }
-}
-
-/**
- * 更新数据
- */
-async function update(table, data, where, whereParams = []) {
-  const sets = Object.keys(data).map(k => `${k} = ?`).join(', ');
-  const values = [...Object.values(data), ...whereParams];
-  const sql = `UPDATE ${table} SET ${sets} WHERE ${where}`;
+  async select(table, column, value) {
+    const db = getDb();
+    if (!db) {
+      console.warn('[DB] 数据库不可用，跳过查询操作');
+      return { data: [], error: 'DB not available' };
+    }
+    return await db.from(table).eq(column, value).select('*');
+  },
   
-  const conn = await getConnection();
-  try {
-    const [result] = await conn.execute(sql, values);
-    return result;
-  } finally {
-    await conn.end();
+  async update(table, column, value, data) {
+    const db = getDb();
+    if (!db) {
+      console.warn('[DB] 数据库不可用，跳过更新操作');
+      return { error: 'DB not available' };
+    }
+    return await db.from(table).eq(column, value).update(data);
   }
-}
-
-/**
- * 查询单条记录
- */
-async function findOne(table, where, params = []) {
-  const sql = `SELECT * FROM ${table} WHERE ${where} LIMIT 1`;
-  const rows = await query(sql, params);
-  return rows[0] || null;
-}
-
-/**
- * 查询多条记录
- */
-async function findAll(table, where = '1=1', params = []) {
-  const sql = `SELECT * FROM ${table} WHERE ${where}`;
-  return await query(sql, params);
-}
-
-module.exports = {
-  getConnection,
-  query,
-  insert,
-  update,
-  findOne,
-  findAll
 };
+
+module.exports = { getDb, getApp, safeDb };

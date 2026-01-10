@@ -7,6 +7,13 @@
  */
 const cloudbasePayment = require('../../utils/cloudbase-payment');
 
+// 套餐价格等级映射
+const PACKAGE_LEVEL = {
+  'free': 0,
+  'basic': 1,
+  'premium': 2
+};
+
 Component({
   properties: {
     // 是否显示弹窗
@@ -18,6 +25,11 @@ Component({
     generationId: {
       type: String,
       value: ''
+    },
+    // 当前付费状态
+    currentPaymentStatus: {
+      type: String,
+      value: 'free'
     }
   },
   
@@ -25,15 +37,46 @@ Component({
     // 选中的套餐
     selectedPackage: 'free',
     // 套餐列表 - 从 cloudbase-payment 模块获取
-    packages: Object.values(cloudbasePayment.PACKAGES),
+    packages: [],
+    allPackages: Object.values(cloudbasePayment.PACKAGES),
     // 支付状态
     isPaying: false,
     paymentStatus: 'idle', // idle, processing, success, failed
     error: null,
     outTradeNo: null
   },
+
+  observers: {
+    'visible, currentPaymentStatus': function(visible, currentPaymentStatus) {
+      if (visible) {
+        this.filterPackages(currentPaymentStatus);
+      }
+    }
+  },
   
   methods: {
+    // 根据当前付费状态过滤可选套餐
+    filterPackages(currentStatus) {
+      const currentLevel = PACKAGE_LEVEL[currentStatus] || 0;
+      const allPackages = Object.values(cloudbasePayment.PACKAGES);
+      
+      // 只显示比当前等级更高或相等的套餐
+      const filteredPackages = allPackages.filter(pkg => {
+        const pkgLevel = PACKAGE_LEVEL[pkg.id] || 0;
+        return pkgLevel >= currentLevel;
+      });
+      
+      // 默认选中第一个可用套餐
+      const defaultSelected = filteredPackages.length > 0 ? filteredPackages[0].id : 'free';
+      
+      this.setData({
+        packages: filteredPackages,
+        selectedPackage: defaultSelected,
+        paymentStatus: 'idle',
+        error: null
+      });
+    },
+
     // 选择套餐
     selectPackage(e) {
       const { id } = e.currentTarget.dataset;
