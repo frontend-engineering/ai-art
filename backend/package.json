@@ -19,6 +19,7 @@
     "test": "jest --runInBand"
   },
   "dependencies": {
+    "@cloudbase/node-sdk": "^3.16.0",
     "@volcengine/openapi": "^1.32.0",
     "axios": "^1.13.2",
     "cors": "^2.8.5",

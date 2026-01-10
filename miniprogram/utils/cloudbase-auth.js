@@ -23,6 +23,10 @@ const STORAGE_KEYS = {
 // 登录状态过期时间（7天，单位毫秒）
 const LOGIN_EXPIRE_TIME = 7 * 24 * 60 * 60 * 1000;
 
+// 登录锁，防止重复登录
+let isLoggingIn = false;
+let loginPromise = null;
+
 // 日志级别
 const LOG_LEVELS = {
   DEBUG: 0,
@@ -121,59 +125,68 @@ const getConfig = () => {
  * @returns {Promise<Object>} 登录状态对象
  */
 const signInWithUnionId = async () => {
-  try {
-    if (!CLOUDBASE_CONFIG.initialized) {
-      throw new Error('CloudBase 未初始化，请先调用 initCloudBase');
-    }
-    
-    log('INFO', '开始 UnionId 静默登录...');
-    
-    // 使用 wx.cloud 获取用户信息
-    // 注意：signInWithUnionId 是 @cloudbase/js-sdk 的方法
-    // 在小程序中，我们使用 wx.cloud.callFunction 调用云函数来实现
-    // 或者直接使用 wx.login 获取 code，然后调用后端换取 session
-    
-    // 方案1：使用 wx.login 获取 code，调用云托管后端
-    const loginResult = await wxLogin();
-    
-    if (!loginResult.code) {
-      throw new Error('获取微信登录凭证失败');
-    }
-    
-    log('DEBUG', '获取到 wx.login code', loginResult.code.substring(0, 10) + '...');
-    
-    // 调用云托管后端进行登录
-    const cloudbaseRequest = require('./cloudbase-request');
-    const result = await cloudbaseRequest.post('/api/wechat/login', {
-      code: loginResult.code
-    }, { showError: false });
-    
-    if (!result.success) {
-      throw new Error(result.message || '登录失败');
-    }
-    
-    const { userId, openid, token, paymentStatus } = result.data;
-    
-    // 构建登录状态对象
-    const loginState = {
-      userId,
-      openid,
-      token,
-      paymentStatus: paymentStatus || 'free',
-      loginTime: Date.now(),
-      expireTime: Date.now() + LOGIN_EXPIRE_TIME
-    };
-    
-    // 存储登录状态
-    saveLoginState(loginState);
-    
-    log('INFO', 'UnionId 静默登录成功', { userId, openid: openid?.substring(0, 8) + '...' });
-    
-    return loginState;
-  } catch (error) {
-    log('ERROR', 'UnionId 静默登录失败', error);
-    throw error;
+  // 防止重复登录
+  if (isLoggingIn && loginPromise) {
+    log('DEBUG', '登录进行中，等待现有登录完成...');
+    return loginPromise;
   }
+  
+  isLoggingIn = true;
+  loginPromise = (async () => {
+    try {
+      if (!CLOUDBASE_CONFIG.initialized) {
+        throw new Error('CloudBase 未初始化，请先调用 initCloudBase');
+      }
+      
+      log('INFO', '开始 UnionId 静默登录...');
+      
+      // 使用 wx.login 获取 code，调用云托管后端
+      const loginResult = await wxLogin();
+      
+      if (!loginResult.code) {
+        throw new Error('获取微信登录凭证失败');
+      }
+      
+      log('DEBUG', '获取到 wx.login code', loginResult.code.substring(0, 10) + '...');
+      
+      // 调用云托管后端进行登录
+      const cloudbaseRequest = require('./cloudbase-request');
+      const result = await cloudbaseRequest.post('/api/wechat/login', {
+        code: loginResult.code
+      }, { showError: false });
+      
+      if (!result.success) {
+        throw new Error(result.message || '登录失败');
+      }
+      
+      const { userId, openid, token, paymentStatus } = result.data;
+      
+      // 构建登录状态对象
+      const loginState = {
+        userId,
+        openid,
+        token,
+        paymentStatus: paymentStatus || 'free',
+        loginTime: Date.now(),
+        expireTime: Date.now() + LOGIN_EXPIRE_TIME
+      };
+      
+      // 存储登录状态
+      saveLoginState(loginState);
+      
+      log('INFO', 'UnionId 静默登录成功', { userId, openid: openid?.substring(0, 8) + '...' });
+      
+      return loginState;
+    } catch (error) {
+      log('ERROR', 'UnionId 静默登录失败', error);
+      throw error;
+    } finally {
+      isLoggingIn = false;
+      loginPromise = null;
+    }
+  })();
+  
+  return loginPromise;
 };
 
 /**

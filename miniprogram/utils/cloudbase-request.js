@@ -6,7 +6,7 @@
 // 云托管配置
 const CLOUDBASE_CONFIG = {
   env: '', // 云开发环境 ID，在 app.js 中初始化时设置
-  serviceName: 'ai-family-photo-api', // 云托管服务名称
+  serviceName: 'express', // 云托管服务名称
 };
 
 // 重试配置

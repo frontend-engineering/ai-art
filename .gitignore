@@ -16,6 +16,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+.env.docker
 
 # Editor directories and files
 .vscode/*
@@ -28,7 +29,9 @@ dist-ssr
 *.sln
 *.sw?
 
-db/
+# Database files - 不跟踪数据库数据文件
+db/history.json
+backend/db/tasks/
 
 # Python virtual environment
 backend/venv/

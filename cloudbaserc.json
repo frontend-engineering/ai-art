@@ -1,0 +1,8 @@
+{
+  "version": "2.0",
+  "envId": "test-1g71tc7eb37627e2",
+  "$schema": "https://framework-1258016615.tcloudbaseapp.com/schema/latest.json",
+  "cloudrun": {
+    "name": "express"
+  }
+}

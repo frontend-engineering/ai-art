@@ -11,8 +11,8 @@
  */
 
 // CloudBase 配置
-const CLOUDBASE_ENV_ID = 'prod-9gxl9eb37627e2'; // 云开发环境 ID，请替换为实际值
-const CLOUDBASE_SERVICE_NAME = 'ai-family-photo-api'; // 云托管服务名称
+const CLOUDBASE_ENV_ID = 'test-1g71tc7eb37627e2'; // 云开发环境 ID，请替换为实际值
+const CLOUDBASE_SERVICE_NAME = 'express'; // 云托管服务名称
 
 App({
   /**
@@ -35,14 +35,29 @@ App({
   onLaunch() {
     console.log('[App] 小程序启动');
     
-    // 初始化云开发
-    this.initCloudBase();
-    
     // 恢复老年模式设置
     this.restoreElderMode();
     
-    // 检查登录状态并自动登录
-    this.autoLogin();
+    // 初始化云开发并自动登录（顺序执行）
+    this.initAndLogin();
+  },
+
+  /**
+   * 初始化云开发并自动登录
+   * 确保初始化完成后再执行登录，避免 code 重复使用
+   */
+  async initAndLogin() {
+    try {
+      // 先初始化云开发
+      await this.initCloudBase();
+      
+      // 初始化成功后再自动登录
+      if (this.globalData.cloudbaseInitialized) {
+        await this.autoLogin();
+      }
+    } catch (err) {
+      console.error('[App] 初始化或登录失败:', err);
+    }
   },
 
   /**
