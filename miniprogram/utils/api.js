@@ -1,34 +1,17 @@
 /**
  * API 接口定义模块
  * 定义所有后端 API 接口
- * 支持云托管和传统 HTTP 两种方式
+ * 使用云托管方式调用
  */
 
-// 动态选择请求模块
-const getRequestModule = () => {
-  const app = getApp();
-  if (app && app.globalData && app.globalData.useCloudBase) {
-    return require('./cloudbase-request');
-  }
-  return require('./request');
-};
+// 使用云托管请求模块
+const cloudbaseRequest = require('./cloudbase-request');
 
-// 获取请求方法
-const getRequestMethods = () => {
-  const module = getRequestModule();
-  return {
-    request: module.request || module.cloudRequest,
-    get: module.get,
-    post: module.post,
-    put: module.put
-  };
-};
-
-// 导出请求方法（延迟获取）
-const request = (...args) => getRequestMethods().request(...args);
-const get = (...args) => getRequestMethods().get(...args);
-const post = (...args) => getRequestMethods().post(...args);
-const put = (...args) => getRequestMethods().put(...args);
+// 请求方法
+const request = cloudbaseRequest.cloudRequest;
+const get = cloudbaseRequest.get;
+const post = cloudbaseRequest.post;
+const put = cloudbaseRequest.put;
 
 /**
  * 用户相关 API

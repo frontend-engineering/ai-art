@@ -48,12 +48,16 @@ App({
    */
   async initAndLogin() {
     try {
+      console.log('[App] 开始初始化云开发...');
       // 先初始化云开发
       await this.initCloudBase();
       
       // 初始化成功后再自动登录
       if (this.globalData.cloudbaseInitialized) {
+        console.log('[App] 云开发初始化成功，开始自动登录...');
         await this.autoLogin();
+      } else {
+        console.warn('[App] 云开发初始化失败，跳过自动登录');
       }
     } catch (err) {
       console.error('[App] 初始化或登录失败:', err);

@@ -98,6 +98,7 @@ const setEnvId = (envId) => {
  * @param {boolean} [options.showLoading=false] 是否显示加载提示
  * @param {string} [options.loadingText='加载中...'] 加载提示文字
  * @param {boolean} [options.showError=true] 是否显示错误提示
+ * @param {boolean} [options.noRetry=false] 是否禁用重试（用于登录等一次性请求）
  * @param {number} [options.retryCount=0] 当前重试次数（内部使用）
  * @returns {Promise<Object>} 响应数据
  */
@@ -111,6 +112,7 @@ const cloudRequest = (options) => {
       showLoading = false,
       loadingText = '加载中...',
       showError: shouldShowError = true,
+      noRetry = false,
       retryCount = 0
     } = options;
 
@@ -185,11 +187,8 @@ const cloudRequest = (options) => {
           showError(ERROR_CODES.AUTH_EXPIRED.message);
         }
 
-        // 尝试重新登录
-        const app = getApp();
-        if (app && app.login) {
-          app.login();
-        }
+        // 不自动重新登录，让调用方处理
+        // 避免与 cloudbase-auth.js 的登录锁冲突
 
         reject({
           code: statusCode,
@@ -204,8 +203,8 @@ const cloudRequest = (options) => {
       const errorInfo = getErrorInfo(null, statusCode);
       const errorMessage = responseData?.message || errorInfo.message;
       
-      // 检查是否可重试
-      if (errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
+      // 检查是否可重试（noRetry 为 true 时禁用重试）
+      if (!noRetry && errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
         const delay = RETRY_CONFIG.exponentialBackoff 
           ? RETRY_CONFIG.retryDelay * Math.pow(2, retryCount)
           : RETRY_CONFIG.retryDelay;
@@ -238,8 +237,8 @@ const cloudRequest = (options) => {
 
       const errorInfo = getErrorInfo(error, 0);
       
-      // 检查是否可重试
-      if (errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
+      // 检查是否可重试（noRetry 为 true 时禁用重试）
+      if (!noRetry && errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
         const delay = RETRY_CONFIG.exponentialBackoff 
           ? RETRY_CONFIG.retryDelay * Math.pow(2, retryCount)
           : RETRY_CONFIG.retryDelay;

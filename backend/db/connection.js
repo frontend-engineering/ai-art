@@ -2,17 +2,12 @@
  * MySQL数据库连接配置
  * 
  * 云托管环境使用 @cloudbase/node-sdk 的 rdb() 方法访问 MySQL
- * 需要配置环境变量：
- * - CLOUDBASE_ENV: 云开发环境 ID
- * - TENCENTCLOUD_SECRETID: 腾讯云 SecretId
- * - TENCENTCLOUD_SECRETKEY: 腾讯云 SecretKey
- * 
- * 本地开发使用 mysql2 直连（DATABASE_URL 或 DB_HOST）
+ * 本地开发使用 mysql2 直连
  */
 
 require('dotenv').config();
 
-// 判断是否在云托管环境中（有 CLOUDBASE_ENV 且有腾讯云密钥）
+// 判断是否在云托管环境中
 const hasCloudBaseConfig = !!(
   process.env.CLOUDBASE_ENV && 
   process.env.TENCENTCLOUD_SECRETID && 
@@ -59,7 +54,7 @@ function initCloudBase() {
 }
 
 /**
- * 初始化 MySQL 直连（本地开发或 DATABASE_URL 模式）
+ * 初始化 MySQL 直连
  */
 function initMysqlPool() {
   if (mysqlPool) return mysqlPool;
@@ -95,8 +90,10 @@ async function testConnection() {
   try {
     if (hasCloudBaseConfig) {
       const app = initCloudBase();
-      const rdb = app.rdb();
-      const result = await rdb.from('users').select('id').limit(1);
+      const db = app.rdb();
+      // 简单查询测试
+      const { data, error } = await db.from('users').select('id');
+      if (error) throw error;
       console.log('✅ CloudBase MySQL 连接成功');
       return true;
     } else {
@@ -114,20 +111,15 @@ async function testConnection() {
 
 /**
  * 执行查询（兼容两种模式）
- * @param {string} sql - SQL查询语句
- * @param {Array} params - 查询参数
- * @returns {Promise<Array>} 查询结果
  */
 async function query(sql, params = []) {
   try {
     if (hasCloudBaseConfig) {
-      // CloudBase SDK 模式 - 使用 rdb() ORM 风格 API
       const app = initCloudBase();
-      const rdb = app.rdb();
-      const result = await executeCloudBaseQuery(rdb, sql, params);
+      const db = app.rdb();
+      const result = await executeCloudBaseQuery(db, sql, params);
       return result;
     } else {
-      // MySQL 直连模式
       const pool = initMysqlPool();
       const [rows] = await pool.execute(sql, params);
       return rows;
@@ -140,109 +132,165 @@ async function query(sql, params = []) {
 }
 
 /**
- * 将 SQL 转换为 CloudBase rdb ORM 操作
+ * 将 SQL 转换为 CloudBase MySQL RDB 操作
+ * 
+ * CloudBase RDB API:
+ * - SELECT: db.from(table).select().eq(column, value)
+ * - INSERT: db.from(table).insert(data)
+ * - UPDATE: db.from(table).update(data).eq(column, value)
+ * - DELETE: db.from(table).delete().eq(column, value)
  */
-async function executeCloudBaseQuery(rdb, sql, params) {
+async function executeCloudBaseQuery(db, sql, params) {
   const sqlLower = sql.trim().toLowerCase();
   
-  // 参数索引
   let paramIndex = 0;
   const getParam = () => params[paramIndex++];
   
   console.log('[CloudBase RDB] SQL:', sql.substring(0, 150));
   console.log('[CloudBase RDB] Params:', JSON.stringify(params).substring(0, 100));
   
-  if (sqlLower.startsWith('select')) {
-    // SELECT 查询
-    const tableMatch = sql.match(/from\s+(\w+)/i);
-    if (!tableMatch) throw new Error('无法解析表名');
-    const tableName = tableMatch[1];
-    
-    let query = rdb.from(tableName);
-    
-    // 解析 WHERE 条件
-    const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
-    if (whereMatch) {
-      const field = whereMatch[1];
-      const value = getParam();
-      query = query.filter({ [field]: value });
+  try {
+    if (sqlLower.startsWith('select')) {
+      return await handleSelect(db, sql, getParam);
+    } else if (sqlLower.startsWith('insert')) {
+      return await handleInsert(db, sql, getParam);
+    } else if (sqlLower.startsWith('update')) {
+      return await handleUpdate(db, sql, getParam);
+    } else if (sqlLower.startsWith('delete')) {
+      return await handleDelete(db, sql, getParam);
+    } else {
+      throw new Error(`不支持的 SQL 操作: ${sqlLower.substring(0, 20)}`);
     }
-    
-    const result = await query.select('*');
-    console.log('[CloudBase RDB] SELECT result:', JSON.stringify(result).substring(0, 200));
-    return result.data || [];
-    
-  } else if (sqlLower.startsWith('insert')) {
-    // INSERT 操作
-    const tableMatch = sql.match(/into\s+(\w+)/i);
-    if (!tableMatch) throw new Error('无法解析表名');
-    const tableName = tableMatch[1];
-    
-    // 解析字段
-    const fieldsMatch = sql.match(/\(([^)]+)\)\s*values/i);
-    if (!fieldsMatch) throw new Error('无法解析字段');
-    const fields = fieldsMatch[1].split(',').map(f => f.trim());
-    
-    const data = {};
-    fields.forEach(field => {
-      data[field] = getParam();
-    });
-    
-    console.log('[CloudBase RDB] INSERT:', tableName, JSON.stringify(data).substring(0, 200));
-    const result = await rdb.from(tableName).insert(data);
-    console.log('[CloudBase RDB] INSERT result:', JSON.stringify(result).substring(0, 200));
-    return result;
-    
-  } else if (sqlLower.startsWith('update')) {
-    // UPDATE 操作
-    const tableMatch = sql.match(/update\s+(\w+)/i);
-    if (!tableMatch) throw new Error('无法解析表名');
-    const tableName = tableMatch[1];
-    
-    // 解析 SET 子句
-    const setMatch = sql.match(/set\s+(.+?)\s+where/i);
-    if (!setMatch) throw new Error('无法解析 SET 子句');
-    
-    const setParts = setMatch[1].split(',');
-    const updateData = {};
-    setParts.forEach(part => {
-      const [field] = part.split('=').map(s => s.trim());
-      // 跳过 CURRENT_TIMESTAMP 等函数
-      if (field && !part.includes('CURRENT_TIMESTAMP') && part.includes('?')) {
-        updateData[field] = getParam();
-      }
-    });
-    
-    // 解析 WHERE 条件
-    const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
-    if (!whereMatch) throw new Error('无法解析 WHERE 条件');
-    const whereField = whereMatch[1];
-    const whereValue = getParam();
-    
-    console.log('[CloudBase RDB] UPDATE:', tableName, updateData, 'WHERE', whereField, '=', whereValue);
-    const result = await rdb.from(tableName).filter({ [whereField]: whereValue }).update(updateData);
-    console.log('[CloudBase RDB] UPDATE result:', JSON.stringify(result).substring(0, 200));
-    return result;
-    
-  } else if (sqlLower.startsWith('delete')) {
-    // DELETE 操作
-    const tableMatch = sql.match(/from\s+(\w+)/i);
-    if (!tableMatch) throw new Error('无法解析表名');
-    const tableName = tableMatch[1];
-    
-    // 解析 WHERE 条件
-    const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
-    if (!whereMatch) throw new Error('无法解析 WHERE 条件');
-    const whereField = whereMatch[1];
-    const whereValue = getParam();
-    
-    console.log('[CloudBase RDB] DELETE:', tableName, 'WHERE', whereField, '=', whereValue);
-    const result = await rdb.from(tableName).filter({ [whereField]: whereValue }).delete();
-    return result;
-    
-  } else {
-    throw new Error(`不支持的 SQL 操作: ${sqlLower.substring(0, 20)}`);
+  } catch (error) {
+    console.error('[CloudBase RDB] 执行失败:', error);
+    throw error;
   }
+}
+
+/**
+ * 处理 SELECT 查询
+ */
+async function handleSelect(db, sql, getParam) {
+  const tableMatch = sql.match(/from\s+(\w+)/i);
+  if (!tableMatch) throw new Error('无法解析表名');
+  const tableName = tableMatch[1];
+  
+  let query = db.from(tableName).select();
+  
+  // 解析 WHERE 条件
+  const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
+  if (whereMatch) {
+    const field = whereMatch[1];
+    const value = getParam();
+    query = query.eq(field, value);
+  }
+  
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('[CloudBase RDB] SELECT error:', error);
+    throw new Error(error.message || 'SELECT 查询失败');
+  }
+  
+  console.log('[CloudBase RDB] SELECT result count:', data ? data.length : 0);
+  return data || [];
+}
+
+/**
+ * 处理 INSERT 操作
+ */
+async function handleInsert(db, sql, getParam) {
+  const tableMatch = sql.match(/into\s+(\w+)/i);
+  if (!tableMatch) throw new Error('无法解析表名');
+  const tableName = tableMatch[1];
+  
+  // 解析字段
+  const fieldsMatch = sql.match(/\(([^)]+)\)\s*values/i);
+  if (!fieldsMatch) throw new Error('无法解析字段');
+  const fields = fieldsMatch[1].split(',').map(f => f.trim());
+  
+  const insertData = {};
+  fields.forEach(field => {
+    insertData[field] = getParam();
+  });
+  
+  console.log('[CloudBase RDB] INSERT:', tableName, JSON.stringify(insertData).substring(0, 200));
+  
+  const { data, error } = await db.from(tableName).insert(insertData);
+  
+  if (error) {
+    console.error('[CloudBase RDB] INSERT error:', error);
+    throw new Error(error.message || 'INSERT 操作失败');
+  }
+  
+  console.log('[CloudBase RDB] INSERT result:', JSON.stringify(data).substring(0, 200));
+  return data;
+}
+
+/**
+ * 处理 UPDATE 操作
+ */
+async function handleUpdate(db, sql, getParam) {
+  const tableMatch = sql.match(/update\s+(\w+)/i);
+  if (!tableMatch) throw new Error('无法解析表名');
+  const tableName = tableMatch[1];
+  
+  // 解析 SET 子句
+  const setMatch = sql.match(/set\s+(.+?)\s+where/i);
+  if (!setMatch) throw new Error('无法解析 SET 子句');
+  
+  const setParts = setMatch[1].split(',');
+  const updateData = {};
+  setParts.forEach(part => {
+    const [field] = part.split('=').map(s => s.trim());
+    if (field && !part.includes('CURRENT_TIMESTAMP') && part.includes('?')) {
+      updateData[field] = getParam();
+    }
+  });
+  
+  // 解析 WHERE 条件
+  const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
+  if (!whereMatch) throw new Error('无法解析 WHERE 条件');
+  const whereField = whereMatch[1];
+  const whereValue = getParam();
+  
+  console.log('[CloudBase RDB] UPDATE:', tableName, updateData, 'WHERE', whereField, '=', whereValue);
+  
+  const { data, error } = await db.from(tableName).update(updateData).eq(whereField, whereValue);
+  
+  if (error) {
+    console.error('[CloudBase RDB] UPDATE error:', error);
+    throw new Error(error.message || 'UPDATE 操作失败');
+  }
+  
+  console.log('[CloudBase RDB] UPDATE result:', JSON.stringify(data).substring(0, 200));
+  return data;
+}
+
+/**
+ * 处理 DELETE 操作
+ */
+async function handleDelete(db, sql, getParam) {
+  const tableMatch = sql.match(/from\s+(\w+)/i);
+  if (!tableMatch) throw new Error('无法解析表名');
+  const tableName = tableMatch[1];
+  
+  // 解析 WHERE 条件
+  const whereMatch = sql.match(/where\s+(\w+)\s*=\s*\?/i);
+  if (!whereMatch) throw new Error('无法解析 WHERE 条件');
+  const whereField = whereMatch[1];
+  const whereValue = getParam();
+  
+  console.log('[CloudBase RDB] DELETE:', tableName, 'WHERE', whereField, '=', whereValue);
+  
+  const { data, error } = await db.from(tableName).delete().eq(whereField, whereValue);
+  
+  if (error) {
+    console.error('[CloudBase RDB] DELETE error:', error);
+    throw new Error(error.message || 'DELETE 操作失败');
+  }
+  
+  return data;
 }
 
 /**
@@ -287,7 +335,41 @@ async function closePool() {
 
 module.exports = {
   get pool() {
-    return hasCloudBaseConfig ? null : initMysqlPool();
+    // 在 CloudBase 模式下返回一个模拟的 pool 对象
+    if (hasCloudBaseConfig) {
+      return {
+        getConnection: async () => {
+          // 返回一个模拟的 connection 对象，使用 query 函数
+          return {
+            execute: async (sql, params) => {
+              const result = await query(sql, params);
+              // mysql2 返回 [rows, fields]，我们模拟这个格式
+              return [result, []];
+            },
+            query: async (sql, params) => {
+              const result = await query(sql, params);
+              return [result, []];
+            },
+            beginTransaction: async () => {
+              console.warn('[CloudBase] 事务不支持，跳过 beginTransaction');
+            },
+            commit: async () => {
+              console.warn('[CloudBase] 事务不支持，跳过 commit');
+            },
+            rollback: async () => {
+              console.warn('[CloudBase] 事务不支持，跳过 rollback');
+            },
+            release: () => {
+              // CloudBase 模式不需要释放连接
+            }
+          };
+        },
+        end: async () => {
+          // CloudBase 模式不需要关闭连接池
+        }
+      };
+    }
+    return initMysqlPool();
   },
   query,
   transaction,

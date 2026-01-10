@@ -85,4 +85,38 @@ router.put('/:userId/payment-status', async (req, res) => {
   }
 });
 
+// 同步用户信息（小程序登录后调用）
+router.post('/sync', async (req, res) => {
+  try {
+    const { userId, openid } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false,
+        message: '缺少 userId 参数' 
+      });
+    }
+    
+    // 获取用户信息
+    let user = await userService.getUserById(userId);
+    
+    if (!user) {
+      // 用户不存在，返回空数据（不自动创建，因为登录时已创建）
+      return res.json({ 
+        success: true, 
+        data: null,
+        message: '用户不存在'
+      });
+    }
+    
+    res.json({ success: true, data: user });
+  } catch (error) {
+    console.error('同步用户信息失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
 module.exports = router;

@@ -10,7 +10,6 @@
  */
 
 const { getHistory, deleteHistory } = require('../../../utils/storage');
-const { request } = require('../../../utils/request');
 const { historyAPI } = require('../../../utils/api');
 
 Page({

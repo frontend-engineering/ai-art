@@ -149,11 +149,11 @@ const signInWithUnionId = async () => {
       
       log('DEBUG', '获取到 wx.login code', loginResult.code.substring(0, 10) + '...');
       
-      // 调用云托管后端进行登录
+      // 调用云托管后端进行登录（禁用重试，因为 code 只能用一次）
       const cloudbaseRequest = require('./cloudbase-request');
       const result = await cloudbaseRequest.post('/api/wechat/login', {
         code: loginResult.code
-      }, { showError: false });
+      }, { showError: false, noRetry: true });
       
       if (!result.success) {
         throw new Error(result.message || '登录失败');

@@ -60,15 +60,8 @@ Component({
         // 获取小程序码
         let qrCodeUrl = '';
         try {
-          const { request } = require('../../utils/request');
-          const result = await request({
-            url: '/api/wechat/qrcode',
-            method: 'POST',
-            data: {
-              path: 'pages/launch/launch',
-              width: 200
-            }
-          });
+          const { wechatAPI } = require('../../utils/api');
+          const result = await wechatAPI.getQRCode('pages/launch/launch', 200);
           if (result.success && result.data) {
             qrCodeUrl = result.data.qrCodeUrl;
           }

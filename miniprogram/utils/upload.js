@@ -3,7 +3,7 @@
  * 实现图片选择、压缩、上传等功能
  */
 
-const { BASE_URL } = require('./request');
+// 不再需要 BASE_URL，使用云托管请求
 
 /**
  * 图片压缩质量配置

@@ -1,1 +1,0 @@
-{"name":"datasource-server","main":"./index.js","dependencies": {"@cloudbase/weda-node-server":"1.0.59"}}

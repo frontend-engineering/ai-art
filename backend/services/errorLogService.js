@@ -103,6 +103,18 @@ class ErrorLogService {
   async writeToDatabase(logEntry) {
     try {
       const db = require('../db/connection');
+      
+      // CloudBase 模式下 pool 为 null，跳过数据库写入
+      if (db.hasCloudBaseConfig) {
+        // CloudBase 模式暂不支持错误日志写入数据库，仅写入文件
+        return;
+      }
+      
+      if (!db.pool) {
+        console.warn('[ErrorLogService] 数据库连接池未初始化，跳过数据库写入');
+        return;
+      }
+      
       const connection = await db.pool.getConnection();
       
       try {
@@ -151,8 +163,7 @@ class ErrorLogService {
       }
     } catch (dbError) {
       // 如果数据库写入失败，至少输出到控制台
-      console.error('[ErrorLogService] 写入数据库失败:', dbError);
-      console.error('[ErrorLogService] 原始日志:', logEntry);
+      console.error('[ErrorLogService] 写入数据库失败:', dbError.message);
     }
   }
   
@@ -274,6 +285,13 @@ class ErrorLogService {
   async queryLogs(filters = {}) {
     try {
       const db = require('../db/connection');
+      
+      // CloudBase 模式下不支持查询
+      if (db.hasCloudBaseConfig || !db.pool) {
+        console.warn('[ErrorLogService] 当前模式不支持查询日志');
+        return [];
+      }
+      
       const connection = await db.pool.getConnection();
       
       try {
@@ -321,8 +339,8 @@ class ErrorLogService {
         connection.release();
       }
     } catch (error) {
-      console.error('[ErrorLogService] 查询日志失败:', error);
-      throw error;
+      console.error('[ErrorLogService] 查询日志失败:', error.message);
+      return [];
     }
   }
   
@@ -332,8 +350,14 @@ class ErrorLogService {
    */
   async cleanupOldLogs(daysToKeep = 30) {
     try {
-      // 清理数据库中的旧日志
       const db = require('../db/connection');
+      
+      // CloudBase 模式下不支持清理
+      if (db.hasCloudBaseConfig || !db.pool) {
+        console.warn('[ErrorLogService] 当前模式不支持清理数据库日志');
+        return 0;
+      }
+      
       const connection = await db.pool.getConnection();
       
       try {
@@ -352,8 +376,8 @@ class ErrorLogService {
         connection.release();
       }
     } catch (error) {
-      console.error('[ErrorLogService] 清理旧日志失败:', error);
-      throw error;
+      console.error('[ErrorLogService] 清理旧日志失败:', error.message);
+      return 0;
     }
   }
   
