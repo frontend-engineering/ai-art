@@ -9,6 +9,14 @@ const CLOUDBASE_CONFIG = {
   serviceName: 'ai-family-photo-api', // 云托管服务名称
 };
 
+// 重试配置
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  retryDelay: 1000,
+  exponentialBackoff: true,
+  retryableErrors: ['NETWORK_TIMEOUT', 'SYS_CLOUD_ERROR']
+};
+
 // 错误消息映射
 const ERROR_MESSAGES = {
   'network': '网络不给力，请检查网络连接',
@@ -16,6 +24,16 @@ const ERROR_MESSAGES = {
   'server': '服务器开小差了，请稍后重试',
   'auth': '登录已过期，请重新登录',
   'default': '操作失败，请稍后重试'
+};
+
+// 错误码定义
+const ERROR_CODES = {
+  NETWORK_TIMEOUT: { code: 'NETWORK_TIMEOUT', message: '网络超时，请检查网络后重试', retryable: true },
+  NETWORK_OFFLINE: { code: 'NETWORK_OFFLINE', message: '网络不可用，请检查网络连接', retryable: false },
+  AUTH_EXPIRED: { code: 'AUTH_EXPIRED', message: '登录已过期，请重新登录', retryable: false },
+  AUTH_FAILED: { code: 'AUTH_FAILED', message: '登录失败，请重试', retryable: false },
+  SYS_CLOUD_ERROR: { code: 'SYS_CLOUD_ERROR', message: '云服务异常', retryable: true },
+  SYS_UNKNOWN: { code: 'SYS_UNKNOWN', message: '系统错误，请稍后重试', retryable: false }
 };
 
 /**
@@ -34,22 +52,32 @@ const showError = (message) => {
  * 获取错误消息
  * @param {Object} error 错误对象
  * @param {number} statusCode HTTP状态码
+ * @returns {Object} 错误信息对象
+ */
+const getErrorInfo = (error, statusCode) => {
+  if (error && error.errMsg && error.errMsg.includes('timeout')) {
+    return ERROR_CODES.NETWORK_TIMEOUT;
+  }
+  if (error && error.errMsg && error.errMsg.includes('fail')) {
+    return ERROR_CODES.NETWORK_OFFLINE;
+  }
+  if (statusCode === 401 || statusCode === 403) {
+    return ERROR_CODES.AUTH_EXPIRED;
+  }
+  if (statusCode >= 500) {
+    return ERROR_CODES.SYS_CLOUD_ERROR;
+  }
+  return ERROR_CODES.SYS_UNKNOWN;
+};
+
+/**
+ * 获取错误消息（兼容旧方法）
+ * @param {Object} error 错误对象
+ * @param {number} statusCode HTTP状态码
  * @returns {string} 错误消息
  */
 const getErrorMessage = (error, statusCode) => {
-  if (error && error.errMsg && error.errMsg.includes('timeout')) {
-    return ERROR_MESSAGES.timeout;
-  }
-  if (error && error.errMsg && error.errMsg.includes('fail')) {
-    return ERROR_MESSAGES.network;
-  }
-  if (statusCode === 401 || statusCode === 403) {
-    return ERROR_MESSAGES.auth;
-  }
-  if (statusCode >= 500) {
-    return ERROR_MESSAGES.server;
-  }
-  return ERROR_MESSAGES.default;
+  return getErrorInfo(error, statusCode).message;
 };
 
 /**
@@ -70,6 +98,7 @@ const setEnvId = (envId) => {
  * @param {boolean} [options.showLoading=false] 是否显示加载提示
  * @param {string} [options.loadingText='加载中...'] 加载提示文字
  * @param {boolean} [options.showError=true] 是否显示错误提示
+ * @param {number} [options.retryCount=0] 当前重试次数（内部使用）
  * @returns {Promise<Object>} 响应数据
  */
 const cloudRequest = (options) => {
@@ -81,32 +110,33 @@ const cloudRequest = (options) => {
       header = {},
       showLoading = false,
       loadingText = '加载中...',
-      showError: shouldShowError = true
+      showError: shouldShowError = true,
+      retryCount = 0
     } = options;
 
     // 检查是否已初始化
     if (!CLOUDBASE_CONFIG.env) {
       const errorMsg = '云开发环境未初始化，请在 app.js 中调用 wx.cloud.init()';
-      console.error(errorMsg);
+      console.error('[CloudBase Request]', errorMsg);
       if (shouldShowError) {
         showError(errorMsg);
       }
-      reject({ code: -1, message: errorMsg });
+      reject({ code: -1, message: errorMsg, errorCode: 'SYS_UNKNOWN' });
       return;
     }
 
     // 获取本地存储的 token
     const token = wx.getStorageSync('token');
 
-    // 显示加载提示
-    if (showLoading) {
+    // 显示加载提示（仅首次请求显示）
+    if (showLoading && retryCount === 0) {
       wx.showLoading({
         title: loadingText,
         mask: true
       });
     }
 
-    // 构建请求头
+    // 构建请求头 - 确保包含 X-WX-SERVICE
     const requestHeader = {
       'Content-Type': 'application/json',
       'X-WX-SERVICE': CLOUDBASE_CONFIG.serviceName,
@@ -117,6 +147,8 @@ const cloudRequest = (options) => {
     if (token) {
       requestHeader['Authorization'] = `Bearer ${token}`;
     }
+
+    console.log('[CloudBase Request]', method, path, { env: CLOUDBASE_CONFIG.env, service: CLOUDBASE_CONFIG.serviceName });
 
     // 发起云托管请求
     wx.cloud.callContainer({
@@ -150,7 +182,7 @@ const cloudRequest = (options) => {
         wx.removeStorageSync('openid');
 
         if (shouldShowError) {
-          showError(ERROR_MESSAGES.auth);
+          showError(ERROR_CODES.AUTH_EXPIRED.message);
         }
 
         // 尝试重新登录
@@ -161,14 +193,33 @@ const cloudRequest = (options) => {
 
         reject({
           code: statusCode,
-          message: ERROR_MESSAGES.auth,
+          message: ERROR_CODES.AUTH_EXPIRED.message,
+          errorCode: 'AUTH_EXPIRED',
           data: responseData
         });
         return;
       }
 
       // 处理其他错误
-      const errorMessage = responseData?.message || getErrorMessage(null, statusCode);
+      const errorInfo = getErrorInfo(null, statusCode);
+      const errorMessage = responseData?.message || errorInfo.message;
+      
+      // 检查是否可重试
+      if (errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
+        const delay = RETRY_CONFIG.exponentialBackoff 
+          ? RETRY_CONFIG.retryDelay * Math.pow(2, retryCount)
+          : RETRY_CONFIG.retryDelay;
+        
+        console.log(`[CloudBase Request] 请求失败，${delay}ms 后重试 (${retryCount + 1}/${RETRY_CONFIG.maxRetries})`);
+        
+        setTimeout(() => {
+          cloudRequest({ ...options, retryCount: retryCount + 1 })
+            .then(resolve)
+            .catch(reject);
+        }, delay);
+        return;
+      }
+      
       if (shouldShowError) {
         showError(errorMessage);
       }
@@ -176,6 +227,7 @@ const cloudRequest = (options) => {
       reject({
         code: statusCode,
         message: errorMessage,
+        errorCode: errorInfo.code,
         data: responseData
       });
     }).catch(error => {
@@ -184,14 +236,32 @@ const cloudRequest = (options) => {
         wx.hideLoading();
       }
 
-      const errorMessage = getErrorMessage(error, 0);
+      const errorInfo = getErrorInfo(error, 0);
+      
+      // 检查是否可重试
+      if (errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
+        const delay = RETRY_CONFIG.exponentialBackoff 
+          ? RETRY_CONFIG.retryDelay * Math.pow(2, retryCount)
+          : RETRY_CONFIG.retryDelay;
+        
+        console.log(`[CloudBase Request] 请求失败，${delay}ms 后重试 (${retryCount + 1}/${RETRY_CONFIG.maxRetries})`);
+        
+        setTimeout(() => {
+          cloudRequest({ ...options, retryCount: retryCount + 1 })
+            .then(resolve)
+            .catch(reject);
+        }, delay);
+        return;
+      }
+      
       if (shouldShowError) {
-        showError(errorMessage);
+        showError(errorInfo.message);
       }
 
       reject({
         code: 0,
-        message: errorMessage,
+        message: errorInfo.message,
+        errorCode: errorInfo.code,
         error
       });
     });
@@ -270,5 +340,9 @@ module.exports = {
   put,
   del,
   showError,
-  ERROR_MESSAGES
+  ERROR_MESSAGES,
+  ERROR_CODES,
+  RETRY_CONFIG,
+  getErrorInfo,
+  getErrorMessage
 };

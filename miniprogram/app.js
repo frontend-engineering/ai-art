@@ -7,7 +7,13 @@
  * - openid: 微信openid
  * - isElderMode: 老年模式开关
  * - useCloudBase: 是否使用云托管（默认 true）
+ * - cloudbaseInitialized: CloudBase 是否已初始化
  */
+
+// CloudBase 配置
+const CLOUDBASE_ENV_ID = 'prod-9gxl9eb37627e2'; // 云开发环境 ID，请替换为实际值
+const CLOUDBASE_SERVICE_NAME = 'ai-family-photo-api'; // 云托管服务名称
+
 App({
   /**
    * 全局数据
@@ -18,7 +24,8 @@ App({
     userId: '',          // 用户ID
     openid: '',          // 微信openid
     isElderMode: false,  // 老年模式
-    useCloudBase: true   // 使用云托管
+    useCloudBase: true,  // 使用云托管
+    cloudbaseInitialized: false // CloudBase 是否已初始化
   },
 
   /**
@@ -34,31 +41,75 @@ App({
     // 恢复老年模式设置
     this.restoreElderMode();
     
-    // 检查登录状态
-    this.checkLoginStatus();
+    // 检查登录状态并自动登录
+    this.autoLogin();
   },
 
   /**
    * 初始化云开发
-   * 配置云托管环境
+   * 配置云托管环境和 CloudBase 认证
    */
-  initCloudBase() {
+  async initCloudBase() {
     try {
-      // 初始化云开发
-      wx.cloud.init({
-        env: '', // 云开发环境 ID，留空使用默认环境
-        traceUser: true
+      // 使用 CloudBase 认证模块初始化
+      const cloudbaseAuth = require('./utils/cloudbase-auth');
+      const success = await cloudbaseAuth.initCloudBase({
+        env: CLOUDBASE_ENV_ID,
+        region: 'ap-shanghai'
       });
 
-      // 设置云托管环境 ID
-      const cloudbaseRequest = require('./utils/cloudbase-request');
-      cloudbaseRequest.setEnvId(''); // 云开发环境 ID
-
-      console.log('[App] 云开发初始化成功');
+      if (success) {
+        // 设置云托管环境 ID
+        const cloudbaseRequest = require('./utils/cloudbase-request');
+        cloudbaseRequest.setEnvId(CLOUDBASE_ENV_ID);
+        
+        this.globalData.cloudbaseInitialized = true;
+        console.log('[App] CloudBase 初始化成功');
+      } else {
+        throw new Error('CloudBase 初始化返回失败');
+      }
     } catch (err) {
-      console.error('[App] 云开发初始化失败:', err);
+      console.error('[App] CloudBase 初始化失败:', err);
+      this.globalData.cloudbaseInitialized = false;
       // 初始化失败时回退到传统 HTTP 请求
       this.globalData.useCloudBase = false;
+    }
+  },
+
+  /**
+   * 自动登录
+   * 检查登录状态，如果未登录或已过期则自动执行静默登录
+   */
+  async autoLogin() {
+    try {
+      const cloudbaseAuth = require('./utils/cloudbase-auth');
+      
+      // 检查登录状态
+      const isValid = await cloudbaseAuth.checkLoginState();
+      
+      if (isValid) {
+        // 登录状态有效，恢复用户信息
+        const userInfo = await cloudbaseAuth.getCurrentUser();
+        if (userInfo) {
+          this.globalData.userId = userInfo.userId;
+          this.globalData.openid = userInfo.openid || '';
+          this.globalData.userInfo = userInfo;
+          console.log('[App] 登录状态有效，用户:', userInfo.userId);
+          
+          // 后台同步用户信息
+          cloudbaseAuth.syncUserInfo().catch(err => {
+            console.warn('[App] 后台同步用户信息失败:', err);
+          });
+          return;
+        }
+      }
+      
+      // 登录状态无效，执行静默登录
+      console.log('[App] 登录状态无效，执行静默登录...');
+      await this.login();
+    } catch (err) {
+      console.error('[App] 自动登录失败:', err);
+      // 自动登录失败不阻断应用启动，等待页面触发登录
     }
   },
 
@@ -92,29 +143,27 @@ App({
   },
 
   /**
-   * 检查登录状态
+   * 检查登录状态（兼容旧方法）
    * 从本地存储读取用户信息，更新全局状态
    * @returns {boolean} 是否已登录
    */
   checkLoginStatus() {
     try {
-      const token = wx.getStorageSync('token');
-      const userId = wx.getStorageSync('userId');
-      const openid = wx.getStorageSync('openid');
-      const paymentStatus = wx.getStorageSync('paymentStatus');
+      const cloudbaseAuth = require('./utils/cloudbase-auth');
+      const loginState = cloudbaseAuth.getLoginState();
       
-      if (userId) {
-        this.globalData.userId = userId;
-        this.globalData.openid = openid || '';
+      if (loginState && loginState.userId) {
+        this.globalData.userId = loginState.userId;
+        this.globalData.openid = loginState.openid || '';
         this.globalData.userInfo = {
-          userId,
-          openid,
-          paymentStatus: paymentStatus || 'free'
+          userId: loginState.userId,
+          openid: loginState.openid,
+          paymentStatus: loginState.paymentStatus || 'free'
         };
-        console.log('[App] 已登录用户:', userId);
+        console.log('[App] 已登录用户:', loginState.userId);
         return true;
       } else {
-        console.log('[App] 用户未登录，等待页面触发登录');
+        console.log('[App] 用户未登录');
         return false;
       }
     } catch (err) {
@@ -125,26 +174,32 @@ App({
 
   /**
    * 执行登录
-   * 调用 auth 模块进行微信登录
+   * 调用 CloudBase 认证模块进行静默登录
    * @returns {Promise<Object>} 登录结果
    */
   async login() {
-    const { login } = require('./utils/auth');
+    const cloudbaseAuth = require('./utils/cloudbase-auth');
     try {
       console.log('[App] 开始登录...');
-      const result = await login();
+      const loginState = await cloudbaseAuth.signInWithUnionId();
       
       // 更新全局状态
-      this.globalData.userId = result.userId;
-      this.globalData.openid = result.openid || '';
+      this.globalData.userId = loginState.userId;
+      this.globalData.openid = loginState.openid || '';
       this.globalData.userInfo = {
-        userId: result.userId,
-        openid: result.openid,
-        paymentStatus: result.paymentStatus || 'free'
+        userId: loginState.userId,
+        openid: loginState.openid,
+        paymentStatus: loginState.paymentStatus || 'free'
       };
       
-      console.log('[App] 登录成功:', result.userId);
-      return result;
+      console.log('[App] 登录成功:', loginState.userId);
+      
+      // 后台同步用户信息
+      cloudbaseAuth.syncUserInfo().catch(err => {
+        console.warn('[App] 后台同步用户信息失败:', err);
+      });
+      
+      return loginState;
     } catch (err) {
       console.error('[App] 登录失败:', err);
       throw err;
@@ -157,10 +212,20 @@ App({
    * @returns {Promise<Object>} 用户信息
    */
   async ensureLogin() {
-    if (this.checkLoginStatus()) {
-      return this.globalData.userInfo;
+    const cloudbaseAuth = require('./utils/cloudbase-auth');
+    try {
+      const userInfo = await cloudbaseAuth.ensureLogin();
+      
+      // 更新全局状态
+      this.globalData.userId = userInfo.userId;
+      this.globalData.openid = userInfo.openid || '';
+      this.globalData.userInfo = userInfo;
+      
+      return userInfo;
+    } catch (err) {
+      console.error('[App] ensureLogin 失败:', err);
+      throw err;
     }
-    return await this.login();
   },
 
   /**
@@ -241,17 +306,25 @@ App({
    * 退出登录
    * 清除全局状态和本地存储
    */
-  logout() {
-    const { logout } = require('./utils/auth');
+  async logout() {
+    const cloudbaseAuth = require('./utils/cloudbase-auth');
     
-    // 清除全局状态
-    this.globalData.userInfo = null;
-    this.globalData.userId = '';
-    this.globalData.openid = '';
-    
-    // 调用 auth 模块的 logout
-    logout();
-    
-    console.log('[App] 已退出登录');
+    try {
+      // 调用 CloudBase 认证模块的退出登录
+      await cloudbaseAuth.signOut();
+      
+      // 清除全局状态
+      this.globalData.userInfo = null;
+      this.globalData.userId = '';
+      this.globalData.openid = '';
+      
+      console.log('[App] 已退出登录');
+    } catch (err) {
+      console.error('[App] 退出登录失败:', err);
+      // 即使失败也清除全局状态
+      this.globalData.userInfo = null;
+      this.globalData.userId = '';
+      this.globalData.openid = '';
+    }
   }
 });

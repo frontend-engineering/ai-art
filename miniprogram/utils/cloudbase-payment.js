@@ -1,0 +1,481 @@
+/**
+ * CloudBase 支付模块
+ * 通过云函数实现微信支付功能
+ * 
+ * 支持功能：
+ * - 创建支付订单 (wxpay_order)
+ * - 查询订单状态 (wxpay_query_order_by_out_trade_no)
+ * - 申请退款 (wxpay_refund)
+ * - 查询退款状态 (wxpay_refund_query)
+ */
+
+// 云函数名称
+const CLOUD_FUNCTION_NAME = 'wxpayFunctions';
+
+// 套餐配置
+const PACKAGES = {
+  free: {
+    id: 'free',
+    name: '免费版',
+    price: 0,
+    amount: 0,  // 分
+    description: 'AI全家福-免费版',
+    features: ['标清图片', '可直接保存', '基础功能']
+  },
+  basic: {
+    id: 'basic',
+    name: '9.9元尝鲜包',
+    price: 9.9,
+    amount: 990,  // 分
+    description: 'AI全家福-尝鲜包',
+    features: ['高清无水印', '3-5人合成', '热门模板']
+  },
+  premium: {
+    id: 'premium',
+    name: '29.9元尊享包',
+    price: 29.9,
+    amount: 2990,  // 分
+    description: 'AI全家福-尊享包',
+    features: ['4K原图', '微动态', '贺卡', '全模板', '优先队列'],
+    recommended: true
+  }
+};
+
+// 订单状态
+const ORDER_STATUS = {
+  PENDING: 'pending',     // 待支付
+  PAID: 'paid',           // 已支付
+  REFUNDED: 'refunded',   // 已退款
+  FAILED: 'failed',       // 支付失败
+  CANCELLED: 'cancelled'  // 已取消
+};
+
+/**
+ * 日志输出
+ * @param {string} message 日志消息
+ * @param {any} data 附加数据
+ */
+const log = (message, data = null) => {
+  const prefix = '[CloudBase Payment]';
+  if (data) {
+    console.log(prefix, message, data);
+  } else {
+    console.log(prefix, message);
+  }
+};
+
+/**
+ * 获取套餐配置
+ * @param {string} packageType 套餐类型
+ * @returns {Object|null} 套餐配置
+ */
+const getPackageConfig = (packageType) => {
+  return PACKAGES[packageType] || null;
+};
+
+/**
+ * 获取所有套餐配置
+ * @returns {Object} 所有套餐配置
+ */
+const getAllPackages = () => {
+  return { ...PACKAGES };
+};
+
+/**
+ * 调用支付云函数
+ * @param {string} type 云函数类型
+ * @param {Object} data 请求数据
+ * @returns {Promise<Object>} 云函数返回结果
+ */
+const callPaymentFunction = async (type, data = {}) => {
+  try {
+    log(`调用云函数: ${type}`, data);
+    
+    const result = await wx.cloud.callFunction({
+      name: CLOUD_FUNCTION_NAME,
+      data: {
+        type,
+        ...data
+      }
+    });
+    
+    log(`云函数返回: ${type}`, result);
+    
+    if (result.result && result.result.code === 0) {
+      return result.result;
+    }
+    
+    // 处理云函数返回的错误
+    if (result.result && result.result.code !== 0) {
+      throw new Error(result.result.msg || '云函数调用失败');
+    }
+    
+    return result.result;
+  } catch (error) {
+    log(`云函数调用失败: ${type}`, error);
+    throw error;
+  }
+};
+
+/**
+ * 创建支付订单
+ * @param {Object} params 订单参数
+ * @param {string} params.packageType 套餐类型 ('basic' | 'premium')
+ * @param {string} params.generationId 关联的生成任务ID
+ * @param {string} params.userId 用户ID
+ * @returns {Promise<Object>} 支付凭证
+ */
+const createOrder = async (params) => {
+  const { packageType, generationId, userId } = params;
+  
+  // 验证套餐类型
+  const packageConfig = getPackageConfig(packageType);
+  if (!packageConfig) {
+    throw new Error(`无效的套餐类型: ${packageType}`);
+  }
+  
+  // 免费版不需要支付
+  if (packageType === 'free') {
+    return {
+      success: true,
+      data: {
+        packageType: 'free',
+        amount: 0,
+        status: ORDER_STATUS.PAID
+      }
+    };
+  }
+  
+  log('创建支付订单', { packageType, generationId, userId });
+  
+  try {
+    const result = await callPaymentFunction('wxpay_order', {
+      packageType,
+      generationId,
+      userId,
+      description: packageConfig.description,
+      amount: packageConfig.amount
+    });
+    
+    if (result && result.data) {
+      return {
+        success: true,
+        data: {
+          timeStamp: result.data.timeStamp,
+          nonceStr: result.data.nonceStr,
+          packageVal: result.data.packageVal,
+          paySign: result.data.paySign,
+          outTradeNo: result.data.outTradeNo,
+          packageType,
+          amount: packageConfig.amount
+        }
+      };
+    }
+    
+    throw new Error('创建订单失败：返回数据异常');
+  } catch (error) {
+    log('创建订单失败', error);
+    throw error;
+  }
+};
+
+/**
+ * 发起微信支付
+ * @param {Object} paymentData 支付凭证
+ * @returns {Promise<Object>} 支付结果
+ */
+const requestPayment = (paymentData) => {
+  return new Promise((resolve, reject) => {
+    log('发起微信支付', paymentData);
+    
+    wx.requestPayment({
+      timeStamp: paymentData.timeStamp,
+      nonceStr: paymentData.nonceStr,
+      package: paymentData.packageVal,
+      signType: 'RSA',  // 固定使用 RSA 签名
+      paySign: paymentData.paySign,
+      success: (res) => {
+        log('支付成功', res);
+        resolve({
+          success: true,
+          data: res
+        });
+      },
+      fail: (err) => {
+        log('支付失败', err);
+        
+        // 用户取消支付
+        if (err.errMsg && err.errMsg.includes('cancel')) {
+          reject({
+            code: 'PAY_CANCELLED',
+            message: '支付已取消',
+            cancelled: true
+          });
+          return;
+        }
+        
+        reject({
+          code: 'PAY_FAILED',
+          message: err.errMsg || '支付失败',
+          error: err
+        });
+      }
+    });
+  });
+};
+
+/**
+ * 查询订单状态
+ * @param {string} outTradeNo 商户订单号
+ * @returns {Promise<Object>} 订单状态
+ */
+const queryOrder = async (outTradeNo) => {
+  log('查询订单状态', { outTradeNo });
+  
+  try {
+    const result = await callPaymentFunction('wxpay_query_order_by_out_trade_no', {
+      out_trade_no: outTradeNo
+    });
+    
+    if (result && result.data) {
+      const tradeState = result.data.trade_state || result.data.tradeState;
+      
+      return {
+        success: true,
+        data: {
+          outTradeNo: result.data.out_trade_no || result.data.outTradeNo,
+          transactionId: result.data.transaction_id || result.data.transactionId,
+          tradeState,
+          tradeStateDesc: result.data.trade_state_desc || result.data.tradeStateDesc,
+          amount: result.data.amount,
+          isPaid: tradeState === 'SUCCESS'
+        }
+      };
+    }
+    
+    return {
+      success: false,
+      message: '查询订单失败'
+    };
+  } catch (error) {
+    log('查询订单失败', error);
+    throw error;
+  }
+};
+
+/**
+ * 通过微信交易号查询订单
+ * @param {string} transactionId 微信交易号
+ * @returns {Promise<Object>} 订单状态
+ */
+const queryOrderByTransactionId = async (transactionId) => {
+  log('通过交易号查询订单', { transactionId });
+  
+  try {
+    const result = await callPaymentFunction('wxpay_query_order_by_transaction_id', {
+      transaction_id: transactionId
+    });
+    
+    if (result && result.data) {
+      const tradeState = result.data.trade_state || result.data.tradeState;
+      
+      return {
+        success: true,
+        data: {
+          outTradeNo: result.data.out_trade_no || result.data.outTradeNo,
+          transactionId: result.data.transaction_id || result.data.transactionId,
+          tradeState,
+          tradeStateDesc: result.data.trade_state_desc || result.data.tradeStateDesc,
+          amount: result.data.amount,
+          isPaid: tradeState === 'SUCCESS'
+        }
+      };
+    }
+    
+    return {
+      success: false,
+      message: '查询订单失败'
+    };
+  } catch (error) {
+    log('查询订单失败', error);
+    throw error;
+  }
+};
+
+/**
+ * 申请退款
+ * @param {Object} params 退款参数
+ * @param {string} params.transactionId 微信交易号
+ * @param {string} params.outRefundNo 商户退款单号
+ * @param {number} params.refundAmount 退款金额(分)
+ * @param {number} params.totalAmount 原订单金额(分)
+ * @returns {Promise<Object>} 退款结果
+ */
+const refund = async (params) => {
+  const { transactionId, outRefundNo, refundAmount, totalAmount } = params;
+  
+  // 验证退款金额
+  if (refundAmount > totalAmount) {
+    throw new Error('退款金额不能大于原订单金额');
+  }
+  
+  if (refundAmount <= 0) {
+    throw new Error('退款金额必须大于0');
+  }
+  
+  log('申请退款', params);
+  
+  try {
+    const result = await callPaymentFunction('wxpay_refund', {
+      transaction_id: transactionId,
+      out_refund_no: outRefundNo || `refund_${Date.now()}`,
+      amount: {
+        refund: refundAmount,
+        total: totalAmount,
+        currency: 'CNY'
+      }
+    });
+    
+    if (result && result.data) {
+      return {
+        success: true,
+        data: {
+          refundId: result.data.refund_id,
+          outRefundNo: result.data.out_refund_no,
+          status: result.data.status,
+          amount: result.data.amount
+        }
+      };
+    }
+    
+    return {
+      success: false,
+      message: '退款申请失败'
+    };
+  } catch (error) {
+    log('退款申请失败', error);
+    throw error;
+  }
+};
+
+/**
+ * 查询退款状态
+ * @param {string} outRefundNo 商户退款单号
+ * @returns {Promise<Object>} 退款状态
+ */
+const queryRefund = async (outRefundNo) => {
+  log('查询退款状态', { outRefundNo });
+  
+  try {
+    const result = await callPaymentFunction('wxpay_refund_query', {
+      out_refund_no: outRefundNo
+    });
+    
+    if (result && result.data) {
+      return {
+        success: true,
+        data: {
+          refundId: result.data.refund_id,
+          outRefundNo: result.data.out_refund_no,
+          status: result.data.status,
+          amount: result.data.amount
+        }
+      };
+    }
+    
+    return {
+      success: false,
+      message: '查询退款状态失败'
+    };
+  } catch (error) {
+    log('查询退款状态失败', error);
+    throw error;
+  }
+};
+
+/**
+ * 完整支付流程
+ * 创建订单 -> 发起支付 -> 返回结果
+ * @param {Object} params 支付参数
+ * @param {string} params.packageType 套餐类型
+ * @param {string} params.generationId 生成任务ID
+ * @param {string} params.userId 用户ID
+ * @returns {Promise<Object>} 支付结果
+ */
+const pay = async (params) => {
+  const { packageType, generationId, userId } = params;
+  
+  // 免费版直接返回成功
+  if (packageType === 'free') {
+    return {
+      success: true,
+      data: {
+        packageType: 'free',
+        status: ORDER_STATUS.PAID
+      }
+    };
+  }
+  
+  try {
+    // 1. 创建订单
+    const orderResult = await createOrder({ packageType, generationId, userId });
+    
+    if (!orderResult.success) {
+      throw new Error('创建订单失败');
+    }
+    
+    // 2. 发起支付
+    const paymentResult = await requestPayment(orderResult.data);
+    
+    // 3. 支付成功，更新用户状态
+    if (paymentResult.success) {
+      // 更新本地用户付费状态
+      const cloudbaseAuth = require('./cloudbase-auth');
+      cloudbaseAuth.updatePaymentStatus(packageType);
+      
+      return {
+        success: true,
+        data: {
+          packageType,
+          outTradeNo: orderResult.data.outTradeNo,
+          status: ORDER_STATUS.PAID
+        }
+      };
+    }
+    
+    return paymentResult;
+  } catch (error) {
+    // 用户取消支付
+    if (error.cancelled) {
+      return {
+        success: false,
+        cancelled: true,
+        message: '支付已取消'
+      };
+    }
+    
+    throw error;
+  }
+};
+
+module.exports = {
+  // 配置
+  PACKAGES,
+  ORDER_STATUS,
+  CLOUD_FUNCTION_NAME,
+  getPackageConfig,
+  getAllPackages,
+  
+  // 支付流程
+  createOrder,
+  requestPayment,
+  pay,
+  
+  // 订单查询
+  queryOrder,
+  queryOrderByTransactionId,
+  
+  // 退款
+  refund,
+  queryRefund
+};
