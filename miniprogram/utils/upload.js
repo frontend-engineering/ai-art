@@ -1,9 +1,15 @@
 /**
  * 图片上传工具模块
  * 实现图片选择、压缩、上传等功能
+ * 
+ * 上传策略：
+ * 1. 优先使用云存储上传（wx.cloud.uploadFile）避免请求体过大
+ * 2. 云存储上传后获取临时 URL，传给后端转存到 OSS
+ * 3. 如果云存储不可用，回退到 Base64 方式（小图片）
  */
 
-// 不再需要 BASE_URL，使用云托管请求
+// 云开发环境 ID
+const CLOUDBASE_ENV_ID = 'test-1g71tc7eb37627e2';
 
 /**
  * 图片压缩质量配置
@@ -13,6 +19,11 @@ const COMPRESS_CONFIG = {
   maxHeight: 1920,     // 最大高度
   quality: 80          // 压缩质量 (0-100)
 };
+
+/**
+ * 文件大小限制（超过此大小使用云存储上传）
+ */
+const MAX_BASE64_SIZE = 500 * 1024; // 500KB
 
 /**
  * 选择图片
@@ -151,20 +162,174 @@ const imageToBase64 = (filePath) => {
 };
 
 /**
- * 上传图片到 OSS（使用 wx.uploadFile）
- * 注意：后端 /api/upload-image 接口期望 Base64 格式，此方法使用 multipart/form-data
- * 建议使用 uploadImageBase64 方法以确保兼容性
+ * 获取文件大小
+ * @param {string} filePath 文件路径
+ * @returns {Promise<number>} 文件大小（字节）
+ */
+const getFileSize = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const fs = wx.getFileSystemManager();
+    fs.getFileInfo({
+      filePath,
+      success: (res) => resolve(res.size),
+      fail: (err) => {
+        console.warn('[Upload] 获取文件大小失败:', err);
+        resolve(0); // 失败时返回 0，让后续逻辑使用云存储
+      }
+    });
+  });
+};
+
+/**
+ * 使用云存储上传图片
+ * @param {string} filePath 图片路径
+ * @param {Function} [onProgress] 进度回调
+ * @returns {Promise<string>} 云存储文件 ID
+ */
+const uploadToCloudStorage = (filePath, onProgress) => {
+  return new Promise((resolve, reject) => {
+    // 生成唯一的云存储路径
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    const ext = filePath.split('.').pop().toLowerCase() || 'jpg';
+    const cloudPath = `uploads/${timestamp}_${random}.${ext}`;
+
+    console.log('[Upload] 开始云存储上传:', cloudPath);
+
+    const uploadTask = wx.cloud.uploadFile({
+      cloudPath,
+      filePath,
+      config: {
+        env: CLOUDBASE_ENV_ID
+      },
+      success: (res) => {
+        if (res.fileID) {
+          console.log('[Upload] 云存储上传成功:', res.fileID);
+          resolve(res.fileID);
+        } else {
+          reject(new Error('云存储上传失败：未返回 fileID'));
+        }
+      },
+      fail: (err) => {
+        console.error('[Upload] 云存储上传失败:', err);
+        reject(err);
+      }
+    });
+
+    // 监听上传进度
+    if (onProgress) {
+      uploadTask.onProgressUpdate((res) => {
+        onProgress(res.progress);
+      });
+    }
+  });
+};
+
+/**
+ * 获取云存储文件的临时 URL
+ * @param {string} fileID 云存储文件 ID
+ * @returns {Promise<string>} 临时访问 URL
+ */
+const getTempFileURL = (fileID) => {
+  return new Promise((resolve, reject) => {
+    wx.cloud.getTempFileURL({
+      fileList: [fileID],
+      success: (res) => {
+        if (res.fileList && res.fileList[0] && res.fileList[0].tempFileURL) {
+          resolve(res.fileList[0].tempFileURL);
+        } else {
+          reject(new Error('获取临时 URL 失败'));
+        }
+      },
+      fail: reject
+    });
+  });
+};
+
+/**
+ * 上传图片到 OSS
+ * 优先使用云存储上传，避免 callContainer 请求体过大的问题
  * @param {string} filePath 图片路径
  * @param {Function} [onProgress] 进度回调
  * @returns {Promise<string>} 上传后的图片 URL
  */
-const uploadImage = (filePath, onProgress) => {
-  // 使用 Base64 方式上传以确保与后端接口兼容
-  return uploadImageBase64(filePath, onProgress);
+const uploadImage = async (filePath, onProgress) => {
+  const { uploadAPI } = require('./api');
+
+  try {
+    // 先压缩图片
+    if (onProgress) onProgress(10);
+    const compressedPath = await compressImage(filePath);
+
+    // 获取压缩后的文件大小
+    const fileSize = await getFileSize(compressedPath);
+    console.log('[Upload] 压缩后文件大小:', Math.round(fileSize / 1024), 'KB');
+
+    // 根据文件大小选择上传方式
+    if (fileSize > MAX_BASE64_SIZE) {
+      // 大文件：使用云存储上传
+      console.log('[Upload] 文件较大，使用云存储上传');
+      return await uploadImageViaCloudStorage(compressedPath, onProgress);
+    } else {
+      // 小文件：使用 Base64 方式
+      console.log('[Upload] 文件较小，使用 Base64 上传');
+      return await uploadImageBase64(compressedPath, onProgress);
+    }
+  } catch (err) {
+    console.error('[Upload] 上传失败:', err);
+    
+    // 如果是云托管请求体过大的错误，尝试使用云存储
+    if (err.errCode === -606001 || (err.message && err.message.includes('606001'))) {
+      console.log('[Upload] 检测到请求体过大，切换到云存储上传');
+      const compressedPath = await compressImage(filePath);
+      return await uploadImageViaCloudStorage(compressedPath, onProgress);
+    }
+    
+    throw err;
+  }
+};
+
+/**
+ * 通过云存储上传图片到 OSS
+ * 1. 先上传到云存储获取临时 URL
+ * 2. 将临时 URL 传给后端转存到 OSS
+ * @param {string} filePath 图片路径
+ * @param {Function} [onProgress] 进度回调
+ * @returns {Promise<string>} OSS 图片 URL
+ */
+const uploadImageViaCloudStorage = async (filePath, onProgress) => {
+  const { uploadAPI } = require('./api');
+
+  // 上传到云存储
+  if (onProgress) onProgress(20);
+  const fileID = await uploadToCloudStorage(filePath, (percent) => {
+    if (onProgress) onProgress(20 + percent * 0.5); // 20-70%
+  });
+
+  // 获取临时 URL
+  if (onProgress) onProgress(75);
+  const tempUrl = await getTempFileURL(fileID);
+  console.log('[Upload] 获取临时 URL 成功');
+
+  // 调用后端接口转存到 OSS
+  if (onProgress) onProgress(80);
+  const result = await uploadAPI.uploadImageFromUrl(tempUrl);
+
+  if (result.success && result.data && result.data.imageUrl) {
+    if (onProgress) onProgress(100);
+    console.log('[Upload] 云存储转存成功:', result.data.imageUrl);
+    return result.data.imageUrl;
+  }
+
+  // 如果后端转存失败，直接返回临时 URL（有效期较短，但可用）
+  console.warn('[Upload] 后端转存失败，使用临时 URL');
+  if (onProgress) onProgress(100);
+  return tempUrl;
 };
 
 /**
  * 上传图片到 OSS（使用 Base64 方式）
+ * 适用于小文件（< 500KB）
  * @param {string} filePath 图片路径
  * @param {Function} [onProgress] 进度回调
  * @returns {Promise<string>} 上传后的图片 URL
@@ -172,13 +337,9 @@ const uploadImage = (filePath, onProgress) => {
 const uploadImageBase64 = async (filePath, onProgress) => {
   const { uploadAPI } = require('./api');
 
-  // 先压缩图片
-  if (onProgress) onProgress(10);
-  const compressedPath = await compressImage(filePath);
-
   // 转换为 Base64
   if (onProgress) onProgress(30);
-  const base64 = await imageToBase64(compressedPath);
+  const base64 = await imageToBase64(filePath);
 
   // 上传
   if (onProgress) onProgress(50);
@@ -207,7 +368,7 @@ const uploadImages = async (filePaths, onProgress) => {
     const filePath = filePaths[i];
     
     try {
-      const url = await uploadImageBase64(filePath, (percent) => {
+      const url = await uploadImage(filePath, (percent) => {
         if (onProgress) {
           const overallPercent = Math.floor(((i + percent / 100) / total) * 100);
           onProgress(i + 1, total, overallPercent);
@@ -364,13 +525,18 @@ const requestAlbumPermission = () => {
 
 module.exports = {
   COMPRESS_CONFIG,
+  MAX_BASE64_SIZE,
   chooseImage,
   chooseOneImage,
   chooseMultipleImages,
   compressImage,
   getImageInfo,
+  getFileSize,
   imageToBase64,
+  uploadToCloudStorage,
+  getTempFileURL,
   uploadImage,
+  uploadImageViaCloudStorage,
   uploadImageBase64,
   uploadImages,
   chooseAndUpload,

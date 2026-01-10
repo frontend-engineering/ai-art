@@ -174,13 +174,23 @@ const paymentAPI = {
  */
 const uploadAPI = {
   /**
-   * 上传图片到 OSS
+   * 上传图片到 OSS（Base64 方式）
    * @param {string} image Base64 图片数据
    * @returns {Promise<Object>} 上传结果
    */
   uploadImage: (image) => post('/api/upload-image', { image }, {
     showLoading: true,
     loadingText: '上传图片中...',
+    timeout: 120000
+  }),
+
+  /**
+   * 从 URL 上传图片到 OSS（用于云存储转存）
+   * @param {string} imageUrl 图片 URL（云存储临时 URL）
+   * @returns {Promise<Object>} 上传结果
+   */
+  uploadImageFromUrl: (imageUrl) => post('/api/upload-image-from-url', { imageUrl }, {
+    showLoading: false,
     timeout: 120000
   }),
 

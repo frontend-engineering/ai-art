@@ -1,7 +1,19 @@
 /**
  * CloudBase 云托管请求封装模块
  * 使用 wx.cloud.callContainer 调用云托管服务
+ * 
+ * 本地调试模式：
+ * 设置 USE_LOCAL_SERVER = true 可切换到本地后端调试
+ * 本地后端地址：http://localhost:3001
  */
+
+// ============================================
+// 🔧 本地调试开关
+// true: 连接本地后端 http://localhost:3001
+// false: 连接云托管服务
+// ============================================
+const USE_LOCAL_SERVER = true;
+const LOCAL_SERVER_URL = 'http://localhost:3001';
 
 // 云托管配置
 const CLOUDBASE_CONFIG = {
@@ -103,6 +115,116 @@ const setEnvId = (envId) => {
  * @returns {Promise<Object>} 响应数据
  */
 const cloudRequest = (options) => {
+  // 本地调试模式使用 wx.request
+  if (USE_LOCAL_SERVER) {
+    return localRequest(options);
+  }
+  
+  // 生产模式使用 wx.cloud.callContainer
+  return cloudContainerRequest(options);
+};
+
+/**
+ * 本地调试请求（使用 wx.request）
+ * @param {Object} options 请求配置
+ * @returns {Promise<Object>} 响应数据
+ */
+const localRequest = (options) => {
+  return new Promise((resolve, reject) => {
+    const {
+      path,
+      method = 'GET',
+      data,
+      header = {},
+      showLoading = false,
+      loadingText = '加载中...',
+      showError: shouldShowError = true,
+      noRetry = false,
+      retryCount = 0
+    } = options;
+
+    // 获取本地存储的 token
+    const token = wx.getStorageSync('token');
+
+    // 显示加载提示
+    if (showLoading && retryCount === 0) {
+      wx.showLoading({ title: loadingText, mask: true });
+    }
+
+    // 构建请求头
+    const requestHeader = {
+      'Content-Type': 'application/json',
+      ...header
+    };
+    if (token) {
+      requestHeader['Authorization'] = `Bearer ${token}`;
+    }
+
+    const url = `${LOCAL_SERVER_URL}${path}`;
+    console.log('[Local Request]', method, url);
+
+    wx.request({
+      url,
+      method,
+      data,
+      header: requestHeader,
+      success: (res) => {
+        if (showLoading) wx.hideLoading();
+
+        const { statusCode, data: responseData } = res;
+
+        if (statusCode >= 200 && statusCode < 300) {
+          resolve(responseData);
+          return;
+        }
+
+        // 处理错误
+        const errorInfo = getErrorInfo(null, statusCode);
+        const errorMessage = responseData?.message || errorInfo.message;
+
+        if (shouldShowError) {
+          showError(errorMessage);
+        }
+
+        reject({
+          code: statusCode,
+          message: errorMessage,
+          errorCode: errorInfo.code,
+          data: responseData
+        });
+      },
+      fail: (error) => {
+        if (showLoading) wx.hideLoading();
+
+        const errorInfo = getErrorInfo(error, 0);
+        
+        // 本地调试常见错误提示
+        let errorMessage = errorInfo.message;
+        if (error.errMsg && error.errMsg.includes('fail')) {
+          errorMessage = '无法连接本地服务器，请确保后端已启动 (pnpm run dev)';
+        }
+
+        if (shouldShowError) {
+          showError(errorMessage);
+        }
+
+        reject({
+          code: 0,
+          message: errorMessage,
+          errorCode: errorInfo.code,
+          error
+        });
+      }
+    });
+  });
+};
+
+/**
+ * 云托管请求（使用 wx.cloud.callContainer）
+ * @param {Object} options 请求配置
+ * @returns {Promise<Object>} 响应数据
+ */
+const cloudContainerRequest = (options) => {
   return new Promise((resolve, reject) => {
     const {
       path,

@@ -26,6 +26,25 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
+.scroll-hint {
+  display: block;
+  font-size: 24rpx;
+  color: #FFD700;
+  margin-top: 12rpx;
+  animation: hint-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes hint-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* 滚动容器 */
+.grid-scroll-container {
+  width: 100%;
+  white-space: nowrap;
+}
+
 /* 网格容器 */
 .grid-container {
   display: grid;
@@ -37,6 +56,20 @@
   grid-template-columns: 1fr;
   max-width: 400rpx;
   margin: 0 auto;
+}
+
+/* 滚动模式 - 多于2张图片时水平滚动 */
+.grid-container.scroll-mode {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 24rpx;
+  padding-right: 24rpx;
+}
+
+.grid-container.scroll-mode .grid-item {
+  flex-shrink: 0;
+  width: 320rpx;
 }
 
 /* 网格项 */

@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const https = require('https');
+const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -13,7 +14,7 @@ const { extractFaces, addWatermark } = require('../services/pythonBridge');
 const { validateRequest, validateUploadImageParams, validateExtractFacesParams } = require('../utils/validation');
 const userService = require('../services/userService');
 
-// 上传图片到OSS
+// 上传图片到OSS（Base64 方式）
 router.post('/upload-image', validateRequest(validateUploadImageParams), async (req, res) => {
   try {
     const { image } = req.body;
@@ -26,6 +27,68 @@ router.post('/upload-image', validateRequest(validateUploadImageParams), async (
     res.json({ success: true, data: { imageUrl } });
   } catch (error) {
     console.error('上传图片失败:', error);
+    res.status(500).json({ error: '上传图片失败', message: error.message });
+  }
+});
+
+// 从 URL 上传图片到 OSS（用于云存储转存）
+router.post('/upload-image-from-url', async (req, res) => {
+  try {
+    const { imageUrl } = req.body;
+    
+    if (!imageUrl) {
+      return res.status(400).json({ error: '缺少必要参数', message: '需要提供 imageUrl 参数' });
+    }
+    
+    console.log('[Upload] 从 URL 下载图片:', imageUrl.substring(0, 100) + '...');
+    
+    // 下载图片到临时文件
+    const tempDir = os.tmpdir();
+    const tempFilePath = path.join(tempDir, `download_${Date.now()}.jpg`);
+    
+    await new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(tempFilePath);
+      const protocol = imageUrl.startsWith('https') ? https : http;
+      
+      protocol.get(imageUrl, (response) => {
+        // 处理重定向
+        if (response.statusCode === 301 || response.statusCode === 302) {
+          const redirectUrl = response.headers.location;
+          const redirectProtocol = redirectUrl.startsWith('https') ? https : http;
+          redirectProtocol.get(redirectUrl, (redirectResponse) => {
+            redirectResponse.pipe(file);
+            file.on('finish', () => { file.close(); resolve(); });
+          }).on('error', reject);
+          return;
+        }
+        
+        if (response.statusCode !== 200) {
+          reject(new Error(`下载失败，状态码: ${response.statusCode}`));
+          return;
+        }
+        
+        response.pipe(file);
+        file.on('finish', () => { file.close(); resolve(); });
+      }).on('error', (err) => {
+        fs.unlink(tempFilePath, () => {});
+        reject(err);
+      });
+    });
+    
+    // 读取文件并转换为 Base64
+    const imageBuffer = fs.readFileSync(tempFilePath);
+    const base64Image = `data:image/jpeg;base64,${imageBuffer.toString('base64')}`;
+    
+    // 清理临时文件
+    fs.unlink(tempFilePath, () => {});
+    
+    // 上传到 OSS
+    const ossUrl = await uploadImageToOSS(base64Image);
+    
+    console.log('[Upload] URL 转存成功:', ossUrl);
+    res.json({ success: true, data: { imageUrl: ossUrl } });
+  } catch (error) {
+    console.error('从 URL 上传图片失败:', error);
     res.status(500).json({ error: '上传图片失败', message: error.message });
   }
 });
