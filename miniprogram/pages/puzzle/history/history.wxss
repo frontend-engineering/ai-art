@@ -1,0 +1,6 @@
+/**
+ * 时空拼图历史记录页样式
+ * Requirements: 2.2, 11.1-11.4, 10.1-10.3
+ */
+
+@import '/pages/transform/history/history.wxss';

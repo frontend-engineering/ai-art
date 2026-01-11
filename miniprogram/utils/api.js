@@ -238,12 +238,45 @@ const historyAPI = {
   /**
    * 删除历史记录
    * @param {string} historyId 历史记录ID
+   * @param {string} [userId] 用户ID（用于权限验证）
    * @returns {Promise<Object>} 删除结果
    */
-  deleteHistory: (historyId) => request({
-    url: `/api/history/${historyId}`,
-    method: 'DELETE'
-  })
+  deleteHistory: (historyId, userId) => {
+    const params = userId ? `?userId=${userId}` : '';
+    return request({
+      path: `/api/history/${historyId}${params}`,
+      method: 'DELETE',
+      showLoading: true,
+      loadingText: '删除中...'
+    });
+  },
+
+  /**
+   * 批量删除历史记录
+   * @param {string[]} recordIds 记录ID数组
+   * @param {string} [userId] 用户ID（用于权限验证）
+   * @returns {Promise<Object>} 删除结果
+   */
+  batchDeleteHistory: (recordIds, userId) => {
+    return post('/api/history/batch-delete', { recordIds, userId }, {
+      showLoading: true,
+      loadingText: '删除中...'
+    });
+  },
+
+  /**
+   * 清空用户所有历史记录
+   * @param {string} userId 用户ID
+   * @returns {Promise<Object>} 删除结果
+   */
+  clearAllHistory: (userId) => {
+    return request({
+      path: `/api/history/user/${userId}/all`,
+      method: 'DELETE',
+      showLoading: true,
+      loadingText: '清空中...'
+    });
+  }
 };
 
 /**

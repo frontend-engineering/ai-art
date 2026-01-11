@@ -54,6 +54,23 @@ Page({
   },
 
   /**
+   * 查看历史记录
+   * Requirements: 11.1-11.4
+   */
+  viewHistory() {
+    wx.navigateTo({
+      url: '/pages/puzzle/history/history',
+      fail: (err) => {
+        console.error('跳转历史记录失败:', err);
+        wx.showToast({
+          title: '页面跳转失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  /**
    * 返回首页
    */
   goBack() {

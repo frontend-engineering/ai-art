@@ -79,6 +79,20 @@
   flex-shrink: 0;
 }
 
+/* 清空按钮 */
+.clear-all-btn {
+  padding: 12rpx 24rpx;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 24rpx;
+  flex-shrink: 0;
+}
+
+.clear-all-text {
+  font-size: 26rpx;
+  color: #EF4444;
+  font-weight: 500;
+}
+
 /* 内容区域 */
 .history-content {
   flex: 1;

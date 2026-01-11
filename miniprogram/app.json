@@ -7,6 +7,7 @@
     "pages/puzzle/generating/generating",
     "pages/puzzle/result-selector/result-selector",
     "pages/puzzle/result/result",
+    "pages/puzzle/history/history",
     "pages/transform/launch/launch",
     "pages/transform/upload/upload",
     "pages/transform/template/template",
