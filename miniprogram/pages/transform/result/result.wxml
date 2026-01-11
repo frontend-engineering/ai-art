@@ -111,8 +111,9 @@
         <view class="btn-shine"></view>
       </view>
       
-      <!-- 生成微动态 / 保存微动态 -->
+      <!-- 生成微动态 / 保存微动态 (暂时隐藏，后续版本放开) -->
       <view 
+        wx:if="{{false}}"
         class="action-btn live-btn {{isGeneratingVideo ? 'loading' : ''}}"
         bindtap="{{hasLivePhoto ? 'handleSaveLivePhoto' : 'handleGenerateLivePhoto'}}"
       >
@@ -123,16 +124,16 @@
         </view>
       </view>
       
-      <!-- 生成贺卡 -->
-      <view class="action-btn card-btn" bindtap="handleGenerateCard">
+      <!-- 生成贺卡 (暂时隐藏，后续版本放开) -->
+      <view wx:if="{{false}}" class="action-btn card-btn" bindtap="handleGenerateCard">
         <view class="btn-inner red">
           <text class="btn-icon">💌</text>
           <text class="btn-text">生成拜年贺卡</text>
         </view>
       </view>
       
-      <!-- 定制产品 -->
-      <view class="action-btn product-btn" bindtap="handleOrderProduct">
+      <!-- 定制产品 (暂时隐藏，后续版本放开) -->
+      <view wx:if="{{false}}" class="action-btn product-btn" bindtap="handleOrderProduct">
         <view class="btn-inner purple">
           <text class="btn-icon">🖼️</text>
           <text class="btn-text">定制晶瓷画</text>

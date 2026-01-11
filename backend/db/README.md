@@ -26,7 +26,7 @@ pnpm run db:migrate:status
 
 显示已应用和待执行的迁移。
 
-### 2. 执行迁移
+### 2. 执行迁移（本地）
 
 ```bash
 pnpm run db:migrate
@@ -34,7 +34,19 @@ pnpm run db:migrate
 
 自动执行所有待执行的迁移文件。
 
-### 3. 创建新迁移
+### 3. 云端数据库同步
+
+```bash
+# 查看云端数据库状态
+pnpm run db:cloudbase
+
+# 输出迁移 SQL（用于在云开发控制台执行）
+pnpm run db:cloudbase:sql
+```
+
+云端 MySQL 使用 CloudBase RDB API，需要在云开发控制台手动执行 SQL。
+
+### 4. 创建新迁移
 
 在 `backend/db/migrations/` 目录下创建新的 SQL 文件，命名格式：
 

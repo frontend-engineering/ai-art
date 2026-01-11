@@ -12,7 +12,7 @@
 // true: 连接本地后端 http://localhost:3001
 // false: 连接云托管服务
 // ============================================
-const USE_LOCAL_SERVER = true;
+const USE_LOCAL_SERVER = false;
 const LOCAL_SERVER_URL = 'http://localhost:3001';
 
 // 云托管配置
@@ -357,7 +357,21 @@ const cloudContainerRequest = (options) => {
         wx.hideLoading();
       }
 
+      // 提取错误码（云托管错误码在 error.errCode 中）
+      const errCode = error.errCode || error.code || 0;
       const errorInfo = getErrorInfo(error, 0);
+      
+      // -606001 是请求体过大错误，静默处理，让调用方回退到其他方式
+      if (errCode === -606001) {
+        reject({
+          code: errCode,
+          errCode: errCode,
+          message: '请求体过大',
+          errorCode: 'PAYLOAD_TOO_LARGE',
+          error
+        });
+        return;
+      }
       
       // 检查是否可重试（noRetry 为 true 时禁用重试）
       if (!noRetry && errorInfo.retryable && retryCount < RETRY_CONFIG.maxRetries) {
@@ -380,7 +394,8 @@ const cloudContainerRequest = (options) => {
       }
 
       reject({
-        code: 0,
+        code: errCode,
+        errCode: errCode,
         message: errorInfo.message,
         errorCode: errorInfo.code,
         error

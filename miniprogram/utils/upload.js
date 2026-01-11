@@ -21,9 +21,11 @@ const COMPRESS_CONFIG = {
 };
 
 /**
- * 文件大小限制（超过此大小使用云存储上传）
+ * 文件大小限制
+ * 由于云托管 callContainer 请求体限制，直接使用云存储上传更稳定
+ * 这个阈值设置得很低，确保大部分情况都走云存储
  */
-const MAX_BASE64_SIZE = 500 * 1024; // 500KB
+const MAX_BASE64_SIZE = 50 * 1024; // 50KB，基本上所有图片都会走云存储
 
 /**
  * 选择图片
@@ -194,8 +196,6 @@ const uploadToCloudStorage = (filePath, onProgress) => {
     const ext = filePath.split('.').pop().toLowerCase() || 'jpg';
     const cloudPath = `uploads/${timestamp}_${random}.${ext}`;
 
-    console.log('[Upload] 开始云存储上传:', cloudPath);
-
     const uploadTask = wx.cloud.uploadFile({
       cloudPath,
       filePath,
@@ -204,7 +204,6 @@ const uploadToCloudStorage = (filePath, onProgress) => {
       },
       success: (res) => {
         if (res.fileID) {
-          console.log('[Upload] 云存储上传成功:', res.fileID);
           resolve(res.fileID);
         } else {
           reject(new Error('云存储上传失败：未返回 fileID'));
@@ -248,14 +247,12 @@ const getTempFileURL = (fileID) => {
 
 /**
  * 上传图片到 OSS
- * 优先使用云存储上传，避免 callContainer 请求体过大的问题
+ * 优先使用云存储上传，更稳定可靠
  * @param {string} filePath 图片路径
  * @param {Function} [onProgress] 进度回调
  * @returns {Promise<string>} 上传后的图片 URL
  */
 const uploadImage = async (filePath, onProgress) => {
-  const { uploadAPI } = require('./api');
-
   try {
     // 先压缩图片
     if (onProgress) onProgress(10);
@@ -263,28 +260,12 @@ const uploadImage = async (filePath, onProgress) => {
 
     // 获取压缩后的文件大小
     const fileSize = await getFileSize(compressedPath);
-    console.log('[Upload] 压缩后文件大小:', Math.round(fileSize / 1024), 'KB');
-
-    // 根据文件大小选择上传方式
-    if (fileSize > MAX_BASE64_SIZE) {
-      // 大文件：使用云存储上传
-      console.log('[Upload] 文件较大，使用云存储上传');
-      return await uploadImageViaCloudStorage(compressedPath, onProgress);
-    } else {
-      // 小文件：使用 Base64 方式
-      console.log('[Upload] 文件较小，使用 Base64 上传');
-      return await uploadImageBase64(compressedPath, onProgress);
-    }
+    
+    // 直接使用云存储上传，更稳定可靠
+    // 云托管 callContainer 有请求体大小限制，云存储没有这个问题
+    return await uploadImageViaCloudStorage(compressedPath, onProgress);
   } catch (err) {
     console.error('[Upload] 上传失败:', err);
-    
-    // 如果是云托管请求体过大的错误，尝试使用云存储
-    if (err.errCode === -606001 || (err.message && err.message.includes('606001'))) {
-      console.log('[Upload] 检测到请求体过大，切换到云存储上传');
-      const compressedPath = await compressImage(filePath);
-      return await uploadImageViaCloudStorage(compressedPath, onProgress);
-    }
-    
     throw err;
   }
 };
@@ -293,6 +274,7 @@ const uploadImage = async (filePath, onProgress) => {
  * 通过云存储上传图片到 OSS
  * 1. 先上传到云存储获取临时 URL
  * 2. 将临时 URL 传给后端转存到 OSS
+ * 3. 如果后端转存失败，直接返回临时 URL
  * @param {string} filePath 图片路径
  * @param {Function} [onProgress] 进度回调
  * @returns {Promise<string>} OSS 图片 URL
@@ -309,27 +291,29 @@ const uploadImageViaCloudStorage = async (filePath, onProgress) => {
   // 获取临时 URL
   if (onProgress) onProgress(75);
   const tempUrl = await getTempFileURL(fileID);
-  console.log('[Upload] 获取临时 URL 成功');
 
-  // 调用后端接口转存到 OSS
+  // 尝试调用后端接口转存到 OSS
   if (onProgress) onProgress(80);
-  const result = await uploadAPI.uploadImageFromUrl(tempUrl);
+  try {
+    const result = await uploadAPI.uploadImageFromUrl(tempUrl);
 
-  if (result.success && result.data && result.data.imageUrl) {
-    if (onProgress) onProgress(100);
-    console.log('[Upload] 云存储转存成功:', result.data.imageUrl);
-    return result.data.imageUrl;
+    if (result.success && result.data && result.data.imageUrl) {
+      if (onProgress) onProgress(100);
+      return result.data.imageUrl;
+    }
+  } catch (err) {
+    // 后端接口可能不存在（404）或其他错误，静默处理
   }
 
-  // 如果后端转存失败，直接返回临时 URL（有效期较短，但可用）
-  console.warn('[Upload] 后端转存失败，使用临时 URL');
+  // 如果后端转存失败，直接返回云存储临时 URL
+  // 临时 URL 有效期约 2 小时，对于即时使用场景足够
   if (onProgress) onProgress(100);
   return tempUrl;
 };
 
 /**
  * 上传图片到 OSS（使用 Base64 方式）
- * 适用于小文件（< 500KB）
+ * 适用于小文件（< 300KB）
  * @param {string} filePath 图片路径
  * @param {Function} [onProgress] 进度回调
  * @returns {Promise<string>} 上传后的图片 URL
@@ -343,15 +327,28 @@ const uploadImageBase64 = async (filePath, onProgress) => {
 
   // 上传
   if (onProgress) onProgress(50);
-  const result = await uploadAPI.uploadImage(base64);
+  
+  try {
+    const result = await uploadAPI.uploadImage(base64);
 
-  if (result.success && result.data && result.data.imageUrl) {
-    if (onProgress) onProgress(100);
-    console.log('[Upload] Base64 上传成功:', result.data.imageUrl);
-    return result.data.imageUrl;
+    if (result.success && result.data && result.data.imageUrl) {
+      if (onProgress) onProgress(100);
+      console.log('[Upload] Base64 上传成功:', result.data.imageUrl);
+      return result.data.imageUrl;
+    }
+
+    throw new Error(result.message || '上传失败');
+  } catch (err) {
+    // 如果是云托管请求体过大的错误，抛出特定错误让上层处理
+    if (err.errCode === -606001 || err.code === -606001 || 
+        (err.message && err.message.includes('606001'))) {
+      console.log('[Upload] Base64 上传失败（请求体过大），需要切换到云存储');
+      const error = new Error('请求体过大');
+      error.errCode = -606001;
+      throw error;
+    }
+    throw err;
   }
-
-  throw new Error(result.message || '上传失败');
 };
 
 /**

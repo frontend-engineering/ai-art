@@ -220,13 +220,12 @@ const historyAPI = {
   /**
    * 获取用户历史记录
    * @param {string} userId 用户ID
-   * @param {string} [mode] 模式筛选
+   * @param {number} [limit] 返回数量限制
    * @returns {Promise<Object>} 历史记录列表
    */
-  getHistory: (userId, mode) => {
-    const params = { userId };
-    if (mode) params.mode = mode;
-    return get('/api/history', params);
+  getHistory: (userId, limit) => {
+    const params = limit ? `?limit=${limit}` : '';
+    return get(`/api/history/user/${userId}${params}`);
   },
 
   /**

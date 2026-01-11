@@ -10,7 +10,7 @@
  */
 
 const { getHistory, deleteHistory } = require('../../../utils/storage');
-const { historyAPI } = require('../../../utils/api');
+const { cloudRequest } = require('../../../utils/cloudbase-request');
 
 Page({
   data: {
@@ -64,9 +64,9 @@ Page({
       const userId = wx.getStorageSync('userId');
       if (userId) {
         try {
-          // 使用统一的 historyAPI
-          const result = await request({
-            url: `/api/history/user/${userId}?limit=20`,
+          // 使用 cloudRequest 获取历史记录
+          const result = await cloudRequest({
+            path: `/api/history/user/${userId}?limit=20`,
             method: 'GET',
             showError: false
           });
