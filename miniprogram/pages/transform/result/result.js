@@ -425,6 +425,7 @@ Page({
     try {
       wx.showLoading({ title: '保存中...', mask: true });
       
+      // 下载图片到本地
       const downloadRes = await new Promise((resolve, reject) => {
         wx.downloadFile({
           url: selectedImage,
@@ -437,12 +438,20 @@ Page({
         throw new Error('下载图片失败');
       }
       
-      await savePosterToAlbum(downloadRes.tempFilePath);
-      
-      wx.hideLoading();
-      wx.showToast({
-        title: '保存成功',
-        icon: 'success'
+      // 直接保存到相册，不使用 savePosterToAlbum
+      await new Promise((resolve, reject) => {
+        wx.saveImageToPhotosAlbum({
+          filePath: downloadRes.tempFilePath,
+          success: () => {
+            wx.hideLoading();
+            wx.showToast({
+              title: '保存成功',
+              icon: 'success'
+            });
+            resolve();
+          },
+          fail: reject
+        });
       });
       
     } catch (err) {
