@@ -14,7 +14,7 @@
 // 云托管服务域名配置
 const DOMAINS = {
   // 云托管默认测试域名（无需备案，可直接使用）
-  cloudbase: 'https://express-215695-6-1317586939.sh.run.tcloudbase.com',
+  cloudbase: 'https://tcb.webinfra.cloud',
   
   // 自定义域名（需要备案后配置）
   // 配置步骤：
@@ -27,7 +27,7 @@ const DOMAINS = {
 // 当前使用的域名（切换时只需修改这里）
 // 'cloudbase' - 使用云托管默认域名
 // 'custom' - 使用自定义域名
-const CURRENT_DOMAIN = 'cloudbase';
+const CURRENT_DOMAIN = 'custom';
 
 // 导出的 API 基础地址
 const API_BASE_URL = DOMAINS[CURRENT_DOMAIN];
