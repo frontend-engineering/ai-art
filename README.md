@@ -63,46 +63,41 @@ AI全家福是一个基于AI技术的全家福照片生成应用，支持多种�
 
 ## 快速开始
 
-### 环境要求
-- Node.js >= 18
-- pnpm >= 8
-- Docker & Docker Compose
+### ✅ 项目已启动成功！
 
-### 安装依赖
+**访问地址：**
+- 前端：http://localhost:3000
+- 后端：http://localhost:3001
 
-```bash
-# 前端依赖
-pnpm install
+### 🐳 Docker 网络问题解决
 
-# 后端依赖
-cd backend
-pnpm install
+如果 `docker-compose up -d` 失败，请配置 Docker 镜像加速：
+
+**Docker Desktop → Settings → Docker Engine**，添加：
+```json
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com"
+  ]
+}
 ```
 
-### 配置环境变量
-
-复制 `.env.example` 为 `.env` 并填写配置：
-
+然后重试：
 ```bash
-cp .env.example .env
-cp backend/.env.example backend/.env
-```
-
-### 启动服务
-
-```bash
-# 启动数据库等服务
 docker-compose up -d
-
-# 启动后端
 cd backend
-pnpm run dev
-
-# 启动前端（新终端）
-pnpm run dev
+pnpm run db:init
 ```
 
-访问 http://localhost:5173
+### ⚠️ 无 Docker 也可运行
+
+项目已启用 Mock 模式，无需数据库即可测试所有功能。
+
+### 环境要求
+- Node.js >= 18 ✅
+- pnpm >= 8 ✅
+- Docker（可选）
 
 ## 项目架构
 
