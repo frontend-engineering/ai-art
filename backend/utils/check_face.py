@@ -37,11 +37,27 @@ def check_face(image_path, min_face_size=80, confidence_threshold=0.7):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         
         # 使用OpenCV的DNN人脸检测器（更准确）
-        # 加载预训练模型
-        model_file = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        face_cascade = cv2.CascadeClassifier(model_file)
+        # 尝试多个可能的模型路径
+        cascade_paths = [
+            'haarcascade_frontalface_default.xml',  # 当前目录
+            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml' if hasattr(cv2, 'data') else None,  # OpenCV数据目录
+            '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',  # Alpine Linux
+            '/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',  # 其他Linux
+        ]
         
-        if face_cascade.empty():
+        face_cascade = None
+        for path in cascade_paths:
+            if path is None:
+                continue
+            try:
+                cascade = cv2.CascadeClassifier(path)
+                if not cascade.empty():
+                    face_cascade = cascade
+                    break
+            except:
+                continue
+        
+        if face_cascade is None or face_cascade.empty():
             return {
                 'success': False,
                 'face_count': 0,
