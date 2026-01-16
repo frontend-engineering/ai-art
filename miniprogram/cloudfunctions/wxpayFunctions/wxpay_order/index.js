@@ -1,5 +1,8 @@
 /**
  * 微信支付 - 下单
+ * 支持两种支付模式：
+ * - JSAPI: 小程序支付（默认）
+ * - NATIVE: PC 扫码支付
  */
 const cloud = require('wx-server-sdk');
 const { safeDb } = require('../db/mysql');
@@ -11,34 +14,196 @@ const PACKAGES = {
   premium: { name: '29.9元尊享包', amount: 2990, description: 'AI全家福-尊享包' }
 };
 
+// 支付模式
+const TRADE_TYPES = {
+  JSAPI: 'JSAPI',   // 小程序支付
+  NATIVE: 'NATIVE'  // PC 扫码支付
+};
+
 function generateOutTradeNo() {
   const timestamp = Date.now();
   const random = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
   return `${timestamp}${random}`;
 }
 
+/**
+ * 小程序支付下单 (JSAPI)
+ */
+async function createJsapiOrder(params) {
+  const { orderDescription, orderAmount, outTradeNo, openid } = params;
+  
+  console.log('[wxpay_order] 调用 cloudbase_module 下单 (JSAPI)...');
+  const res = await cloud.callFunction({
+    name: 'cloudbase_module',
+    data: {
+      name: 'wxpay_order',
+      data: {
+        description: orderDescription,
+        amount: { total: orderAmount, currency: 'CNY' },
+        out_trade_no: outTradeNo,
+        payer: { openid }
+      }
+    }
+  });
+  
+  console.log('[wxpay_order] cloudbase_module 返回:', JSON.stringify(res.result));
+  
+  if (!res.result) {
+    return { code: -1, msg: '支付服务返回为空' };
+  }
+  
+  // 检查各种可能的返回格式
+  if (res.result.payment) {
+    return {
+      code: 0,
+      data: {
+        tradeType: TRADE_TYPES.JSAPI,
+        timeStamp: res.result.payment.timeStamp,
+        nonceStr: res.result.payment.nonceStr,
+        packageVal: res.result.payment.package || res.result.payment.packageVal,
+        paySign: res.result.payment.paySign,
+        outTradeNo
+      }
+    };
+  } else if (res.result.code === 0 && res.result.data) {
+    const data = res.result.data;
+    return {
+      code: 0,
+      data: {
+        tradeType: TRADE_TYPES.JSAPI,
+        timeStamp: data.timeStamp,
+        nonceStr: data.nonceStr,
+        packageVal: data.package || data.packageVal,
+        paySign: data.paySign,
+        outTradeNo
+      }
+    };
+  } else if (res.result.timeStamp && res.result.paySign) {
+    return {
+      code: 0,
+      data: {
+        tradeType: TRADE_TYPES.JSAPI,
+        timeStamp: res.result.timeStamp,
+        nonceStr: res.result.nonceStr,
+        packageVal: res.result.package || res.result.packageVal,
+        paySign: res.result.paySign,
+        outTradeNo
+      }
+    };
+  } else if (res.result.errcode && res.result.errmsg) {
+    return { 
+      code: -1, 
+      msg: res.result.errmsg || '支付下单失败',
+      errcode: res.result.errcode,
+      data: res.result
+    };
+  }
+  
+  return { 
+    code: -1, 
+    msg: '支付服务返回格式异常',
+    data: res.result
+  };
+}
+
+/**
+ * PC 扫码支付下单 (NATIVE)
+ * 注意：cloudbase_module 可能不支持 wxpay_native_order
+ * 如果不支持，需要通过后端服务调用微信支付 API v3
+ */
+async function createNativeOrder(params) {
+  const { orderDescription, orderAmount, outTradeNo } = params;
+  
+  console.log('[wxpay_order] 尝试调用 cloudbase_module 下单 (NATIVE)...');
+  
+  try {
+    const res = await cloud.callFunction({
+      name: 'cloudbase_module',
+      data: {
+        name: 'wxpay_native_order',
+        data: {
+          description: orderDescription,
+          amount: { total: orderAmount, currency: 'CNY' },
+          out_trade_no: outTradeNo
+        }
+      }
+    });
+    
+    console.log('[wxpay_order] cloudbase_module NATIVE 返回:', JSON.stringify(res.result));
+    
+    if (!res.result) {
+      return { code: -1, msg: '支付服务返回为空' };
+    }
+    
+    // Native 支付返回 code_url
+    if (res.result.code_url) {
+      return {
+        code: 0,
+        data: {
+          tradeType: TRADE_TYPES.NATIVE,
+          codeUrl: res.result.code_url,
+          outTradeNo
+        }
+      };
+    } else if (res.result.code === 0 && res.result.data && res.result.data.code_url) {
+      return {
+        code: 0,
+        data: {
+          tradeType: TRADE_TYPES.NATIVE,
+          codeUrl: res.result.data.code_url,
+          outTradeNo
+        }
+      };
+    } else if (res.result.errcode && res.result.errmsg) {
+      return { 
+        code: -1, 
+        msg: res.result.errmsg || 'Native支付下单失败',
+        errcode: res.result.errcode,
+        data: res.result
+      };
+    }
+    
+    // cloudbase_module 可能不支持 native 支付
+    return { 
+      code: -1, 
+      msg: 'cloudbase_module 可能不支持 Native 支付，请使用后端 API',
+      data: res.result
+    };
+  } catch (error) {
+    console.error('[wxpay_order] Native 支付调用失败:', error);
+    // 如果 cloudbase_module 不支持，返回提示
+    return { 
+      code: -1, 
+      msg: 'Native 支付需要通过后端服务实现，请调用后端 /api/payment/native 接口',
+      error: error.message
+    };
+  }
+}
+
 exports.main = async (event, context) => {
   const wxContext = cloud.getWXContext();
-  const { packageType, generationId, userId, description, amount } = event;
+  const { 
+    packageType, 
+    generationId, 
+    userId, 
+    description, 
+    amount,
+    tradeType = TRADE_TYPES.JSAPI,  // 默认小程序支付
+    openid: customOpenid  // 允许外部传入 openid（用于 Web 端）
+  } = event;
   
   // 打印环境信息用于调试
   console.log('[wxpay_order] 环境信息:', {
     ENV: wxContext.ENV,
     APPID: wxContext.APPID,
     OPENID: wxContext.OPENID,
-    UNIONID: wxContext.UNIONID,
-    CLIENTIP: wxContext.CLIENTIP,
-    CLIENTIPV6: wxContext.CLIENTIPV6,
     SOURCE: wxContext.SOURCE
   });
-  console.log('[wxpay_order] 云函数环境变量:', {
-    TCB_ENV: process.env.TCB_ENV,
-    TCB_ENVID: process.env.TCB_ENVID,
-    SCF_NAMESPACE: process.env.SCF_NAMESPACE,
-    TENCENTCLOUD_APPID: process.env.TENCENTCLOUD_APPID
-  });
   
-  console.log('[wxpay_order] 收到请求:', { packageType, generationId, userId, openid: wxContext.OPENID });
+  console.log('[wxpay_order] 收到请求:', { 
+    packageType, generationId, userId, tradeType,
+    openid: wxContext.OPENID || customOpenid
+  });
   
   const packageConfig = PACKAGES[packageType];
   if (!packageConfig && !amount) {
@@ -48,76 +213,35 @@ exports.main = async (event, context) => {
   const orderAmount = amount || packageConfig.amount;
   const orderDescription = description || packageConfig.description;
   const outTradeNo = generateOutTradeNo();
+  const effectiveOpenid = wxContext.OPENID || customOpenid;
   
-  console.log('[wxpay_order] 订单信息:', { outTradeNo, orderAmount, orderDescription });
+  console.log('[wxpay_order] 订单信息:', { outTradeNo, orderAmount, orderDescription, tradeType });
   
-  // 调用微信支付下单（核心流程）
+  // 根据支付类型调用不同的下单方法
   let paymentResult;
   try {
-    console.log('[wxpay_order] 调用 cloudbase_module 下单...');
-    const res = await cloud.callFunction({
-      name: 'cloudbase_module',
-      data: {
-        name: 'wxpay_order',
-        data: {
-          description: orderDescription,
-          amount: { total: orderAmount, currency: 'CNY' },
-          out_trade_no: outTradeNo,
-          payer: { openid: wxContext.OPENID }
-        }
+    if (tradeType === TRADE_TYPES.NATIVE) {
+      // PC 扫码支付
+      paymentResult = await createNativeOrder({
+        orderDescription,
+        orderAmount,
+        outTradeNo
+      });
+    } else {
+      // 小程序支付（默认）
+      if (!effectiveOpenid) {
+        return { code: -1, msg: 'JSAPI支付需要用户openid' };
       }
-    });
-    
-    console.log('[wxpay_order] cloudbase_module 返回:', JSON.stringify(res.result));
-    
-    if (!res.result) {
-      return { code: -1, msg: '支付服务返回为空' };
+      paymentResult = await createJsapiOrder({
+        orderDescription,
+        orderAmount,
+        outTradeNo,
+        openid: effectiveOpenid
+      });
     }
     
-    // 检查各种可能的返回格式
-    if (res.result.payment) {
-      // 标准成功格式 (payment 对象)
-      paymentResult = {
-        timeStamp: res.result.payment.timeStamp,
-        nonceStr: res.result.payment.nonceStr,
-        packageVal: res.result.payment.package || res.result.payment.packageVal,
-        paySign: res.result.payment.paySign,
-        outTradeNo
-      };
-    } else if (res.result.code === 0 && res.result.data) {
-      // 新版返回格式 (data 对象)
-      const data = res.result.data;
-      paymentResult = {
-        timeStamp: data.timeStamp,
-        nonceStr: data.nonceStr,
-        packageVal: data.package || data.packageVal,
-        paySign: data.paySign,
-        outTradeNo
-      };
-    } else if (res.result.timeStamp && res.result.paySign) {
-      // 直接返回支付参数
-      paymentResult = {
-        timeStamp: res.result.timeStamp,
-        nonceStr: res.result.nonceStr,
-        packageVal: res.result.package || res.result.packageVal,
-        paySign: res.result.paySign,
-        outTradeNo
-      };
-    } else if (res.result.errcode && res.result.errmsg) {
-      // 错误格式
-      return { 
-        code: -1, 
-        msg: res.result.errmsg || '支付下单失败',
-        errcode: res.result.errcode,
-        data: res.result
-      };
-    } else {
-      // 未知格式
-      return { 
-        code: -1, 
-        msg: '支付服务返回格式异常，请查看data字段',
-        data: res.result
-      };
+    if (paymentResult.code !== 0) {
+      return paymentResult;
     }
   } catch (error) {
     console.error('[wxpay_order] 调用支付服务失败:', error);
@@ -131,9 +255,10 @@ exports.main = async (event, context) => {
       package_type: packageType,
       generation_id: generationId || null,
       user_id: userId || null,
-      openid: wxContext.OPENID,
+      openid: effectiveOpenid || null,
       amount: orderAmount,
       description: orderDescription,
+      trade_type: tradeType,
       status: 'pending',
       created_at: new Date()
     });
@@ -142,5 +267,5 @@ exports.main = async (event, context) => {
     console.error('[wxpay_order] 数据库存储失败（不影响支付）:', dbError.message);
   }
   
-  return { code: 0, msg: 'success', data: paymentResult };
+  return { code: 0, msg: 'success', data: paymentResult.data };
 };

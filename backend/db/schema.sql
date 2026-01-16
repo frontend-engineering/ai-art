@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS payment_orders (
   amount DECIMAL(10, 2) NOT NULL COMMENT '订单金额',
   package_type ENUM('free', 'basic', 'premium') NOT NULL COMMENT '套餐类型',
   payment_method VARCHAR(50) DEFAULT 'wechat' COMMENT '支付方式',
+  trade_type VARCHAR(20) DEFAULT 'JSAPI' COMMENT '支付类型: JSAPI-小程序, NATIVE-扫码支付, H5-H5支付, APP-APP支付',
   transaction_id VARCHAR(100) COMMENT '第三方交易ID',
   status ENUM('pending', 'paid', 'failed', 'refunded') DEFAULT 'pending' COMMENT '订单状态',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -54,6 +55,7 @@ CREATE TABLE IF NOT EXISTS payment_orders (
   INDEX idx_user_id (user_id),
   INDEX idx_status (status),
   INDEX idx_transaction_id (transaction_id),
+  INDEX idx_trade_type (trade_type),
   INDEX idx_created_at (created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (generation_id) REFERENCES generation_history(id) ON DELETE SET NULL
