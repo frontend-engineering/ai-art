@@ -111,6 +111,31 @@ async function createJsapiPayment(params) {
 }
 
 /**
+ * 发起Native支付（PC扫码支付）
+ * @param {Object} params 支付参数
+ * @param {string} params.description 商品描述
+ * @param {string} params.out_trade_no 商户订单号
+ * @param {string} params.notify_url 回调地址
+ * @param {Object} params.amount 金额信息
+ * @param {number} params.amount.total 总金额（分）
+ * @returns {Promise<{code_url: string}>} 返回二维码链接
+ */
+async function createNativePayment(params) {
+  const payment = getWechatPayment();
+  if (!payment) {
+    throw new Error('微信支付服务不可用，请检查配置');
+  }
+  
+  try {
+    const result = await payment.transactions_native(params);
+    return result;
+  } catch (error) {
+    console.error('Native支付创建失败:', error);
+    throw error;
+  }
+}
+
+/**
  * 查询订单
  * @param {Object} params 查询参数
  */
@@ -229,6 +254,7 @@ module.exports = {
   getWechatPayment,
   isWechatPaymentAvailable,
   createJsapiPayment,
+  createNativePayment,
   queryOrder,
   closeOrder,
   refunds,

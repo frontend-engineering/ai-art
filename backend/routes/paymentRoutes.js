@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db/connection');
 const userService = require('../services/userService');
 const { 
-  isWechatPaymentAvailable, createJsapiPayment, 
+  isWechatPaymentAvailable, createJsapiPayment, createNativePayment,
   verifyCallbackSign, decipherCallback 
 } = require('../services/wechatPayService');
 const { executeWithRetry } = require('../utils/apiRetry');
@@ -124,6 +124,106 @@ router.post('/wechat/jsapi', validateRequest(validateWechatPaymentParams), async
     console.error('发起微信支付失败:', error);
     await errorLogService.logError('WECHAT_PAYMENT_FAILED', error.message, { orderId: req.body.orderId });
     res.status(500).json({ error: '发起微信支付失败', message: error.message });
+  }
+});
+
+// 发起 Native 支付（PC扫码支付）
+router.post('/wechat/native', async (req, res) => {
+  try {
+    const { orderId, packageType, userId, generationId, description, amount } = req.body;
+    
+    if (!isWechatPaymentAvailable()) {
+      return res.status(503).json({ error: '支付服务不可用', message: '微信支付配置未完整设置' });
+    }
+    
+    const connection = await db.pool.getConnection();
+    try {
+      let order;
+      let finalOrderId = orderId;
+      
+      // 如果提供了 orderId，查询现有订单
+      if (orderId) {
+        const [rows] = await connection.execute('SELECT * FROM payment_orders WHERE id = ?', [orderId]);
+        
+        if (rows.length === 0) {
+          return res.status(404).json({ error: '订单不存在', message: '未找到对应的支付订单' });
+        }
+        
+        order = rows[0];
+        
+        if (order.status !== 'pending') {
+          return res.status(400).json({ 
+            error: '订单状态异常', 
+            message: `订单状态为 ${order.status}，无法支付` 
+          });
+        }
+      } else {
+        // 没有 orderId，创建新订单
+        if (!packageType) {
+          return res.status(400).json({ error: '缺少必要参数', message: '需要提供 orderId 或 packageType' });
+        }
+        
+        const validPackageTypes = ['basic', 'premium'];
+        if (!validPackageTypes.includes(packageType)) {
+          return res.status(400).json({ error: '无效的套餐类型' });
+        }
+        
+        finalOrderId = uuidv4();
+        const orderAmount = amount || PACKAGE_PRICES[packageType];
+        
+        await connection.execute(
+          `INSERT INTO payment_orders 
+          (id, user_id, generation_id, amount, package_type, payment_method, trade_type, status, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+          [finalOrderId, userId || null, generationId || null, orderAmount, packageType, 'wechat', 'NATIVE', 'pending']
+        );
+        
+        order = {
+          id: finalOrderId,
+          amount: orderAmount,
+          package_type: packageType
+        };
+        
+        console.log(`创建 Native 支付订单: ${finalOrderId}`);
+      }
+      
+      const params = {
+        description: description || `AI全家福-${order.package_type === 'basic' ? '尝鲜包' : '尊享包'}`,
+        out_trade_no: finalOrderId,
+        notify_url: `${process.env.API_BASE_URL || 'http://localhost:3001'}/api/payment/callback`,
+        amount: { total: Math.round(order.amount * 100), currency: 'CNY' }
+      };
+      
+      const result = await executeWithRetry(
+        () => createNativePayment(params),
+        { maxRetries: 1, timeout: 30000, operationName: '微信支付Native' }
+      );
+      
+      // 更新订单的 trade_type
+      await connection.execute(
+        'UPDATE payment_orders SET trade_type = ? WHERE id = ?',
+        ['NATIVE', finalOrderId]
+      );
+      
+      res.json({ 
+        success: true, 
+        data: {
+          orderId: finalOrderId,
+          codeUrl: result.code_url,
+          amount: order.amount,
+          packageType: order.package_type
+        }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('发起 Native 支付失败:', error);
+    await errorLogService.logError('WECHAT_NATIVE_PAYMENT_FAILED', error.message, { 
+      orderId: req.body.orderId,
+      packageType: req.body.packageType 
+    });
+    res.status(500).json({ error: '发起 Native 支付失败', message: error.message });
   }
 });
 
