@@ -56,7 +56,7 @@ const UsersPage: React.FC = () => {
     paymentStatus: ''
   });
   const [detailVisible, setDetailVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserDetail | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ user: User; generations: Generation[]; orders: Order[] } | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {

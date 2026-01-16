@@ -58,20 +58,25 @@ export interface UserListResponse {
   };
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 /**
  * 获取用户列表
  */
 export const getUserList = async (params: UserListParams): Promise<UserListResponse> => {
-  const response = await api.get('/admin-api/users', { params });
-  return response.data.data;
+  const response = await api.get<any, ApiResponse<UserListResponse>>('/users', { params });
+  return response.data;
 };
 
 /**
  * 获取用户详情
  */
-export const getUserDetail = async (id: string): Promise<UserDetail> => {
-  const response = await api.get(`/admin-api/users/${id}`);
-  return response.data.data;
+export const getUserDetail = async (id: string): Promise<{ user: User; generations: Generation[]; orders: Order[] }> => {
+  const response = await api.get<any, ApiResponse<{ user: User; generations: Generation[]; orders: Order[] }>>(`/users/${id}`);
+  return response.data;
 };
 
 /**
@@ -81,16 +86,16 @@ export const updateUserPaymentStatus = async (
   id: string,
   paymentStatus: 'free' | 'basic' | 'premium'
 ): Promise<void> => {
-  await api.put(`/admin-api/users/${id}/payment-status`, { paymentStatus });
+  await api.put(`/users/${id}/payment-status`, { paymentStatus });
 };
 
 /**
  * 导出用户数据
  */
 export const exportUsers = async (params: UserListParams): Promise<Blob> => {
-  const response = await api.get('/admin-api/users/export/data', {
+  const response = await api.get('/users/export/data', {
     params,
     responseType: 'blob'
   });
-  return response.data;
+  return response as unknown as Blob;
 };

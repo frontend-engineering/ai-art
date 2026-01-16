@@ -200,7 +200,7 @@ const Orders: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       width: 100,
-      render: (amount: number) => `¥${amount.toFixed(2)}`
+      render: (amount: number | string) => `¥${Number(amount).toFixed(2)}`
     },
     {
       title: '套餐类型',
@@ -314,7 +314,7 @@ const Orders: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       width: 100,
-      render: (amount: number) => `¥${amount.toFixed(2)}`
+      render: (amount: number | string) => `¥${Number(amount).toFixed(2)}`
     },
     {
       title: '收货人',
@@ -399,7 +399,7 @@ const Orders: React.FC = () => {
       dataIndex: 'amount',
       key: 'amount',
       width: 100,
-      render: (amount: number) => `¥${amount.toFixed(2)}`
+      render: (amount: number | string) => `¥${Number(amount).toFixed(2)}`
     },
     {
       title: '状态',
@@ -609,7 +609,7 @@ const Orders: React.FC = () => {
               </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="用户ID">{selectedOrder.user_id}</Descriptions.Item>
-            <Descriptions.Item label="金额">¥{selectedOrder.amount.toFixed(2)}</Descriptions.Item>
+            <Descriptions.Item label="金额">¥{Number(selectedOrder.amount).toFixed(2)}</Descriptions.Item>
             <Descriptions.Item label="状态">
               {getStatusTag(selectedOrder.status, selectedOrder.order_type)}
             </Descriptions.Item>

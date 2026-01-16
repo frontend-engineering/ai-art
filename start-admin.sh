@@ -38,7 +38,7 @@ if docker ps | grep -q mysql; then
     echo -e "${YELLOW}⚠️  MySQL 已在运行${NC}"
 else
     echo "   启动 MySQL 容器..."
-    docker-compose up -d mysql
+    docker compose up -d mysql
     echo "   等待 MySQL 启动完成..."
     sleep 10
     echo -e "${GREEN}✅ MySQL 启动成功${NC}"
@@ -54,7 +54,7 @@ if [ ! -f "db/migrations/005_create_admin_tables.sql" ]; then
 fi
 
 echo "   运行数据库迁移..."
-pnpm run migrate > /dev/null 2>&1
+pnpm run db:migrate > /dev/null 2>&1
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ 数据库迁移完成${NC}"
 else
@@ -98,7 +98,7 @@ echo -e "${GREEN}✅ 所有检查通过！${NC}"
 echo ""
 echo "即将启动以下服务："
 echo "  - 后端服务: http://localhost:3000"
-echo "  - 管理后台: http://localhost:5173"
+echo "  - 管理后台: http://localhost:3002"
 echo ""
 echo "默认管理员账号："
 echo "  用户名: admin"

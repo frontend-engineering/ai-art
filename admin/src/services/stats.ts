@@ -65,40 +65,45 @@ export interface UserStats {
   active: number;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 // 获取看板数据
-export const getDashboardData = async () => {
-  const response = await api.get<{ data: DashboardData }>('/admin-api/stats/dashboard');
-  return response.data.data;
+export const getDashboardData = async (): Promise<DashboardData> => {
+  const response = await api.get<any, ApiResponse<DashboardData>>('/stats/dashboard');
+  return response.data;
 };
 
 // 获取收入统计
-export const getRevenueStats = async (startDate?: string, endDate?: string) => {
-  const response = await api.get<{ data: RevenueStats }>('/admin-api/stats/revenue', {
+export const getRevenueStats = async (startDate?: string, endDate?: string): Promise<RevenueStats> => {
+  const response = await api.get<any, ApiResponse<RevenueStats>>('/stats/revenue', {
     params: { startDate, endDate }
   });
-  return response.data.data;
+  return response.data;
 };
 
 // 获取用户统计
-export const getUserStats = async (startDate?: string, endDate?: string) => {
-  const response = await api.get<{ data: UserStats }>('/admin-api/stats/users', {
+export const getUserStats = async (startDate?: string, endDate?: string): Promise<UserStats> => {
+  const response = await api.get<any, ApiResponse<UserStats>>('/stats/users', {
     params: { startDate, endDate }
   });
-  return response.data.data;
+  return response.data;
 };
 
 // 获取热门模板
-export const getPopularTemplates = async (limit: number = 10) => {
-  const response = await api.get<{ data: PopularTemplate[] }>('/admin-api/stats/templates', {
+export const getPopularTemplates = async (limit: number = 10): Promise<PopularTemplate[]> => {
+  const response = await api.get<any, ApiResponse<PopularTemplate[]>>('/stats/templates', {
     params: { limit }
   });
-  return response.data.data;
+  return response.data;
 };
 
 // 获取趋势数据
-export const getTrendData = async (days: number = 7) => {
-  const response = await api.get<{ data: TrendData }>('/admin-api/stats/trends', {
+export const getTrendData = async (days: number = 7): Promise<TrendData> => {
+  const response = await api.get<any, ApiResponse<TrendData>>('/stats/trends', {
     params: { days }
   });
-  return response.data.data;
+  return response.data;
 };

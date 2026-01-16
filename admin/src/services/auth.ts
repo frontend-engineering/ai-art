@@ -25,11 +25,16 @@ export interface User {
   created_at: string;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 /**
  * 登录
  */
 export async function login(params: LoginParams): Promise<LoginResponse> {
-  const response = await api.post<any, { success: boolean; data: LoginResponse }>('/auth/login', params);
+  const response = await api.post<any, ApiResponse<LoginResponse>>('/auth/login', params);
   return response.data;
 }
 
@@ -44,7 +49,7 @@ export async function logout(): Promise<void> {
  * 获取当前用户信息
  */
 export async function getCurrentUser(): Promise<User> {
-  const response = await api.get<any, { success: boolean; data: User }>('/auth/me');
+  const response = await api.get<any, ApiResponse<User>>('/auth/me');
   return response.data;
 }
 

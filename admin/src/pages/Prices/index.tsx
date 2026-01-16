@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, DatePicker, Select, Switch, message, Space, Tag, Card, Statistic, Row, Col } from 'antd';
+import { Table, Button, Modal, Form, Input, InputNumber, DatePicker, Select, message, Space, Tag, Card, Statistic, Row, Col } from 'antd';
 import { PlusOutlined, EditOutlined, HistoryOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
@@ -13,17 +13,23 @@ import {
   createPrice, 
   updatePrice, 
   deactivatePrice,
-  getPriceHistoryByPackage,
+  getPriceHistory,
   type PriceConfig,
   type PriceHistory 
 } from '../../services/price';
 
 const { Option } = Select;
 
-const PACKAGE_TYPE_MAP: Record<string, string> = {
-  free: '免费版',
-  basic: '尝鲜包',
-  premium: '尊享包'
+const CATEGORY_MAP: Record<string, string> = {
+  package: '套餐',
+  product: '产品',
+  service: '服务'
+};
+
+const STATUS_MAP: Record<string, { text: string; color: string }> = {
+  active: { text: '启用', color: 'green' },
+  inactive: { text: '停用', color: 'red' },
+  scheduled: { text: '待生效', color: 'orange' }
 };
 
 const PricesPage: React.FC = () => {
@@ -47,7 +53,7 @@ const PricesPage: React.FC = () => {
       const data = await getAllPrices();
       setPrices(data);
     } catch (error: any) {
-      message.error(error.response?.data?.message || '加载价格配置失败');
+      message.error(error.message || '加载价格配置失败');
     } finally {
       setLoading(false);
     }
@@ -71,17 +77,19 @@ const PricesPage: React.FC = () => {
   const handleEdit = (record: PriceConfig) => {
     setEditingPrice(record);
     form.setFieldsValue({
-      packageType: record.package_type,
+      category: record.category,
+      code: record.code,
+      name: record.name,
       price: record.price,
-      effectiveDate: dayjs(record.effective_date),
-      isActive: record.is_active
+      description: record.description,
+      effectiveDate: dayjs(record.effective_date)
     });
     setModalVisible(true);
   };
 
-  const handleViewHistory = async (packageType: string) => {
+  const handleViewHistory = async (id: string) => {
     try {
-      const history = await getPriceHistoryByPackage(packageType);
+      const history = await getPriceHistory(id);
       setPriceHistory(history);
       setHistoryModalVisible(true);
     } catch (error: any) {
@@ -89,7 +97,7 @@ const PricesPage: React.FC = () => {
     }
   };
 
-  const handleDeactivate = async (id: number) => {
+  const handleDeactivate = async (id: string) => {
     Modal.confirm({
       title: '确认停用',
       content: '确定要停用此价格配置吗？',
@@ -100,7 +108,7 @@ const PricesPage: React.FC = () => {
           loadPrices();
           loadCurrentPrices();
         } catch (error: any) {
-          message.error(error.response?.data?.message || '停用失败');
+          message.error(error.message || '停用失败');
         }
       }
     });
@@ -110,14 +118,20 @@ const PricesPage: React.FC = () => {
     try {
       const values = await form.validateFields();
       const data = {
-        packageType: values.packageType,
+        category: values.category,
+        code: values.code,
+        name: values.name,
         price: values.price,
-        effectiveDate: values.effectiveDate.format('YYYY-MM-DD HH:mm:ss'),
-        isActive: values.isActive
+        description: values.description,
+        effectiveDate: values.effectiveDate?.format('YYYY-MM-DD HH:mm:ss')
       };
 
       if (editingPrice) {
-        await updatePrice(editingPrice.id, data);
+        await updatePrice(editingPrice.id, {
+          price: data.price,
+          description: data.description,
+          effectiveDate: data.effectiveDate
+        });
         message.success('更新成功');
       } else {
         await createPrice(data);
@@ -131,57 +145,78 @@ const PricesPage: React.FC = () => {
       if (error.errorFields) {
         return;
       }
-      message.error(error.response?.data?.message || '操作失败');
+      message.error(error.message || '操作失败');
     }
   };
 
   const columns: ColumnsType<PriceConfig> = [
     {
-      title: '套餐类型',
-      dataIndex: 'package_type',
-      key: 'package_type',
-      render: (type: string) => PACKAGE_TYPE_MAP[type] || type
+      title: '类别',
+      dataIndex: 'category',
+      key: 'category',
+      width: 80,
+      render: (category: string) => CATEGORY_MAP[category] || category
+    },
+    {
+      title: '代码',
+      dataIndex: 'code',
+      key: 'code',
+      width: 150
+    },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      key: 'name',
+      width: 120
     },
     {
       title: '价格（元）',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `¥${price.toFixed(2)}`
+      width: 100,
+      render: (price: number) => `¥${Number(price).toFixed(2)}`
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+      width: 150,
+      ellipsis: true
     },
     {
       title: '生效时间',
       dataIndex: 'effective_date',
       key: 'effective_date',
+      width: 180,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: '状态',
-      dataIndex: 'is_active',
-      key: 'is_active',
-      render: (isActive: boolean) => (
-        <Tag color={isActive ? 'green' : 'red'}>
-          {isActive ? '启用' : '停用'}
-        </Tag>
-      )
-    },
-    {
-      title: '创建人',
-      dataIndex: 'created_by',
-      key: 'created_by'
+      dataIndex: 'status',
+      key: 'status',
+      width: 80,
+      render: (status: string) => {
+        const config = STATUS_MAP[status] || { text: status, color: 'default' };
+        return <Tag color={config.color}>{config.text}</Tag>;
+      }
     },
     {
       title: '创建时间',
       dataIndex: 'created_at',
       key: 'created_at',
+      width: 180,
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm:ss')
     },
     {
       title: '操作',
       key: 'action',
+      width: 200,
+      fixed: 'right',
       render: (_, record) => (
         <Space>
           <Button 
             type="link" 
+            size="small"
             icon={<EditOutlined />} 
             onClick={() => handleEdit(record)}
           >
@@ -189,14 +224,16 @@ const PricesPage: React.FC = () => {
           </Button>
           <Button 
             type="link" 
+            size="small"
             icon={<HistoryOutlined />} 
-            onClick={() => handleViewHistory(record.package_type)}
+            onClick={() => handleViewHistory(record.id)}
           >
             历史
           </Button>
-          {record.is_active && (
+          {record.status === 'active' && (
             <Button 
               type="link" 
+              size="small"
               danger 
               icon={<DeleteOutlined />} 
               onClick={() => handleDeactivate(record.id)}
@@ -220,13 +257,13 @@ const PricesPage: React.FC = () => {
       title: '原价格',
       dataIndex: 'old_price',
       key: 'old_price',
-      render: (price: number | null) => price !== null ? `¥${price.toFixed(2)}` : '-'
+      render: (price: number | null) => price !== null ? `¥${Number(price).toFixed(2)}` : '-'
     },
     {
       title: '新价格',
       dataIndex: 'new_price',
       key: 'new_price',
-      render: (price: number) => `¥${price.toFixed(2)}`
+      render: (price: number) => `¥${Number(price).toFixed(2)}`
     },
     {
       title: '变更人',
@@ -235,8 +272,8 @@ const PricesPage: React.FC = () => {
     },
     {
       title: '变更原因',
-      dataIndex: 'reason',
-      key: 'reason'
+      dataIndex: 'change_reason',
+      key: 'change_reason'
     }
   ];
 
@@ -289,6 +326,7 @@ const PricesPage: React.FC = () => {
         rowKey="id"
         loading={loading}
         pagination={{ pageSize: 20 }}
+        scroll={{ x: 1300 }}
       />
 
       <Modal
@@ -300,15 +338,31 @@ const PricesPage: React.FC = () => {
       >
         <Form form={form} layout="vertical">
           <Form.Item
-            name="packageType"
-            label="套餐类型"
-            rules={[{ required: true, message: '请选择套餐类型' }]}
+            name="category"
+            label="类别"
+            rules={[{ required: true, message: '请选择类别' }]}
           >
-            <Select placeholder="请选择套餐类型" disabled={!!editingPrice}>
-              <Option value="free">免费版</Option>
-              <Option value="basic">尝鲜包</Option>
-              <Option value="premium">尊享包</Option>
+            <Select placeholder="请选择类别" disabled={!!editingPrice}>
+              <Option value="package">套餐</Option>
+              <Option value="product">产品</Option>
+              <Option value="service">服务</Option>
             </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="code"
+            label="代码"
+            rules={[{ required: true, message: '请输入代码' }]}
+          >
+            <Input placeholder="如: basic_package" disabled={!!editingPrice} />
+          </Form.Item>
+
+          <Form.Item
+            name="name"
+            label="名称"
+            rules={[{ required: true, message: '请输入名称' }]}
+          >
+            <Input placeholder="如: 尝鲜包" disabled={!!editingPrice} />
           </Form.Item>
 
           <Form.Item
@@ -319,31 +373,32 @@ const PricesPage: React.FC = () => {
               { type: 'number', min: 0, message: '价格不能为负数' }
             ]}
           >
-            <Input type="number" placeholder="请输入价格" step="0.01" />
+            <InputNumber 
+              placeholder="请输入价格" 
+              step={0.01} 
+              precision={2}
+              style={{ width: '100%' }}
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="描述"
+          >
+            <Input.TextArea placeholder="请输入描述" rows={3} />
           </Form.Item>
 
           <Form.Item
             name="effectiveDate"
             label="生效时间"
-            rules={[{ required: true, message: '请选择生效时间' }]}
           >
             <DatePicker 
               showTime 
               format="YYYY-MM-DD HH:mm:ss" 
               style={{ width: '100%' }}
-              placeholder="请选择生效时间"
+              placeholder="留空则立即生效"
             />
           </Form.Item>
-
-          {editingPrice && (
-            <Form.Item
-              name="isActive"
-              label="启用状态"
-              valuePropName="checked"
-            >
-              <Switch checkedChildren="启用" unCheckedChildren="停用" />
-            </Form.Item>
-          )}
         </Form>
       </Modal>
 

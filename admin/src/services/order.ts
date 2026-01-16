@@ -73,41 +73,47 @@ export interface OrderStats {
   }>;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+}
+
 // 获取订单列表
-export const getOrderList = async (params: OrderListParams) => {
-  const response = await api.get<{ data: OrderListResponse }>('/admin-api/orders', { params });
-  return response.data.data;
+export const getOrderList = async (params: OrderListParams): Promise<OrderListResponse> => {
+  const response = await api.get<any, ApiResponse<OrderListResponse>>('/orders', { params });
+  return response.data;
 };
 
 // 获取订单详情
-export const getOrderDetail = async (id: string, orderType?: 'payment' | 'product') => {
-  const response = await api.get<{ data: Order }>(`/admin-api/orders/${id}`, {
+export const getOrderDetail = async (id: string, orderType?: 'payment' | 'product'): Promise<Order> => {
+  const response = await api.get<any, ApiResponse<Order>>(`/orders/${id}`, {
     params: { orderType }
   });
-  return response.data.data;
+  return response.data;
 };
 
 // 更新订单状态
 export const updateOrderStatus = async (id: string, status: string, orderType: 'payment' | 'product') => {
-  const response = await api.put(`/admin-api/orders/${id}/status`, { status, orderType });
-  return response.data;
+  const response = await api.put<any, ApiResponse<any>>(`/orders/${id}/status`, { status, orderType });
+  return response;
 };
 
 // 订单退款
 export const refundOrder = async (id: string, reason: string) => {
-  const response = await api.post(`/admin-api/orders/${id}/refund`, { reason });
-  return response.data;
+  const response = await api.post<any, ApiResponse<any>>(`/orders/${id}/refund`, { reason });
+  return response;
 };
 
 // 导出订单数据
 export const exportOrderData = async (orderType: 'payment' | 'product' | 'all', startDate?: string, endDate?: string) => {
-  const response = await api.get('/admin-api/orders/export/data', {
+  const response = await api.get('/orders/export/data', {
     params: { orderType, startDate, endDate },
     responseType: 'blob'
   });
   
   // 创建下载链接
-  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const blob = response as unknown as Blob;
+  const url = window.URL.createObjectURL(new Blob([blob]));
   const link = document.createElement('a');
   link.href = url;
   link.setAttribute('download', `orders_${Date.now()}.csv`);
@@ -118,9 +124,9 @@ export const exportOrderData = async (orderType: 'payment' | 'product' | 'all', 
 };
 
 // 获取订单统计
-export const getOrderStats = async (startDate?: string, endDate?: string) => {
-  const response = await api.get<{ data: OrderStats }>('/admin-api/orders/stats/overview', {
+export const getOrderStats = async (startDate?: string, endDate?: string): Promise<OrderStats> => {
+  const response = await api.get<any, ApiResponse<OrderStats>>('/orders/stats/overview', {
     params: { startDate, endDate }
   });
-  return response.data.data;
+  return response.data;
 };
