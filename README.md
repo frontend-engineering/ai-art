@@ -8,6 +8,37 @@ AI全家福是一个基于AI技术的全家福照片生成应用，支持多种�
 - **时空拼图**：将分散各地的家人照片合成为完美全家福
 - **富贵变身**：一键更换照片背景，让普通照片变身豪门大片
 
+## 🎉 管理后台系统
+
+### 快速启动
+```bash
+# 一键启动管理后台（推荐）
+./start-admin.sh
+
+# 或手动启动
+docker-compose up mysql          # 启动数据库
+cd backend && pnpm run migrate   # 运行迁移
+cd backend && pnpm run dev       # 启动后端
+cd admin && pnpm run dev         # 启动前端
+```
+
+### 访问地址
+- **管理后台**: http://localhost:5173
+- **默认账号**: admin / Admin@123456
+- **文档**: `.kiro/specs/admin-dashboard/`
+
+### 核心功能
+- 🔐 认证系统 - JWT认证、双层权限、操作日志
+- 💰 价格管理 - 动态配置、历史记录、定时生效
+- 👥 用户管理 - 列表查看、详情展示、状态管理、数据导出
+- 📦 订单管理 - 统一视图、状态更新、退款处理、数据导出
+- 📊 数据看板 - 实时统计、趋势分析、图表展示
+
+### 详细文档
+- [快速开始](./kiro/specs/admin-dashboard/README.md)
+- [部署指南](./kiro/specs/admin-dashboard/DEPLOYMENT.md)
+- [完整文档](./kiro/specs/admin-dashboard/)
+
 ## 最近更新 (2025-01-04)
 
 ### 富贵变身模式完整链路修复

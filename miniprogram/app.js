@@ -25,7 +25,8 @@ App({
     openid: '',          // 微信openid
     isElderMode: false,  // 老年模式
     useCloudBase: true,  // 使用云托管
-    cloudbaseInitialized: false // CloudBase 是否已初始化
+    cloudbaseInitialized: false, // CloudBase 是否已初始化
+    apiBaseUrl: 'https://your-api-domain.com' // API基础URL，请替换为实际值
   },
 
   /**

@@ -6,13 +6,73 @@
  */
 const cloud = require('wx-server-sdk');
 const { safeDb } = require('../db/mysql');
+const axios = require('axios');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
-const PACKAGES = {
+// 降级方案 - 本地默认价格
+const FALLBACK_PACKAGES = {
   basic: { name: '0.01元尝鲜包', amount: 1, description: 'AI全家福-尝鲜包' },
   premium: { name: '29.9元尊享包', amount: 2990, description: 'AI全家福-尊享包' }
 };
+
+// 价格缓存
+let priceCache = null;
+let priceCacheTime = 0;
+const PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
+
+// API基础URL - 从环境变量获取
+const API_BASE_URL = process.env.API_BASE_URL || 'https://your-api-domain.com';
+
+/**
+ * 从API获取价格配置
+ */
+async function fetchPricesFromAPI() {
+  try {
+    // 检查缓存
+    const now = Date.now();
+    if (priceCache && (now - priceCacheTime) < PRICE_CACHE_DURATION) {
+      console.log('[wxpay_order] 使用缓存的价格配置');
+      return priceCache;
+    }
+
+    console.log('[wxpay_order] 从API获取价格配置');
+    
+    const response = await axios.get(`${API_BASE_URL}/api/prices/current`, {
+      timeout: 5000
+    });
+
+    if (response.data && response.data.success && response.data.data) {
+      const apiPrices = response.data.data;
+      
+      // 转换API返回的价格格式
+      const packages = {
+        basic: {
+          name: '0.01元尝鲜包',
+          amount: Math.round((apiPrices.packages?.basic || 0.01) * 100),
+          description: 'AI全家福-尝鲜包'
+        },
+        premium: {
+          name: '29.9元尊享包',
+          amount: Math.round((apiPrices.packages?.premium || 29.9) * 100),
+          description: 'AI全家福-尊享包'
+        }
+      };
+
+      // 更新缓存
+      priceCache = packages;
+      priceCacheTime = now;
+      
+      console.log('[wxpay_order] 价格配置获取成功', packages);
+      return packages;
+    }
+
+    throw new Error('API返回数据格式错误');
+  } catch (error) {
+    console.warn('[wxpay_order] 从API获取价格失败，使用降级方案', error.message);
+    return FALLBACK_PACKAGES;
+  }
+}
 
 // 支付模式
 const TRADE_TYPES = {
@@ -204,6 +264,9 @@ exports.main = async (event, context) => {
     packageType, generationId, userId, tradeType,
     openid: wxContext.OPENID || customOpenid
   });
+  
+  // 从API获取价格配置（带降级方案）
+  const PACKAGES = await fetchPricesFromAPI();
   
   const packageConfig = PACKAGES[packageType];
   if (!packageConfig && !amount) {

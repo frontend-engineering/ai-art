@@ -7,6 +7,7 @@ const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const db = require('../db/connection');
 const userService = require('../services/userService');
+const priceConfigService = require('../services/priceConfigService');
 const { 
   isWechatPaymentAvailable, createJsapiPayment, createNativePayment,
   verifyCallbackSign, decipherCallback 
@@ -15,8 +16,21 @@ const { executeWithRetry } = require('../utils/apiRetry');
 const { validateRequest, validateCreatePaymentParams, validateWechatPaymentParams } = require('../utils/validation');
 const errorLogService = require('../services/errorLogService');
 
-// 套餐价格配置
-const PACKAGE_PRICES = { 'free': 0, 'basic': 0.01, 'premium': 29.9 };
+// 套餐价格配置 - 已迁移到数据库，保留作为降级方案
+const FALLBACK_PACKAGE_PRICES = { 'free': 0, 'basic': 0.01, 'premium': 29.9 };
+
+/**
+ * 获取套餐价格（优先从数据库获取，失败时使用降级方案）
+ */
+async function getPackagePrices() {
+  try {
+    const prices = await priceConfigService.getCurrentPrices(true);
+    return prices;
+  } catch (error) {
+    console.warn('从数据库获取价格失败，使用降级方案:', error.message);
+    return FALLBACK_PACKAGE_PRICES;
+  }
+}
 
 // 创建支付订单
 router.post('/create', validateRequest(validateCreatePaymentParams), async (req, res) => {
@@ -44,7 +58,10 @@ router.post('/create', validateRequest(validateCreatePaymentParams), async (req,
     }
     
     const orderId = uuidv4();
-    const amount = PACKAGE_PRICES[packageType];
+    
+    // 从数据库获取价格配置
+    const packagePrices = await getPackagePrices();
+    const amount = packagePrices[packageType];
     
     const connection = await db.pool.getConnection();
     try {
@@ -169,7 +186,10 @@ router.post('/wechat/native', async (req, res) => {
         }
         
         finalOrderId = uuidv4();
-        const orderAmount = amount || PACKAGE_PRICES[packageType];
+        
+        // 从数据库获取价格配置
+        const packagePrices = await getPackagePrices();
+        const orderAmount = amount || packagePrices[packageType];
         
         await connection.execute(
           `INSERT INTO payment_orders 

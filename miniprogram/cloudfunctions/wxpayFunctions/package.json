@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "wx-server-sdk": "~2.4.0",
-    "@cloudbase/node-sdk": "^2.0.0"
+    "@cloudbase/node-sdk": "^2.0.0",
+    "axios": "^1.6.0"
   }
 }

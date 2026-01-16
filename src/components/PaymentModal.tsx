@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPaymentOrder, initiateWeChatPayment, getPaymentOrderStatus } from '../lib/api';
 import { useUser } from '../contexts/UserContext';
+import { usePrices } from '../hooks/usePrices';
 
 interface PaymentModalProps {
   isOpen: boolean;
@@ -19,27 +20,6 @@ interface PackageOption {
   features: string[];
 }
 
-const packages: PackageOption[] = [
-  {
-    type: 'free',
-    name: '免费版',
-    price: 0,
-    features: ['标清图片', '可直接保存', '基础功能'],
-  },
-  {
-    type: 'basic',
-    name: '0.01元尝鲜包',
-    price: 0.01,
-    features: ['高清无水印', '3-5人合成', '热门模板'],
-  },
-  {
-    type: 'premium',
-    name: '29.9元尊享包',
-    price: 29.9,
-    features: ['4K原图', '微动态', '贺卡', '全模板', '优先队列'],
-  }
-];
-
 const PaymentModal: React.FC<PaymentModalProps> = ({ 
   isOpen, 
   onClose, 
@@ -47,11 +27,34 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
   generationId 
 }) => {
   const { user } = useUser();
+  const { prices, loading: pricesLoading } = usePrices();
   const [selectedPackage, setSelectedPackage] = useState<PackageType>('free');
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'processing' | 'success' | 'failed'>('idle');
+  
+  // 使用API价格动态生成套餐配置
+  const packages: PackageOption[] = useMemo(() => [
+    {
+      type: 'free',
+      name: '免费版',
+      price: prices.packages.free,
+      features: ['标清图片', '可直接保存', '基础功能'],
+    },
+    {
+      type: 'basic',
+      name: '0.01元尝鲜包',
+      price: prices.packages.basic,
+      features: ['高清无水印', '3-5人合成', '热门模板'],
+    },
+    {
+      type: 'premium',
+      name: '29.9元尊享包',
+      price: prices.packages.premium,
+      features: ['4K原图', '微动态', '贺卡', '全模板', '优先队列'],
+    }
+  ], [prices]);
   
   const handleSelectPackage = (packageType: PackageType) => {
     setSelectedPackage(packageType);
@@ -198,6 +201,19 @@ const PaymentModal: React.FC<PaymentModalProps> = ({
                 <p className="text-gray-500 text-sm">解锁更多功能，获得更好体验</p>
               </div>
             
+              {/* 价格加载中提示 */}
+              {pricesLoading && (
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-xl">
+                  <div className="flex items-center justify-center">
+                    <svg className="animate-spin h-4 w-4 mr-2 text-blue-600" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    <p className="text-blue-600 text-sm">正在加载最新价格...</p>
+                  </div>
+                </div>
+              )}
+
               {/* 套餐选项 */}
               <div className="space-y-3 mb-6">
                 {packages.map((pkg) => {
