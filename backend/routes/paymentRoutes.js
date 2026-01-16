@@ -16,7 +16,7 @@ const { validateRequest, validateCreatePaymentParams, validateWechatPaymentParam
 const errorLogService = require('../services/errorLogService');
 
 // 套餐价格配置
-const PACKAGE_PRICES = { 'free': 0, 'basic': 9.9, 'premium': 29.9 };
+const PACKAGE_PRICES = { 'free': 0, 'basic': 0.01, 'premium': 29.9 };
 
 // 创建支付订单
 router.post('/create', validateRequest(validateCreatePaymentParams), async (req, res) => {

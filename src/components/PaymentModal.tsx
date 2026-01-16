@@ -28,8 +28,8 @@ const packages: PackageOption[] = [
   },
   {
     type: 'basic',
-    name: '9.9元尝鲜包',
-    price: 9.9,
+    name: '0.01元尝鲜包',
+    price: 0.01,
     features: ['高清无水印', '3-5人合成', '热门模板'],
   },
   {

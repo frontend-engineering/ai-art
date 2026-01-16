@@ -24,9 +24,9 @@ const PACKAGES = {
   },
   basic: {
     id: 'basic',
-    name: '9.9元尝鲜包',
-    price: 9.9,
-    amount: 990,  // 分
+    name: '0.01元尝鲜包',
+    price: 0.01,
+    amount: 1,  // 分
     description: 'AI全家福-尝鲜包',
     features: ['高清无水印', '3-5人合成', '热门模板']
   },
