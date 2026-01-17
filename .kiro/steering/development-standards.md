@@ -51,13 +51,21 @@ pnpm run dev
 - 该命令会在 terminal 执行过程中出错，导致执行崩溃
 - 使用 `fsWrite` 或 `strReplace` 工具代替文件写入操作
 
+**禁止向 terminal 发送大量文本**
+
+- 一次性发送大量文本到 terminal 会导致执行崩溃
+- 创建或修改文件时，必须使用 `fsWrite`、`fsAppend` 或 `strReplace` 工具
+- 禁止使用 `echo` 命令写入大量内容
+- 禁止使用任何会向 terminal 输出大量文本的命令
+
 ## 执行检查
 
 在执行任何任务时，必须确认：
 - [ ] 使用 pnpm 而非 npm
 - [ ] 第三方服务通过 Docker 启动
 - [ ] 不使用 cat << 'EOF' 命令
-- [ ] 使用 fsWrite/strReplace 工具进行文件操作
+- [ ] 使用 fsWrite/fsAppend/strReplace 工具进行文件操作
+- [ ] 不向 terminal 发送大量文本输出
 
 任务完成后，必须确认：
 - [ ] 删除了所有临时文件和备份文件
