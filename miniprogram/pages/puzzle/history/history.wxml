@@ -2,10 +2,16 @@
   时空拼图模式历史记录页
   Requirements: 2.2, 11.1-11.4
 -->
-<view class="history-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="history-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <corner-background />
   
   <view class="history-bg"></view>
+  
+  <!-- 模式名称副标题栏 -->
+  <view class="mode-subtitle-bar">
+    <text class="mode-icon">🧩</text>
+    <text class="mode-name">时空拼图</text>
+  </view>
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
@@ -13,10 +19,7 @@
       <text class="back-icon">‹</text>
     </view>
     <text class="nav-title">我的记录</text>
-    <view class="clear-all-btn" bindtap="handleClearAll" wx:if="{{records.length > 0 && !loading}}">
-      <text class="clear-all-text">清空</text>
-    </view>
-    <view class="nav-placeholder" wx:else></view>
+    <elder-mode-toggle />
   </view>
   
   <!-- 内容区域 -->

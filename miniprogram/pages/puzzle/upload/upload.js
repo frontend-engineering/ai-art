@@ -10,6 +10,7 @@
 
 const { chooseImage, uploadImage } = require('../../../utils/upload');
 const { faceAPI } = require('../../../utils/api');
+const pageMixin = require('../../../utils/page-mixin');
 
 Page({
   data: {
@@ -23,17 +24,15 @@ Page({
   },
 
   onLoad() {
-    const app = getApp();
-    this.setData({
-      isElderMode: app.globalData.isElderMode
-    });
+    pageMixin.onLoad.call(this);
   },
 
   onShow() {
-    const app = getApp();
-    this.setData({
-      isElderMode: app.globalData.isElderMode
-    });
+    pageMixin.onShow.call(this);
+  },
+
+  onElderModeChange(isElderMode) {
+    pageMixin.onElderModeChange.call(this, isElderMode);
   },
 
   /**

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import Background from '../components/Background';
+import ElderModeToggle from '@/components/ElderModeToggle';
 import PageTransition from '@/components/PageTransition';
 import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
 import { useUser } from '@/contexts/UserContext';
@@ -208,8 +209,18 @@ export default function CardEditor() {
       <div className="min-h-screen w-full flex flex-col relative overflow-hidden bg-[#FFF8F0]">
         <Background />
         
+        {/* 模式名称副标题栏 */}
+        <div className="sticky top-0 z-40 w-full bg-[#6B0000] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="max-w-md mx-auto px-4 py-1.5 text-center">
+            <h2 className="text-sm font-medium text-[#FFD700]/90 flex items-center justify-center">
+              <span className="mr-1.5 text-base">🎊</span>
+              拜年贺卡
+            </h2>
+          </div>
+        </div>
+        
         {/* 顶部导航栏 */}
-        <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-white/70 shadow-sm px-4 py-3">
+        <header className="sticky z-30 w-full backdrop-blur-sm bg-white/70 shadow-sm px-4 py-3" style={{ top: 'calc(env(safe-area-inset-top) + 36px)' }}>
           <div className="flex items-center justify-between">
             <button 
               onClick={handleBack} 
@@ -221,7 +232,7 @@ export default function CardEditor() {
               <span>返回</span>
             </button>
             <h1 className="text-xl font-bold text-[#D4302B]">生成拜年贺卡</h1>
-            <div className="w-16"></div>
+            <ElderModeToggle />
           </div>
         </header>
 

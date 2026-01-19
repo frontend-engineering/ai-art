@@ -27,48 +27,7 @@
   pointer-events: none;
 }
 
-/* 顶部导航栏 */
-.nav-bar {
-  position: relative;
-  z-index: 100;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 32rpx;
-  padding-top: calc(24rpx + env(safe-area-inset-top));
-  box-sizing: border-box;
-}
-
-.back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-chinese-red);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
-}
-
-.nav-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: var(--color-chinese-red);
-}
-
-.nav-placeholder {
-  width: 64rpx;
-}
+/* 导航栏样式使用通用样式文件 common-navigation.wxss */
 
 /* 主内容区 */
 .upload-content {

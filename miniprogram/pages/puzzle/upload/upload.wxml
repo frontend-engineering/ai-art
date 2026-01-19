@@ -2,12 +2,18 @@
   时空拼图模式上传页 - 复用原网页 UploadPage 样式
   Requirements: 2.2, 6.1-6.5
 -->
-<view class="upload-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="upload-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
   <!-- 背景 -->
   <view class="upload-bg"></view>
+  
+  <!-- 模式名称副标题栏 -->
+  <view class="mode-subtitle-bar">
+    <text class="mode-icon">🧩</text>
+    <text class="mode-name">时空拼图</text>
+  </view>
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
@@ -15,7 +21,7 @@
       <text class="back-icon">‹</text>
     </view>
     <text class="nav-title">上传照片</text>
-    <view class="nav-placeholder"></view>
+    <elder-mode-toggle />
   </view>
   
   <!-- 主内容区 -->

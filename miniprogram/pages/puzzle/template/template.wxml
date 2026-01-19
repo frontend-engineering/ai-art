@@ -2,20 +2,24 @@
   时空拼图模式模板选择页 - 复用原网页 TemplateSelector 样式
   Requirements: 2.2
 -->
-<view class="template-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="template-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
   <!-- 背景 -->
   <view class="template-bg"></view>
   
+  <!-- 模式名称副标题栏 -->
+  <view class="mode-subtitle-bar">
+    <text class="mode-icon">🧩</text>
+    <text class="mode-name">时空拼图</text>
+  </view>
+  
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
-    </view>
-    <text class="nav-title">选择模板</text>
     <view class="nav-placeholder"></view>
+    <text class="nav-title">选择模板</text>
+    <elder-mode-toggle />
   </view>
   
   <!-- 分类标签栏 -->

@@ -2,20 +2,24 @@
   富贵变身模式结果选择页 - 复用原网页 ResultSelectorPage 样式
   Requirements: 2.3, 15.1-15.4
 -->
-<view class="result-selector-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="result-selector-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
   <!-- 背景 -->
   <view class="selector-bg"></view>
   
+  <!-- 模式名称副标题栏 -->
+  <view class="mode-subtitle-bar">
+    <text class="mode-icon">👑</text>
+    <text class="mode-name">富贵变身</text>
+  </view>
+  
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
-    </view>
-    <text class="nav-title">选择最满意的一张</text>
     <view class="nav-placeholder"></view>
+    <text class="nav-title">选择结果</text>
+    <elder-mode-toggle />
   </view>
   
   <!-- 提示文字 -->

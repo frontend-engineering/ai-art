@@ -40,6 +40,8 @@
   border-radius: 32rpx;
   overflow: hidden;
   transition: transform 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 
 .payment-modal.show .modal-content {
@@ -50,6 +52,7 @@
 .top-decoration {
   height: 12rpx;
   background: linear-gradient(90deg, #D4302B, #FFD700, #D4302B);
+  flex-shrink: 0;
 }
 
 /* 装饰元素 */
@@ -59,6 +62,7 @@
   top: 32rpx;
   font-size: 48rpx;
   opacity: 0.6;
+  z-index: 1;
 }
 
 .decor-left {
@@ -69,9 +73,12 @@
   right: 32rpx;
 }
 
-/* 弹窗主体 */
+/* 弹窗主体 - 支持滚动 */
 .modal-body {
   padding: 80rpx 48rpx 48rpx;
+  overflow-y: auto;
+  flex: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* 标题区域 */
@@ -392,4 +399,49 @@
 .bottom-decoration {
   height: 8rpx;
   background: linear-gradient(90deg, #D4302B, #FFD700, #D4302B);
+  flex-shrink: 0;
+}
+
+/* 老年模式适配 */
+.elder-mode .modal-title {
+  font-size: 48rpx;
+}
+
+.elder-mode .modal-subtitle {
+  font-size: 34rpx;
+}
+
+.elder-mode .package-name {
+  font-size: 38rpx;
+}
+
+.elder-mode .feature-tag {
+  font-size: 26rpx;
+}
+
+.elder-mode .price-text {
+  font-size: 52rpx;
+}
+
+.elder-mode .pay-btn {
+  height: 112rpx;
+  font-size: 38rpx;
+}
+
+.elder-mode .cancel-btn {
+  height: 96rpx;
+  font-size: 36rpx;
+}
+
+.elder-mode .error-text,
+.elder-mode .success-text {
+  font-size: 32rpx;
+}
+
+.elder-mode .payment-notice text {
+  font-size: 26rpx;
+}
+
+.elder-mode .security-text {
+  font-size: 28rpx;
 }

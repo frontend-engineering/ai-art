@@ -24,6 +24,16 @@
     "backgroundColor": "#FFF8F0",
     "backgroundTextStyle": "dark"
   },
+  "usingComponents": {
+    "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle",
+    "corner-background": "/components/corner-background/corner-background",
+    "loading": "/components/loading/loading",
+    "four-grid-selector": "/components/four-grid-selector/four-grid-selector",
+    "fireworks": "/components/fireworks/fireworks",
+    "payment-modal": "/components/payment-modal/payment-modal",
+    "share-modal": "/components/share-modal/share-modal",
+    "product-recommendation": "/components/product-recommendation/product-recommendation"
+  },
   "style": "v2",
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"

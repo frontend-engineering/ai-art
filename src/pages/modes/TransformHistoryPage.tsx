@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import PageTransition from '@/components/PageTransition';
+import ElderModeToggle from '@/components/ElderModeToggle';
 import { useUser } from '@/contexts/UserContext';
 import { API_ENDPOINTS, apiFetch } from '@/lib/apiConfig';
 import launchBg2 from '@/assets/launch-bg2.png';
@@ -139,8 +140,18 @@ export default function TransformHistoryPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#FFF8DC]/50 via-transparent to-[#D4AF37]/30" />
 
+        {/* 模式名称副标题栏 */}
+        <div className="relative z-40 w-full bg-[#6B0000] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+          <div className="max-w-md mx-auto px-4 py-1.5 text-center">
+            <h2 className="text-sm font-medium text-[#FFD700]/90 flex items-center justify-center">
+              <span className="mr-1.5 text-base">👑</span>
+              富贵变身
+            </h2>
+          </div>
+        </div>
+
         {/* 头部 */}
-        <div className="relative z-10 flex items-center px-4 py-4">
+        <div className="relative z-10 flex items-center justify-between px-4 py-4">
           <button
             onClick={() => navigate('/transform')}
             className="p-2 rounded-full bg-white/80 shadow-md"
@@ -149,7 +160,8 @@ export default function TransformHistoryPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h1 className="flex-1 text-center text-xl font-bold text-[#8B4513] pr-10">我的记录</h1>
+          <h1 className="flex-1 text-center text-xl font-bold text-[#8B4513]">我的记录</h1>
+          <ElderModeToggle />
         </div>
 
         {/* 内容区域 */}

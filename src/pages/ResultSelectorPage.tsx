@@ -6,6 +6,7 @@ import FourGridSelector from '@/components/FourGridSelector';
 import PageTransition from '@/components/PageTransition';
 import CornerBackground from '@/components/CornerBackground';
 import { useModeConfig } from '@/hooks/useModeConfig';
+import ElderModeToggle from '@/components/ElderModeToggle';
 import FireworksAnimation from '@/components/FireworksAnimation';
 
 export default function ResultSelectorPage() {
@@ -153,21 +154,22 @@ export default function ResultSelectorPage() {
             </motion.div>
           </div>
           
-          {/* 顶部导航栏 */}
-          <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30">
-            <div className="flex items-center justify-between max-w-md mx-auto">
-              <button 
-                onClick={handleBack} 
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 text-[#FFD700] hover:bg-black/30 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">
+          {/* 模式名称副标题栏 */}
+          <div className="sticky top-0 z-40 w-full bg-[#6B0000] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <div className="max-w-md mx-auto px-4 py-1.5 text-center">
+              <h2 className="text-sm font-medium text-[#FFD700]/90 flex items-center justify-center">
+                <span className="mr-1.5 text-base">{modeConfig?.theme.icon}</span>
                 {modeConfig?.name || '选择结果'}
-              </h1>
-              <div className="w-10" />
+              </h2>
+            </div>
+          </div>
+
+          {/* 顶部导航栏 */}
+          <header className="sticky z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30" style={{ top: 'calc(env(safe-area-inset-top) + 36px)' }}>
+            <div className="flex items-center justify-between max-w-md mx-auto">
+              <div className="w-10"></div>
+              <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">选择结果</h1>
+              <ElderModeToggle />
             </div>
           </header>
 

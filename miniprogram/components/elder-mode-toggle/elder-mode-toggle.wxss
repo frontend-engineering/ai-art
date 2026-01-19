@@ -1,31 +1,27 @@
 /* 老年模式切换组件样式 */
 .elder-toggle {
-  position: fixed;
+  position: relative;
   z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* 位置样式 */
+/* 位置样式 - 不再使用 fixed 定位，由父容器控制 */
 .elder-toggle.bottom-right {
-  bottom: 160rpx;
-  right: 32rpx;
+  /* 由父容器控制位置 */
 }
 
 .elder-toggle.bottom-left {
-  bottom: 160rpx;
-  left: 32rpx;
+  /* 由父容器控制位置 */
 }
 
 .elder-toggle.top-right {
-  top: 32rpx;
-  right: 32rpx;
+  /* 由父容器控制位置 */
 }
 
 .elder-toggle.top-left {
-  top: 32rpx;
-  left: 32rpx;
+  /* 由父容器控制位置 */
 }
 
 /* 主按钮 */

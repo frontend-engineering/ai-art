@@ -3,6 +3,9 @@
  * 复用原网页设计风格，使用 rpx 单位适配小程序
  */
 
+/* 导入通用导航栏样式 */
+@import "styles/common-navigation.wxss";
+
 /* ========================================
    CSS 变量定义（小程序不支持 :root，使用 page）
    ======================================== */
@@ -514,27 +517,43 @@ image {
    老年模式样式
    ======================================== */
 
+/* 老年模式基础容器 */
 .elder-mode {
+  /* 基础字体放大 */
+}
+
+/* 老年模式 - 通用文字放大（使用更高优先级） */
+view.elder-mode text,
+.elder-mode view text,
+.elder-mode text {
   font-size: 120%;
 }
 
 .elder-mode .text-title {
-  font-size: calc(var(--font-size-title-lg) * 1.2);
+  font-size: 67rpx; /* 56rpx * 1.2 */
 }
 
 .elder-mode .text-subtitle {
-  font-size: calc(var(--font-size-title-md) * 1.2);
+  font-size: 58rpx; /* 48rpx * 1.2 */
 }
 
 .elder-mode .text-body {
-  font-size: calc(var(--font-size-body) * 1.2);
+  font-size: 38rpx; /* 32rpx * 1.2 */
 }
 
 .elder-mode .text-caption {
-  font-size: calc(var(--font-size-caption) * 1.2);
+  font-size: 34rpx; /* 28rpx * 1.2 */
 }
 
-.elder-mode .btn-festival {
+/* 老年模式 - 按钮放大（使用更高优先级） */
+view.elder-mode button,
+view.elder-mode .btn-festival,
+view.elder-mode view[class*="btn"],
+view.elder-mode view[class*="-btn"],
+.elder-mode button,
+.elder-mode .btn-festival,
+.elder-mode view[class*="btn"],
+.elder-mode view[class*="-btn"] {
   transform: scale(1.15);
   transform-origin: center;
 }

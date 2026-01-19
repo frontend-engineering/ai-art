@@ -49,24 +49,9 @@
 }
 
 
-/* 顶部导航栏 */
-.nav-bar {
-  position: relative;
-  z-index: 100;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 32rpx;
-  padding-top: calc(24rpx + env(safe-area-inset-top));
-  background: rgba(139, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 2rpx solid rgba(255, 215, 0, 0.2);
-  box-sizing: border-box;
-}
+/* 导航栏样式使用通用样式文件 common-navigation.wxss */
 
-.back-btn, .home-btn {
+.home-btn {
   width: 64rpx;
   height: 64rpx;
   background: rgba(0, 0, 0, 0.2);
@@ -76,21 +61,7 @@
   justify-content: center;
 }
 
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-festival-gold);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
-}
-
 .home-icon { font-size: 32rpx; }
-
-.nav-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: var(--color-festival-gold);
-}
 
 /* 主内容区 */
 .result-content {
@@ -212,6 +183,8 @@
   justify-content: center;
   gap: 16rpx;
   border-radius: 48rpx;
+  white-space: nowrap;
+  padding: 0 32rpx;
 }
 
 .btn-inner.gold {
@@ -235,7 +208,11 @@
 }
 
 .btn-icon { font-size: 36rpx; }
-.btn-text { font-size: 32rpx; font-weight: bold; }
+.btn-text { 
+  font-size: 32rpx; 
+  font-weight: bold;
+  white-space: nowrap;
+}
 
 .btn-inner.gold .btn-text { color: #8B0000; }
 .btn-inner.red .btn-text { color: var(--color-festival-gold); }
@@ -271,9 +248,15 @@
 /* 老年模式适配 */
 .elder-mode .nav-title { font-size: 42rpx; }
 .elder-mode .tip-text { font-size: 32rpx; }
-.elder-mode .action-btn { height: 112rpx; }
+.elder-mode .action-btn { 
+  height: 120rpx;
+  min-width: 400rpx;
+}
 .elder-mode .btn-icon { font-size: 44rpx; }
-.elder-mode .btn-text { font-size: 38rpx; }
+.elder-mode .btn-text { 
+  font-size: 38rpx;
+  white-space: nowrap;
+}
 .elder-mode .badge-text { font-size: 28rpx; }
 
 /* ========================================

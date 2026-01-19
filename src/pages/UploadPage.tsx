@@ -273,19 +273,27 @@ export default function UploadPage() {
         {/* 简单装饰 */}
       </div>
       
+      {/* 模式名称副标题栏 */}
+      <div className="sticky top-0 z-40 w-full bg-[#6B0000] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+        <div className="max-w-md mx-auto px-4 py-1.5 text-center">
+          <h2 className="text-sm font-medium text-[#FFD700]/90 flex items-center justify-center">
+            <span className="mr-1.5 text-base">{modeConfig?.theme.icon}</span>
+            {modeConfig?.name || (mode === 'puzzle' ? '时空拼图' : '富贵变身')}
+          </h2>
+        </div>
+      </div>
+      
       {/* 顶部导航栏 */}
-      <header className="sticky top-0 z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3">
+      <header className="sticky z-30 w-full backdrop-blur-sm bg-[#8B0000]/80 shadow-lg px-4 py-3" style={{ top: 'calc(env(safe-area-inset-top) + 36px)' }}>
         <div className="flex items-center justify-between">
           <button 
             onClick={handleBack} 
             className="flex items-center text-[#FFD700] font-medium hover:text-[#FFC700] transition-colors"
           >
             <i className="fas fa-arrow-left mr-1"></i>
-            <span>Back</span>
+            <span>返回</span>
           </button>
-          <h1 className="text-xl font-bold text-[#FFD700]">
-            {modeConfig?.name || (mode === 'puzzle' ? '时空拼图' : '富贵变身')}
-          </h1>
+          <h1 className="text-xl font-bold text-[#FFD700]">上传照片</h1>
           <ElderModeToggle />
         </div>
       </header>

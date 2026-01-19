@@ -7,6 +7,7 @@ import PaymentModal from '../components/PaymentModal';
 import ProductRecommendation from '../components/ProductRecommendation';
 import { useUser } from '../contexts/UserContext';
 import { useModeConfig } from '@/hooks/useModeConfig';
+import ElderModeToggle from '@/components/ElderModeToggle';
 import PageTransition from '@/components/PageTransition';
 import { buildApiUrl, API_ENDPOINTS } from '@/lib/apiConfig';
 
@@ -22,7 +23,6 @@ export default function ResultPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showProductRecommendation, setShowProductRecommendation] = useState(false);
   const [isPlayingLivePhoto, setIsPlayingLivePhoto] = useState(false);
-  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
   
@@ -72,46 +72,16 @@ export default function ResultPage() {
     }
   }, [hasLivePhoto]);
   
-  const handleBack = () => {
-    // 如果是从历史记录进入的，返回到模式首页
-    if (fromHistory) {
-      const targetPath = modeConfig ? modeConfig.slug : '/';
-      navigate(targetPath);
-      return;
-    }
-    
-    // 返回到结果选择页
-    const targetPath = modeConfig ? `${modeConfig.slug}/result-selector` : '/result-selector';
-    navigate(targetPath, {
-      state: location.state // 保持原有状态
-    });
-  };
-  
-  // 检测是否为移动端
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-  // 实际执行下载的函数
+  // 实际执行下载的函数（仅在用户选择免费/付费选项后调用）
   const doDownload = () => {
-    if (isMobile) {
-      // 移动端：提示用户长按图片保存
-      toast.success('💡 请长按上方图片，选择"保存图片"到相册', {
-        duration: 5000,
-        style: {
-          background: 'linear-gradient(135deg, #D4302B 0%, #B82820 100%)',
-          color: 'white',
-          border: '2px solid #FFD700',
-        }
-      });
-    } else {
-      // PC端：直接下载
-      const link = document.createElement('a');
-      link.href = selectedImage;
-      link.download = `团圆照相馆-${Date.now()}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast.success('🎉 图片已保存');
-    }
+    // PC端和移动端都直接下载
+    const link = document.createElement('a');
+    link.href = selectedImage;
+    link.download = `团圆照相馆-${Date.now()}.jpg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('🎉 图片已保存');
   };
   
   // 点击保存按钮 → 先弹出增值服务推荐
@@ -192,23 +162,7 @@ export default function ResultPage() {
     }
   };
   
-  const handleLongPress = () => {
-    // 长按保存图片
-    if (isMobile) {
-      toast.success('💡 请长按图片，选择"保存图片"', {
-        duration: 3000,
-        style: {
-          background: 'linear-gradient(135deg, #D4302B 0%, #B82820 100%)',
-          color: 'white',
-          border: '2px solid #FFD700',
-        }
-      });
-    } else {
-      doDownload();
-      setShowSaveSuccess(true);
-      setTimeout(() => setShowSaveSuccess(false), 2000);
-    }
-  };
+
   
   const handleCompletePayment = () => {
     setShowPaymentModal(false);
@@ -254,32 +208,35 @@ export default function ResultPage() {
             </motion.div>
           </div>
           
+          {/* 模式名称副标题栏 */}
+          <div className="sticky top-0 z-40 w-full bg-[#6B0000] shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+            <div className="max-w-md mx-auto px-4 py-1.5 text-center">
+              <h2 className="text-sm font-medium text-[#FFD700]/90 flex items-center justify-center">
+                <span className="mr-1.5 text-base">{modeConfig?.theme.icon}</span>
+                {modeConfig?.name || '生成结果'}
+              </h2>
+            </div>
+          </div>
+
           {/* 顶部导航栏 */}
-          <header className="sticky top-0 z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30">
+          <header className="sticky z-30 w-full backdrop-blur-md bg-[#8B0000]/90 shadow-lg px-4 py-3 border-b border-[#D4AF37]/30" style={{ top: 'calc(env(safe-area-inset-top) + 36px)' }}>
             <div className="flex items-center justify-between max-w-md mx-auto">
-              <button 
-                onClick={handleBack} 
-                className="flex items-center justify-center w-10 h-10 rounded-full bg-black/20 text-[#FFD700] hover:bg-black/30 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
+              <div className="w-10"></div>
               <h1 className="text-xl font-bold text-[#FFD700] drop-shadow-sm">生成结果</h1>
-              <div className="w-10" />
+              <ElderModeToggle />
             </div>
           </header>
 
           <main className="flex-1 z-10 flex flex-col">
             {/* 高清图展示区 */}
-            <div className="relative p-4">
+            <div className="relative p-4 select-none touch-none" style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
               {/* 金色外边框 */}
-              <div className="relative p-0.5 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700]">
-                <div className="relative bg-gradient-to-br from-[#8B0000]/95 to-[#6B0000]/95 rounded-2xl p-3">
+              <div className="relative p-0.5 rounded-2xl bg-gradient-to-r from-[#FFD700] via-[#FFC700] to-[#FFD700] select-none" style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
+                <div className="relative bg-gradient-to-br from-[#8B0000]/95 to-[#6B0000]/95 rounded-2xl p-3 select-none" style={{ WebkitUserSelect: 'none', WebkitTouchCallout: 'none' }}>
                   {/* Live Photo标识 */}
                   {hasLivePhoto && (
                     <motion.div 
-                      className="absolute top-5 left-5 z-20 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center border border-[#FFD700]/30"
+                      className="absolute top-5 left-5 z-30 bg-black/60 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center border border-[#FFD700]/30"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.3 }}
@@ -291,23 +248,15 @@ export default function ResultPage() {
                   
                   {/* 高清图片 */}
                   <motion.div
-                    className="relative"
+                    className="relative pointer-events-none select-none touch-none"
+                    style={{ 
+                      WebkitUserSelect: 'none',
+                      WebkitTouchCallout: 'none',
+                      userSelect: 'none'
+                    }}
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.4 }}
-                    onContextMenu={(e) => e.preventDefault()}
-                    onTouchStart={() => {
-                      const longPressTimer = setTimeout(() => {
-                        handleLongPress();
-                      }, 800);
-                      
-                      const handleTouchEnd = () => {
-                        clearTimeout(longPressTimer);
-                        document.removeEventListener('touchend', handleTouchEnd);
-                      };
-                      
-                      document.addEventListener('touchend', handleTouchEnd);
-                    }}
                   >
                     {/* 内层金色边框 */}
                     <div className="relative p-0.5 rounded-xl bg-gradient-to-br from-[#FFD700]/80 to-[#D4AF37]/80">
@@ -338,20 +287,44 @@ export default function ResultPage() {
                           )}
                         </AnimatePresence>
                         
+                        {/* 使用隐藏的 img 标签来获取图片尺寸和触发加载 */}
                         <img 
                           ref={imageRef}
                           src={selectedImage} 
                           alt="Generated Art Photo" 
-                          className={`w-full h-auto block rounded-xl transition-opacity duration-300 ${
+                          className="invisible absolute"
+                          onLoad={() => setImageLoaded(true)}
+                        />
+                        
+                        {/* 使用背景图显示，无法被长按保存 */}
+                        <div
+                          className={`w-full rounded-xl transition-opacity duration-300 ${
                             isPlayingLivePhoto ? 'animate-pulse' : ''
                           } ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-                          onLoad={() => setImageLoaded(true)}
+                          style={{
+                            backgroundImage: `url(${selectedImage})`,
+                            backgroundSize: 'contain',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat',
+                            aspectRatio: 'auto',
+                            minHeight: '300px',
+                            paddingBottom: imageRef.current ? `${(imageRef.current.naturalHeight / imageRef.current.naturalWidth) * 100}%` : '100%',
+                            WebkitUserSelect: 'none',
+                            WebkitTouchCallout: 'none',
+                            userSelect: 'none',
+                            touchAction: 'none'
+                          }}
+                          onContextMenu={(e) => e.preventDefault()}
+                          onTouchStart={(e) => e.preventDefault()}
+                          onTouchEnd={(e) => e.preventDefault()}
+                          onTouchMove={(e) => e.preventDefault()}
+                          onMouseDown={(e) => e.preventDefault()}
                         />
                       </div>
                     </div>
                     
                     {/* AI团圆照相馆制作标识 */}
-                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm text-[#FFD700] px-3 py-1.5 rounded-lg text-xs flex items-center border border-[#FFD700]/20">
+                    <div className="absolute bottom-3 left-3 z-30 bg-black/60 backdrop-blur-sm text-[#FFD700] px-3 py-1.5 rounded-lg text-xs flex items-center border border-[#FFD700]/20">
                       <svg className="w-3.5 h-3.5 mr-1.5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                       </svg>
@@ -360,23 +333,6 @@ export default function ResultPage() {
                   </motion.div>
                 </div>
               </div>
-              
-              {/* 保存成功提示 */}
-              <AnimatePresence>
-                {showSaveSuccess && (
-                  <motion.div
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/80 backdrop-blur-sm text-[#FFD700] px-6 py-3 rounded-xl border border-[#FFD700]/30"
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.8 }}
-                  >
-                    <svg className="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                    保存成功
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
 
             {/* 功能按钮区 */}

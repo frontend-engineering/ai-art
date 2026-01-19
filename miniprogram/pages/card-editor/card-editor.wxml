@@ -2,12 +2,18 @@
   贺卡编辑页 - 复用原网页 CardEditor 样式
   Requirements: 2.4, 13.1-13.5
 -->
-<view class="card-editor-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="card-editor-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
   <!-- 背景 -->
   <view class="editor-bg"></view>
+  
+  <!-- 模式名称副标题栏 -->
+  <view class="mode-subtitle-bar">
+    <text class="mode-icon">🎊</text>
+    <text class="mode-name">拜年贺卡</text>
+  </view>
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
@@ -15,7 +21,7 @@
       <text class="back-icon">‹</text>
     </view>
     <text class="nav-title">制作拜年贺卡</text>
-    <view class="nav-placeholder"></view>
+    <elder-mode-toggle />
   </view>
   
   <!-- 主内容区 -->
