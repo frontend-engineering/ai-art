@@ -157,8 +157,8 @@
 }
 
 .mode-icon-wrapper {
-  width: 120rpx;
-  height: 120rpx;
+  width: 180rpx;
+  height: 180rpx;
   background: linear-gradient(135deg, var(--color-festival-gold) 0%, #F4CF47 100%);
   border-radius: 50%;
   display: flex;
@@ -166,10 +166,20 @@
   justify-content: center;
   box-shadow: 0 6rpx 24rpx rgba(212, 175, 55, 0.4);
   margin-bottom: 16rpx;
+  padding: 8rpx;
+  overflow: hidden;
 }
 
 .mode-icon {
   font-size: 60rpx;
+}
+
+.mode-icon-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center;
 }
 
 .mode-name {
@@ -198,9 +208,8 @@
   justify-content: center;
   gap: 20rpx;
   padding: 24rpx;
-  background: rgba(255, 255, 255, 0.6);
+  background: transparent;
   border-radius: 20rpx;
-  backdrop-filter: blur(10px);
 }
 
 .preview-before,
@@ -219,6 +228,8 @@
   justify-content: center;
   gap: 8rpx;
   border: 3rpx dashed #9CA3AF;
+  overflow: hidden;
+  position: relative;
 }
 
 .preview-placeholder.gold {
@@ -226,13 +237,27 @@
   border: 3rpx solid var(--color-festival-gold);
 }
 
+.preview-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 .placeholder-icon {
   font-size: 48rpx;
+  position: relative;
+  z-index: 1;
 }
 
 .placeholder-text {
   font-size: 22rpx;
   color: #6B7280;
+  position: relative;
+  z-index: 1;
 }
 
 .preview-placeholder.gold .placeholder-text {
@@ -406,8 +431,9 @@
 }
 
 .elder-mode .mode-icon-wrapper {
-  width: 140rpx;
-  height: 140rpx;
+  width: 220rpx;
+  height: 220rpx;
+  padding: 10rpx;
 }
 
 .elder-mode .mode-icon {

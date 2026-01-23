@@ -50,7 +50,9 @@
         
         <!-- 加载中遮罩 -->
         <view wx:if="{{!imageLoadStates[index]}}" class="loading-mask">
-          <view class="lantern-spin">🏮</view>
+          <view class="lantern-spin-container">
+            <image src="../../assets/lantern.png" class="lantern-spin-image" mode="aspectFit"></image>
+          </view>
         </view>
         
         <!-- 揭幕遮罩 -->

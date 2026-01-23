@@ -17,11 +17,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
     </view>
     <text class="nav-title">上传照片</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->
@@ -32,97 +35,64 @@
       <text class="subtitle-text">最多可选择{{maxImages}}张，AI将为您合成时空全家福</text>
     </view>
     
-    <!-- 已选择的图片列表 -->
-    <view class="selected-images" wx:if="{{selectedImages.length > 0}}">
-      <view class="image-grid">
-        <view class="image-item" wx:for="{{selectedImages}}" wx:key="index">
-          <image class="preview-image" src="{{item.tempPath}}" mode="aspectFill" />
-          <view class="remove-btn" bindtap="removeImage" data-index="{{index}}">
-            <text class="remove-icon">×</text>
-          </view>
-          <view class="upload-status" wx:if="{{item.uploaded}}">
-            <text class="status-icon">✓</text>
-          </view>
-        </view>
-        
-        <!-- 添加更多按钮 -->
-        <view 
-          class="add-more-btn" 
-          wx:if="{{selectedImages.length < maxImages && !isUploading}}"
-          bindtap="handleUploadClick"
-        >
-          <text class="add-icon">+</text>
-          <text class="add-text">添加</text>
-        </view>
-      </view>
-      
-      <text class="image-count">已选择 {{selectedImages.length}}/{{maxImages}} 张</text>
-    </view>
-    
-    <!-- 上传区域（未选择图片时显示） -->
-    <view 
-      class="upload-area" 
-      wx:if="{{selectedImages.length === 0 && !isUploading}}"
-      bindtap="handleUploadClick"
-      hover-class="upload-area-hover"
-    >
-      <view class="upload-prompt">
-        <view class="upload-icon-wrapper">
-          <text class="upload-icon">📷</text>
-        </view>
-        <text class="upload-text">点击上传照片</text>
-        <text class="upload-hint">支持 JPG、PNG 格式，最大 10MB</text>
-        
-        <!-- 示例提示 -->
-        <view class="example-tips">
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">可上传不同年代的照片</text>
-          </view>
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">人脸清晰可见</text>
-          </view>
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">最多5张照片</text>
-          </view>
-        </view>
-      </view>
-    </view>
-    
-    <!-- 上传中状态 -->
-    <view class="uploading-overlay" wx:if="{{isUploading}}">
-      <view class="uploading-state">
-        <view class="loading-spinner">
-          <loading />
-        </view>
-        <text class="status-text">{{statusText}}</text>
-        <view class="progress-bar" wx:if="{{uploadProgress > 0}}">
-          <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
-        </view>
-      </view>
-    </view>
-    
     <!-- 错误提示 -->
     <view class="error-toast" wx:if="{{errorMessage && !isUploading}}">
       <text class="error-icon">⚠️</text>
       <text class="error-text">{{errorMessage}}</text>
       <view class="error-close" bindtap="clearError">
-        <text class="close-icon">×</text>
+        <text class="close-icon">✕</text>
       </view>
     </view>
     
-    <!-- 开始处理按钮 -->
-    <view class="action-section" wx:if="{{selectedImages.length > 0 && !isUploading}}">
-      <view class="start-btn" bindtap="startProcess">
-        <text class="btn-text">开始制作</text>
+    <!-- 上传区域 -->
+    <view 
+      class="upload-area" 
+      wx:if="{{!isUploading}}"
+      bindtap="handleUploadClick"
+      hover-class="upload-area-hover"
+    >
+      <!-- 上传提示 -->
+      <view class="upload-prompt">
+        <image class="camera-image" src="../../../assets/camera-upload.png" mode="scaleToFill" />
+      </view>
+    </view>
+    
+    <!-- 文本部分 - 在框外下方 -->
+    <view class="upload-text-section" wx:if="{{!isUploading}}">
+      <text class="upload-text">点击上传照片</text>
+      <text class="upload-hint">支持 JPG、PNG 格式，最大 10MB</text>
+      
+      <!-- 示例提示 -->
+      <view class="example-tips">
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">可上传不同年代的照片</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">人脸清晰可见</text>
+        </view>
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">最多5张照片</text>
+        </view>
       </view>
     </view>
     
     <!-- 底部提示 -->
-    <view class="bottom-tips">
+    <view class="bottom-tips" wx:if="{{!isUploading}}">
       <text class="tips-text">💡 提示：上传不同年代的家人照片，AI将合成穿越时空的全家福</text>
+    </view>
+  </view>
+  
+  <!-- 上传中状态 - 页面居中 -->
+  <view class="uploading-state" wx:if="{{isUploading}}">
+    <view class="loading-spinner">
+      <loading />
+    </view>
+    <text class="status-text">{{statusText}}</text>
+    <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">
+      <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
     </view>
   </view>
 </view>

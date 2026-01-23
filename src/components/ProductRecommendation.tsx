@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import Loading from './Loading';
 
 // 图片加载组件
 const ImageWithLoading: React.FC<{
@@ -25,13 +26,7 @@ const ImageWithLoading: React.FC<{
               animate={{ x: ['-100%', '100%'] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             />
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="text-3xl"
-            >
-              🏮
-            </motion.div>
+            <Loading size="medium" text="" />
           </motion.div>
         )}
       </AnimatePresence>

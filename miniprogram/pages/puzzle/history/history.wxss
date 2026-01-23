@@ -4,3 +4,11 @@
  */
 
 @import '/pages/transform/history/history.wxss';
+
+/* ========================================
+   时空拼图模式导航栏覆盖
+   ======================================== */
+
+.history-page .back-icon {
+  color: #FFD700;
+}

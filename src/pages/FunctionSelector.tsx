@@ -6,6 +6,7 @@ import { useElderMode } from '@/contexts/ElderModeContext';
 import ElderModeToggle from '@/components/ElderModeToggle';
 import PageTransition from '@/components/PageTransition';
 import CornerBackground from '@/components/CornerBackground';
+import Loading from '@/components/Loading';
 
 // 中国风图标组件
 const PuzzleIcon = () => (
@@ -73,16 +74,7 @@ export default function FunctionSelector() {
     return (
       <CornerBackground>
         <div className="min-h-screen w-full flex items-center justify-center">
-          <div className="text-center">
-            <motion.div 
-              className="text-5xl mb-4"
-              animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              🏮
-            </motion.div>
-            <p className="text-[#FFD700] font-medium">正在初始化...</p>
-          </div>
+          <Loading text="正在初始化..." size="large" />
         </div>
       </CornerBackground>
     );

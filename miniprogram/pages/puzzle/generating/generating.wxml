@@ -9,19 +9,18 @@
   <!-- 背景 -->
   <view class="generating-bg"></view>
   
-  <!-- 装饰元素 -->
-  <view class="decorations">
-    <text class="decoration lantern-1 animate-float">🏮</text>
-    <text class="decoration lantern-2 animate-float-delay">🏮</text>
-    <text class="decoration sparkle animate-twinkle">✨</text>
-  </view>
-  
   <!-- 主内容区 -->
   <view class="generating-content">
     <!-- 主灯笼动画 -->
     <view class="lantern-wrapper animate-bounce">
       <view class="lantern-glow"></view>
-      <text class="main-lantern">🏮</text>
+      <video 
+        class="main-lantern"
+        src="../../../assets/lantern.mp4"
+        autoplay
+        loop
+        muted
+      ></video>
     </view>
     
     <!-- 标题 -->

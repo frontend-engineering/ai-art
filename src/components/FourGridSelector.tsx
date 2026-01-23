@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import lanternImg from '../assets/lantern.png';
 
 interface FourGridSelectorProps {
   images: string[];
@@ -115,14 +116,15 @@ export default function FourGridSelector({
                   transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
                 />
                 
-                {/* 旋转灯笼图标 */}
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                  className="text-3xl sm:text-4xl mb-2"
-                >
-                  🏮
-                </motion.div>
+                {/* 旋转灯笼图片 */}
+                <div className="flex items-center justify-center h-12 mb-1">
+                  <img 
+                    src={lanternImg}
+                    alt="loading"
+                    className="animate-lantern-spin"
+                    style={{ width: '40px', height: '40px', objectFit: 'contain' }}
+                  />
+                </div>
                 
                 <p className="text-[#FFD700] text-xs sm:text-sm font-medium">生成中...</p>
                 <p className="text-[#FFD700]/60 text-xs mt-1">选项 {index}</p>

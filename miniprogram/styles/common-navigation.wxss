@@ -56,32 +56,43 @@
 /* 顶部导航栏 - 有返回按钮版本 */
 .nav-bar {
   position: sticky;
-  /* 副标题栏高度 = env(safe-area-inset-top) + 12rpx(padding-bottom) + 约36rpx(内容高度) ≈ 48rpx */
   top: 0;
   z-index: 100;
   width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   padding: 24rpx 32rpx;
   background: #6B0000;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
+  position: relative;
+}
+
+.nav-left {
+  position: absolute;
+  left: 32rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
 }
 
 .back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(0, 0, 0, 0.2);
+  width: 96rpx;
+  height: 96rpx;
+  background: transparent;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .back-icon {
-  font-size: 48rpx;
+  font-size: 80rpx;
   color: #FFD700;
   font-weight: bold;
   line-height: 1;
@@ -92,17 +103,79 @@
   font-size: 36rpx;
   font-weight: bold;
   color: #FFD700;
+  flex: 1;
+  text-align: center;
+}
+
+.nav-right {
+  width: 64rpx;
+  flex-shrink: 0;
 }
 
 .nav-placeholder {
   width: 64rpx;
 }
 
-/* elder-mode-toggle 在导航栏中的容器 */
-.nav-elder-toggle {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* elder-mode-toggle 在导航栏中的位置 - 紧挨着返回键 */
+.nav-left elder-mode-toggle {
+  margin-left: 50rpx;
+  flex-shrink: 0;
+}
+
+/* elder-mode-toggle 在导航栏中的样式 */
+.nav-bar .elder-toggle .toggle-btn {
+  width: 56rpx;
+  height: 56rpx;
+  border: 2rpx solid rgba(212, 175, 55, 0.4);
+}
+
+.nav-bar .elder-toggle .icon-text {
+  font-size: 20rpx;
+}
+
+.nav-bar .elder-toggle.active .icon-text {
+  font-size: 24rpx;
+}
+
+.nav-bar .elder-toggle .icon-label {
+  font-size: 14rpx;
+}
+
+/* ========================================
+   富贵变身模式 (Transform) 导航栏覆盖
+   ======================================== */
+
+.template-page .page-with-nav::before,
+.result-page .page-with-nav::before,
+.result-selector-page .page-with-nav::before,
+.upload-page .page-with-nav::before {
+  background: #D4AF37;
+}
+
+.template-page .mode-subtitle-bar,
+.result-page .mode-subtitle-bar,
+.result-selector-page .mode-subtitle-bar,
+.upload-page .mode-subtitle-bar {
+  background: #D4AF37;
+}
+
+.template-page .nav-bar,
+.result-page .nav-bar,
+.result-selector-page .nav-bar,
+.upload-page .nav-bar {
+  background: #D4AF37;
+}
+
+.template-page .back-icon,
+.result-page .back-icon,
+.result-selector-page .back-icon,
+.upload-page .back-icon {
+  color: #DC143C;
+}
+
+.template-page .nav-title,
+.result-page .nav-title,
+.result-selector-page .nav-title,
+.upload-page .nav-title {
+  color: #8B4513;
 }

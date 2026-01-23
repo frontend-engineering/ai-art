@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import lanternImg from '../assets/lantern.png';
 
 interface ImageWithLoadingProps {
   src: string;
@@ -25,11 +26,11 @@ export default function ImageWithLoading({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
 
-  const sizeClasses = {
-    sm: 'text-2xl',
-    md: 'text-4xl',
-    lg: 'text-6xl'
-  };
+  const sizeMap = {
+    sm: { width: '40px', height: '40px' },
+    md: { width: '60px', height: '60px' },
+    lg: { width: '100px', height: '100px' }
+  } as const;
 
   const handleLoad = () => {
     setIsLoading(false);
@@ -60,14 +61,20 @@ export default function ImageWithLoading({
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             />
             
-            {/* 旋转灯笼图标 */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className={sizeClasses[loadingSize]}
-            >
-              🏮
-            </motion.div>
+            {/* 旋转灯笼图片 */}
+            <div className="flex items-center justify-center" style={sizeMap[loadingSize]}>
+              <img 
+                src={lanternImg}
+                alt="loading"
+                className="animate-lantern-spin"
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center'
+                }}
+              />
+            </div>
             
             {showLoadingText && (
               <p className="text-[#8B4513] text-sm font-medium mt-2">加载中...</p>

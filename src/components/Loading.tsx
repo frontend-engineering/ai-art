@@ -1,4 +1,5 @@
 import React from 'react';
+import lanternImg from '../assets/lantern.png';
 
 interface LoadingProps {
   text?: string;
@@ -11,19 +12,26 @@ const Loading: React.FC<LoadingProps> = ({
   size = 'medium',
   className = '' 
 }) => {
-  const sizeClasses = {
-    small: 'text-[40px]',
-    medium: 'text-[80px]',
-    large: 'text-[120px]'
+  const sizeMap = {
+    small: '50px',
+    medium: '80px',
+    large: '120px'
   };
   
   return (
     <div className={`loading-container ${className}`}>
-      <div 
-        className="loading-lantern" 
-        style={{ fontSize: size === 'small' ? '40px' : size === 'large' ? '120px' : '80px' }}
-      >
-        🏮
+      <div className="loading-lantern-wrapper">
+        <img 
+          src={lanternImg}
+          alt="loading"
+          className="animate-lantern-spin" 
+          style={{ 
+            width: sizeMap[size],
+            height: sizeMap[size],
+            objectFit: 'contain',
+            objectPosition: 'center'
+          }}
+        />
       </div>
       {text && <p className="loading-text">{text}</p>}
     </div>

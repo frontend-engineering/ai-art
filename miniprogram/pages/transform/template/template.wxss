@@ -163,18 +163,19 @@
   position: absolute;
   top: 16rpx;
   left: 16rpx;
-  width: 48rpx;
-  height: 48rpx;
-  background: rgba(0, 0, 0, 0.5);
+  width: 64rpx;
+  height: 64rpx;
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(4px);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3);
 }
 
 .preview-icon {
-  font-size: 24rpx;
+  font-size: 32rpx;
 }
 
 /* 模板信息 */
@@ -363,18 +364,21 @@
   left: 50%;
   transform: translate(-50%, -50%);
   width: 90%;
+  height: 80%;
   max-width: 600rpx;
-  background: #FFFFFF;
+  background: #000000;
   border-radius: 32rpx;
   overflow: hidden;
   box-shadow: 0 16rpx 64rpx rgba(0, 0, 0, 0.3);
   border: 4rpx solid var(--color-festival-gold);
+  display: flex;
+  flex-direction: column;
 }
 
 .close-btn {
   position: absolute;
-  top: -20rpx;
-  right: -20rpx;
+  top: 16rpx;
+  right: 16rpx;
   width: 64rpx;
   height: 64rpx;
   background: linear-gradient(135deg, var(--color-festival-red) 0%, #8B0000 100%);
@@ -384,6 +388,7 @@
   justify-content: center;
   border: 4rpx solid var(--color-festival-gold);
   z-index: 10;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.5);
 }
 
 .close-icon {
@@ -395,7 +400,24 @@
 
 .preview-image {
   width: 100%;
+  height: 100%;
   display: block;
+}
+
+.preview-image-area {
+  flex: 1;
+  width: 100%;
+  background: #000000;
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-image-movable {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview-image-wrapper {

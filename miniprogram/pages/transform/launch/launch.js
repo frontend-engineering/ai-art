@@ -16,7 +16,7 @@ Page({
       name: '富贵变身',
       icon: '👑',
       slogan: '背景太土？一秒变豪门',
-      description: '杂乱餐桌 → 欧式豪宅背景',
+      description: '普通背景变身富贵豪门',
       uploadGuide: '上传一张全家福，AI将为您更换高端背景',
       buttonText: '立即变身豪门'
     }
@@ -105,5 +105,23 @@ Page({
       title: '富贵变身 - 背景太土？一秒变豪门',
       imageUrl: '/assets/images/share-transform.png'
     };
+  },
+
+  /**
+   * 图片加载成功
+   */
+  onImageLoad(e) {
+    console.log('[TransformLaunch] 图片加载成功:', e.detail);
+  },
+
+  /**
+   * 图片加载失败
+   */
+  onImageError(e) {
+    console.error('[TransformLaunch] 图片加载失败:', e.detail);
+    wx.showToast({
+      title: '图片加载失败',
+      icon: 'none'
+    });
   }
 });

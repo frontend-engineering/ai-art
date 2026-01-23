@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import CornerBackground from '@/components/CornerBackground';
 import PaymentModal from '../components/PaymentModal';
 import ProductRecommendation from '../components/ProductRecommendation';
+import Loading from '@/components/Loading';
 import { useUser } from '../contexts/UserContext';
 import { useModeConfig } from '@/hooks/useModeConfig';
 import ElderModeToggle from '@/components/ElderModeToggle';
@@ -47,10 +48,7 @@ export default function ResultPage() {
       <PageTransition>
         <CornerBackground>
           <div className="min-h-screen w-full flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-4xl mb-4">🏮</div>
-              <p>正在加载...</p>
-            </div>
+            <Loading text="正在加载..." size="large" />
           </div>
         </CornerBackground>
       </PageTransition>

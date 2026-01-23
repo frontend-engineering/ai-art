@@ -10,12 +10,6 @@
   <!-- 背景 -->
   <view class="result-bg"></view>
   
-  <!-- 装饰元素 -->
-  <view class="decorations">
-    <text class="decoration lantern-1 animate-float">🏮</text>
-    <text class="decoration lantern-2 animate-float-delay">🏮</text>
-  </view>
-  
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
     <text class="mode-icon">👑</text>
@@ -24,9 +18,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="nav-placeholder"></view>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
+    </view>
     <text class="nav-title">生成结果</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->
@@ -102,7 +101,7 @@
       >
         <view class="btn-inner gold">
           <text class="btn-icon">📥</text>
-          <text class="btn-text">{{isSaving ? '保存中...' : '保存图片'}}</text>
+          <text class="btn-text">{{isSaving ? '保存中...' : '保存至相册'}}</text>
         </view>
         <view class="btn-shine"></view>
       </view>

@@ -1,5 +1,5 @@
 /**
- * 富贵变身上传页样式 - 复用原网页 TransformUploadPage 设计
+ * 富贵变身上传页样式
  * Requirements: 2.3, 6.1-6.5, 10.1-10.3
  */
 
@@ -7,9 +7,13 @@
   position: relative;
   width: 100%;
   min-height: 100vh;
-  background: linear-gradient(180deg, #FFF8DC 0%, #FFF9E5 50%, #FFF0CC 100%);
+  background: linear-gradient(180deg, #FFF8F0 0%, #FFE4E1 50%, #FFF0F0 100%);
   overflow-x: hidden;
   box-sizing: border-box;
+}
+
+.upload-page.page-with-nav {
+  padding-top: 0;
 }
 
 .upload-bg {
@@ -19,55 +23,12 @@
   width: 100%;
   height: 100%;
   background: linear-gradient(180deg, 
-    rgba(212, 175, 55, 0.05) 0%, 
-    rgba(255, 248, 220, 0.9) 30%,
-    rgba(255, 240, 204, 1) 100%
+    rgba(212, 48, 43, 0.03) 0%, 
+    rgba(255, 248, 240, 0.9) 30%,
+    rgba(255, 240, 240, 1) 100%
   );
   z-index: 0;
   pointer-events: none;
-}
-
-/* 顶部导航栏 */
-.nav-bar {
-  position: relative;
-  z-index: 100;
-  width: 100%;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24rpx 32rpx;
-  padding-top: calc(24rpx + env(safe-area-inset-top));
-  box-sizing: border-box;
-}
-
-.back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-festival-gold);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
-}
-
-.nav-title {
-  font-size: 36rpx;
-  font-weight: bold;
-  color: var(--color-festival-gold);
-}
-
-.nav-placeholder {
-  width: 64rpx;
 }
 
 /* 主内容区 */
@@ -81,19 +42,20 @@
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
+  margin-top: 120rpx;
 }
 
 /* 标题说明 */
 .title-section {
   text-align: center;
-  margin-bottom: 48rpx;
+  margin-bottom: 32rpx;
 }
 
 .title-text {
   display: block;
   font-size: 48rpx;
   font-weight: bold;
-  color: var(--color-festival-gold);
+  color: var(--color-chinese-red);
   margin-bottom: 12rpx;
 }
 
@@ -103,79 +65,83 @@
   color: #8B4513;
 }
 
-/* 上传区域 */
+/* 上传区域 - 虚线框 */
 .upload-area {
   width: 100%;
-  aspect-ratio: 3/4;
-  max-height: 800rpx;
-  background: rgba(255, 255, 255, 0.9);
+  max-width: 500rpx;
+  border: 4rpx dashed var(--color-chinese-red);
   border-radius: 32rpx;
-  border: 4rpx dashed var(--color-festival-gold);
+  box-sizing: border-box;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 8rpx 32rpx rgba(212, 175, 55, 0.15);
+  background: transparent;
   transition: all 0.3s ease;
+  overflow: hidden;
+  margin: 0 auto 32rpx;
+  position: relative;
+  padding-bottom: 100%;
 }
 
 .upload-area-hover {
   transform: scale(0.98);
   border-style: solid;
-  background: rgba(255, 248, 220, 0.95);
 }
 
-.upload-area.uploading {
-  border-style: solid;
-  background: rgba(0, 0, 0, 0.7);
-}
-
-/* 上传提示 */
+/* 上传提示容器 */
 .upload-prompt {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 48rpx;
-}
-
-.upload-icon-wrapper {
-  width: 160rpx;
-  height: 160rpx;
-  background: linear-gradient(135deg, var(--color-festival-gold) 0%, #F4CF47 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
   justify-content: center;
-  margin-bottom: 32rpx;
-  box-shadow: 0 8rpx 24rpx rgba(212, 175, 55, 0.3);
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 }
 
-.upload-icon {
-  font-size: 80rpx;
+/* 相机图片 - 655:718 比例 */
+.camera-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 文本部分 - 框外 */
+.upload-text-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 16rpx;
 }
 
 .upload-text {
-  font-size: 36rpx;
+  font-size: 32rpx;
   font-weight: bold;
-  color: var(--color-festival-gold);
-  margin-bottom: 12rpx;
+  color: var(--color-chinese-red);
+  margin-bottom: 8rpx;
 }
 
 .upload-hint {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #9CA3AF;
-  margin-bottom: 32rpx;
+  margin-bottom: 24rpx;
 }
 
 /* 示例提示 */
 .example-tips {
   display: flex;
   flex-direction: column;
-  gap: 16rpx;
-  background: rgba(212, 175, 55, 0.1);
-  padding: 24rpx 32rpx;
+  gap: 12rpx;
+  background: rgba(212, 48, 43, 0.05);
+  padding: 20rpx 28rpx;
   border-radius: 16rpx;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tip-item {
@@ -186,120 +152,117 @@
 }
 
 .tip-icon {
-  font-size: 24rpx;
+  font-size: 22rpx;
   color: #10B981;
   font-weight: bold;
 }
 
 .tip-text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #6B7280;
 }
 
-/* 上传中状态 */
+/* 上传中状态 - 页面居中显示 */
 .uploading-state {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 24rpx;
+  z-index: 1000;
+  margin-top: 60rpx;
 }
 
 .loading-spinner {
-  width: 120rpx;
-  height: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .status-text {
-  font-size: 32rpx;
-  color: #FFFFFF;
-  font-weight: 500;
+  font-size: 36rpx;
+  color: #000000;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .progress-bar {
   width: 400rpx;
   height: 8rpx;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(212, 48, 43, 0.2);
   border-radius: 4rpx;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--color-festival-gold), #F4CF47);
+  background: linear-gradient(90deg, var(--color-chinese-red), #E85A50);
   border-radius: 4rpx;
   transition: width 0.3s ease;
 }
 
-/* 错误状态 */
-.error-state {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+/* 错误提示 */
+.error-toast {
+  width: 100%;
   display: flex;
+  flex-direction: row;
   align-items: center;
-  justify-content: center;
-}
-
-.error-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 48rpx;
-  background: #EF4444;
-  border-radius: 24rpx;
-  margin: 32rpx;
-  max-width: 500rpx;
+  padding: 20rpx 24rpx;
+  background: #FEF2F2;
+  border: 2rpx solid #FECACA;
+  border-radius: 16rpx;
+  margin-bottom: 24rpx;
+  box-sizing: border-box;
 }
 
 .error-icon {
-  font-size: 64rpx;
-  margin-bottom: 16rpx;
+  font-size: 32rpx;
+  margin-right: 12rpx;
+  flex-shrink: 0;
 }
 
 .error-text {
+  flex: 1;
+  font-size: 26rpx;
+  color: #DC2626;
+}
+
+.error-close {
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.close-icon {
   font-size: 32rpx;
-  color: #FFFFFF;
-  text-align: center;
-  margin-bottom: 24rpx;
-  line-height: 1.5;
-}
-
-.retry-btn {
-  padding: 16rpx 48rpx;
-  background: #FFFFFF;
-  border-radius: 32rpx;
-}
-
-.retry-text {
-  font-size: 28rpx;
-  color: #EF4444;
-  font-weight: 500;
+  color: #9CA3AF;
 }
 
 /* 底部提示 */
 .bottom-tips {
   margin-top: 32rpx;
   padding: 24rpx;
+  text-align: center;
 }
 
 .tips-text {
-  font-size: 26rpx;
+  font-size: 24rpx;
   color: #9CA3AF;
 }
 
 /* ========================================
    老年模式适配
    ======================================== */
-
-.elder-mode .nav-title {
-  font-size: 42rpx;
-}
 
 .elder-mode .title-text {
   font-size: 56rpx;
@@ -309,25 +272,20 @@
   font-size: 34rpx;
 }
 
-.elder-mode .upload-icon-wrapper {
-  width: 200rpx;
-  height: 200rpx;
-}
-
-.elder-mode .upload-icon {
-  font-size: 100rpx;
+.elder-mode .upload-area {
+  height: 480rpx;
 }
 
 .elder-mode .upload-text {
-  font-size: 42rpx;
+  font-size: 38rpx;
 }
 
 .elder-mode .upload-hint {
-  font-size: 32rpx;
+  font-size: 30rpx;
 }
 
 .elder-mode .tip-text {
-  font-size: 32rpx;
+  font-size: 30rpx;
 }
 
 .elder-mode .status-text {
@@ -335,13 +293,9 @@
 }
 
 .elder-mode .error-text {
-  font-size: 38rpx;
-}
-
-.elder-mode .retry-text {
-  font-size: 34rpx;
+  font-size: 32rpx;
 }
 
 .elder-mode .tips-text {
-  font-size: 32rpx;
+  font-size: 30rpx;
 }

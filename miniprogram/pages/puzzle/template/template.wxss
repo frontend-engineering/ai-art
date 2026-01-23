@@ -453,3 +453,11 @@
 .elder-mode .preview-name { font-size: 42rpx; }
 .elder-mode .preview-desc { font-size: 32rpx; }
 .elder-mode .select-text { font-size: 38rpx; }
+
+/* ========================================
+   时空拼图模式导航栏覆盖
+   ======================================== */
+
+.template-page .back-icon {
+  color: #FFD700;
+}

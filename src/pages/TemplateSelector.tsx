@@ -6,6 +6,7 @@ import { useElderMode } from '@/contexts/ElderModeContext';
 import { useModeConfig } from '@/hooks/useModeConfig';
 import ElderModeToggle from '@/components/ElderModeToggle';
 import PageTransition from '@/components/PageTransition';
+import Loading from '@/components/Loading';
 import { 
   getModeTemplates, 
   getModeTemplateCategories, 
@@ -329,14 +330,7 @@ export default function TemplateSelector() {
             {isLoading ? (
               <div className="flex items-center justify-center h-64">
                 <div className="text-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    className="text-5xl mb-3"
-                  >
-                    🏮
-                  </motion.div>
-                  <p className="text-[#FFD700] text-sm">加载模板中...</p>
+                  <Loading text="加载模板中..." size="large" />
                 </div>
               </div>
             ) : (

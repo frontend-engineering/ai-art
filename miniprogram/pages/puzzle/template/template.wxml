@@ -17,9 +17,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="nav-placeholder"></view>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
+    </view>
     <text class="nav-title">选择模板</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 分类标签栏 -->

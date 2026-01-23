@@ -104,7 +104,7 @@
 }
 
 .animate-lantern-spin {
-  animation: lanternSpin 20s linear infinite;
+  animation: lanternSpin 2s linear infinite;
 }
 
 .animate-firework-burst {
@@ -600,9 +600,13 @@ input[type="file"] {
   user-select: none;
 }
 
-.loading-lantern::before {
-  content: '🏮';
-  display: block;
+.loading-lantern-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 80px;
+  padding: 10px 0;
 }
 
 /* 加载容器 */

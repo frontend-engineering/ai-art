@@ -3,9 +3,9 @@
  * Requirements: 2.2, 6.1-6.5
  * 
  * 功能：
- * - 复用原网页 UploadPage 样式
- * - 实现多图选择（最多5张）
- * - 实现人脸检测和上传
+ * - 与富贵变身保持一致的 UI 样式
+ * - 实现多图上传（最多5张）
+ * - 实现人脸检测
  */
 
 const { chooseImage, uploadImage } = require('../../../utils/upload');
@@ -18,9 +18,7 @@ Page({
     isUploading: false,
     statusText: '',
     errorMessage: '',
-    uploadProgress: 0,
-    selectedImages: [], // 已选择的图片列表
-    maxImages: 5
+    uploadProgress: 0
   },
 
   onLoad() {
@@ -42,23 +40,12 @@ Page({
   async handleUploadClick() {
     if (this.data.isUploading) return;
     
-    const { selectedImages, maxImages } = this.data;
-    const remainingCount = maxImages - selectedImages.length;
-    
-    if (remainingCount <= 0) {
-      wx.showToast({
-        title: `最多选择${maxImages}张图片`,
-        icon: 'none'
-      });
-      return;
-    }
-    
     console.log('[PuzzleUpload] 用户点击上传区域');
     this.setData({ errorMessage: '' });
     
     try {
-      // 选择图片（多张）
-      const tempFiles = await chooseImage(remainingCount);
+      // 选择图片（最多5张）
+      const tempFiles = await chooseImage(5);
       if (!tempFiles || tempFiles.length === 0) {
         console.log('[PuzzleUpload] 用户取消选择');
         return;
@@ -76,17 +63,8 @@ Page({
         }
       }
       
-      // 添加到已选择列表
-      const newImages = tempFiles.map(f => ({
-        tempPath: f.path,
-        size: f.size,
-        uploaded: false,
-        url: ''
-      }));
-      
-      this.setData({
-        selectedImages: [...selectedImages, ...newImages]
-      });
+      // 开始上传流程
+      await this.processUpload(tempFiles);
       
     } catch (err) {
       console.error('[PuzzleUpload] 选择图片失败:', err);
@@ -100,30 +78,10 @@ Page({
   },
 
   /**
-   * 删除已选择的图片
-   */
-  removeImage(e) {
-    const index = e.currentTarget.dataset.index;
-    const { selectedImages } = this.data;
-    selectedImages.splice(index, 1);
-    this.setData({ selectedImages });
-  },
-
-  /**
-   * 开始处理上传
+   * 处理上传流程
    * Requirements: 6.2-6.5
    */
-  async startProcess() {
-    const { selectedImages } = this.data;
-    
-    if (selectedImages.length === 0) {
-      wx.showToast({
-        title: '请先选择图片',
-        icon: 'none'
-      });
-      return;
-    }
-    
+  async processUpload(tempFiles) {
     this.setData({
       isUploading: true,
       statusText: '正在上传图片...',
@@ -134,20 +92,15 @@ Page({
     try {
       // 1. 上传所有图片
       const uploadedUrls = [];
-      for (let i = 0; i < selectedImages.length; i++) {
-        const img = selectedImages[i];
+      for (let i = 0; i < tempFiles.length; i++) {
+        const file = tempFiles[i];
         this.setData({
-          statusText: `正在上传第 ${i + 1}/${selectedImages.length} 张...`,
-          uploadProgress: Math.round((i / selectedImages.length) * 50)
+          statusText: `正在上传第 ${i + 1}/${tempFiles.length} 张...`,
+          uploadProgress: Math.round((i / tempFiles.length) * 50)
         });
         
-        const url = await uploadImage(img.tempPath);
+        const url = await uploadImage(file.path);
         uploadedUrls.push(url);
-        
-        // 更新状态
-        selectedImages[i].uploaded = true;
-        selectedImages[i].url = url;
-        this.setData({ selectedImages });
       }
       
       console.log('[PuzzleUpload] 所有图片上传成功:', uploadedUrls.length);

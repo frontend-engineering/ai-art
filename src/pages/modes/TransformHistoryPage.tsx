@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import PageTransition from '@/components/PageTransition';
 import ElderModeToggle from '@/components/ElderModeToggle';
+import Loading from '@/components/Loading';
 import { useUser } from '@/contexts/UserContext';
 import { API_ENDPOINTS, apiFetch } from '@/lib/apiConfig';
 import launchBg2 from '@/assets/launch-bg2.png';
@@ -30,13 +31,7 @@ const ImageWithLoading: React.FC<{
               animate={{ x: ['-100%', '100%'] }}
               transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
             />
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-              className="text-2xl"
-            >
-              🏮
-            </motion.div>
+            <Loading size="medium" text="" />
           </motion.div>
         )}
       </AnimatePresence>

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import FourGridSelector from '@/components/FourGridSelector';
 import PageTransition from '@/components/PageTransition';
 import CornerBackground from '@/components/CornerBackground';
+import Loading from '@/components/Loading';
 import { useModeConfig } from '@/hooks/useModeConfig';
 import ElderModeToggle from '@/components/ElderModeToggle';
 import FireworksAnimation from '@/components/FireworksAnimation';
@@ -46,10 +47,7 @@ export default function ResultSelectorPage() {
       <PageTransition>
         <CornerBackground>
           <div className="min-h-screen w-full flex items-center justify-center">
-            <div className="text-white text-center">
-              <div className="text-4xl mb-4">🏮</div>
-              <p>正在加载...</p>
-            </div>
+            <Loading text="正在加载..." size="large" />
           </div>
         </CornerBackground>
       </PageTransition>

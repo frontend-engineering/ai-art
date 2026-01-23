@@ -3,8 +3,10 @@
   "navigationBarBackgroundColor": "#D4AF37",
   "navigationBarTextStyle": "white",
   "navigationStyle": "custom",
+  "disableScroll": true,
   "usingComponents": {
     "corner-background": "/components/corner-background/corner-background",
-    "loading": "/components/loading/loading"
+    "loading": "/components/loading/loading",
+    "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle"
   }
 }

@@ -40,9 +40,9 @@ Component({
   methods: {
     updateSize() {
       const sizeMap = {
-        small: '60rpx',
-        medium: '100rpx',
-        large: '160rpx'
+        small: '50rpx',
+        medium: '80rpx',
+        large: '120rpx'
       };
       this.setData({
         lanternSize: sizeMap[this.data.size] || sizeMap.medium

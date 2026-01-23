@@ -17,9 +17,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="nav-placeholder"></view>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
+    </view>
     <text class="nav-title">选择模板</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 分类标签栏 -->
@@ -120,12 +125,23 @@
         <text class="close-icon">×</text>
       </view>
       
-      <!-- 预览图片 -->
-      <image 
-        class="preview-image" 
-        src="{{previewTemplate.url}}" 
-        mode="aspectFit"
-      />
+      <!-- 预览图片 - 支持缩放和移动 -->
+      <movable-area class="preview-image-area">
+        <movable-view 
+          class="preview-image-movable"
+          direction="all"
+          scale
+          scale-min="1"
+          scale-max="3"
+          scale-value="1"
+        >
+          <image 
+            class="preview-image" 
+            src="{{previewTemplate.url}}" 
+            mode="widthFix"
+          />
+        </movable-view>
+      </movable-area>
       
       <!-- 底部信息 -->
       <view class="preview-info">

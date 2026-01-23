@@ -1,28 +1,44 @@
-/* 加载组件样式 - 复用原网页灯笼旋转动画样式 */
+/* 加载组件样式 - 灯笼图片 */
 .loading-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40rpx;
+  padding: 20rpx;
 }
 
-.loading-lantern {
-  animation: lantern-spin 2s linear infinite;
+.lantern-image-wrapper {
+  width: 120rpx;
+  height: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  padding: 8rpx;
 }
 
-@keyframes lantern-spin {
+.lantern-image {
+  width: 100%;
+  height: 100%;
+  animation: lanternSpin 2s linear infinite;
+  object-fit: contain;
+  object-position: center;
+}
+
+.loading-text {
+  margin-top: 24rpx;
+  font-size: 28rpx;
+  color: #FF4444;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+@keyframes lanternSpin {
   from {
     transform: rotate(0deg);
   }
   to {
     transform: rotate(360deg);
   }
-}
-
-.loading-text {
-  margin-top: 24rpx;
-  font-size: 28rpx;
-  color: #FFD700;
-  font-weight: 500;
 }

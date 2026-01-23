@@ -1,5 +1,5 @@
 <!--
-  富贵变身模式上传页 - 复用原网页 TransformUploadPage 样式
+  富贵变身模式上传页 - 复用 puzzle upload 设计
   Requirements: 2.3, 6.1-6.5
 -->
 <view class="upload-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
@@ -17,11 +17,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
     </view>
     <text class="nav-title">上传照片</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->
@@ -32,63 +35,64 @@
       <text class="subtitle-text">AI将为您更换高端背景</text>
     </view>
     
+    <!-- 错误提示 -->
+    <view class="error-toast" wx:if="{{errorMessage && !isUploading}}">
+      <text class="error-icon">⚠️</text>
+      <text class="error-text">{{errorMessage}}</text>
+      <view class="error-close" bindtap="clearError">
+        <text class="close-icon">✕</text>
+      </view>
+    </view>
+    
     <!-- 上传区域 -->
     <view 
-      class="upload-area {{isUploading ? 'uploading' : ''}}" 
+      class="upload-area" 
+      wx:if="{{!isUploading}}"
       bindtap="handleUploadClick"
-      hover-class="{{isUploading ? '' : 'upload-area-hover'}}"
+      hover-class="upload-area-hover"
     >
       <!-- 上传提示 -->
-      <view class="upload-prompt" wx:if="{{!isUploading && !errorMessage}}">
-        <view class="upload-icon-wrapper">
-          <text class="upload-icon">📷</text>
-        </view>
-        <text class="upload-text">点击上传照片</text>
-        <text class="upload-hint">支持 JPG、PNG 格式，最大 10MB</text>
-        
-        <!-- 示例提示 -->
-        <view class="example-tips">
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">正面清晰照片</text>
-          </view>
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">人脸完整可见</text>
-          </view>
-          <view class="tip-item">
-            <text class="tip-icon">✓</text>
-            <text class="tip-text">光线充足</text>
-          </view>
-        </view>
+      <view class="upload-prompt">
+        <image class="camera-image" src="../../../assets/camera-upload.png" mode="scaleToFill" />
       </view>
+    </view>
+    
+    <!-- 文本部分 - 在框外下方 -->
+    <view class="upload-text-section" wx:if="{{!isUploading}}">
+      <text class="upload-text">点击上传照片</text>
+      <text class="upload-hint">支持 JPG、PNG 格式，最大 10MB</text>
       
-      <!-- 上传中状态 -->
-      <view class="uploading-state" wx:if="{{isUploading}}">
-        <view class="loading-spinner">
-          <loading />
+      <!-- 示例提示 -->
+      <view class="example-tips">
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">正面清晰照片</text>
         </view>
-        <text class="status-text">{{statusText}}</text>
-        <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">
-          <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">人脸完整可见</text>
         </view>
-      </view>
-      
-      <!-- 错误状态 -->
-      <view class="error-state" wx:if="{{errorMessage && !isUploading}}">
-        <view class="error-content">
-          <text class="error-icon">⚠️</text>
-          <text class="error-text">{{errorMessage}}</text>
-          <view class="retry-btn" bindtap="clearError" catchtap="clearError">
-            <text class="retry-text">重新上传</text>
-          </view>
+        <view class="tip-item">
+          <text class="tip-icon">✓</text>
+          <text class="tip-text">光线充足</text>
         </view>
       </view>
     </view>
     
     <!-- 底部提示 -->
-    <view class="bottom-tips">
+    <view class="bottom-tips" wx:if="{{!isUploading}}">
       <text class="tips-text">💡 提示：上传清晰的正面照片效果更好</text>
+    </view>
+  </view>
+  
+  <!-- 上传中状态 - 页面居中 -->
+  <view class="uploading-state" wx:if="{{isUploading}}">
+    <view class="loading-spinner">
+      <loading />
+    </view>
+    <text class="status-text">{{statusText}}</text>
+    <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">
+      <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
     </view>
   </view>
 </view>

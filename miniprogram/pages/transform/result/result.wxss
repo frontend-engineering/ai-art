@@ -336,6 +336,11 @@
   overflow: hidden;
 }
 
+.action-btn.save-btn {
+  width: 420rpx;
+  margin: 0 auto;
+}
+
 .action-btn.loading {
   opacity: 0.7;
   pointer-events: none;
@@ -356,7 +361,7 @@
 
 .btn-inner.gold {
   background: linear-gradient(135deg, var(--color-festival-gold), #D4AF37);
-  border: 4rpx solid #FFD700;
+  border: 2rpx solid rgba(255, 215, 0, 0.3);
 }
 
 .btn-inner.red {

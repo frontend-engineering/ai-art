@@ -1,5 +1,11 @@
-<!-- 加载组件 - 灯笼旋转动画 -->
+<!-- 加载组件 - 灯笼图片 -->
 <view class="loading-container">
-  <view class="loading-lantern" style="font-size: {{lanternSize}};">🏮</view>
+  <view class="lantern-image-wrapper" style="width: {{lanternSize}}; height: {{lanternSize}};">
+    <image 
+      class="lantern-image"
+      src="../../assets/lantern.png"
+      mode="aspectFit"
+    ></image>
+  </view>
   <text wx:if="{{showText}}" class="loading-text">{{text}}</text>
 </view>

@@ -15,11 +15,14 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+      <elder-mode-toggle />
     </view>
     <text class="nav-title">我的记录</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 内容区域 -->
