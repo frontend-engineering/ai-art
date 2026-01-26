@@ -10,6 +10,59 @@ const axios = require('axios');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 
+// 微信支付 SDK（用于 Native 支付）
+let WxPay = null;
+let wechatPayment = null;
+
+/**
+ * 初始化微信支付 SDK（仅用于 Native 支付）
+ */
+function initWechatPaymentSDK() {
+  if (wechatPayment) {
+    return wechatPayment;
+  }
+  
+  // 检查必要的配置
+  const hasRequiredConfig = !!(
+    process.env.WECHAT_APPID &&
+    process.env.WECHAT_MCHID &&
+    process.env.WECHAT_SERIAL_NO &&
+    process.env.WECHAT_PRIVATE_KEY &&
+    process.env.WECHAT_APIV3_KEY
+  );
+  
+  if (!hasRequiredConfig) {
+    console.warn('[wxpay_order] Native 支付配置未完整设置');
+    return null;
+  }
+  
+  try {
+    if (!WxPay) {
+      WxPay = require('wechatpay-node-v3');
+    }
+    
+    // 处理私钥 - 处理换行符
+    let privateKey = process.env.WECHAT_PRIVATE_KEY;
+    if (privateKey) {
+      privateKey = privateKey.replace(/\\n/g, '\n');
+    }
+    
+    wechatPayment = new WxPay({
+      appid: process.env.WECHAT_APPID,
+      mchid: process.env.WECHAT_MCHID,
+      serial_no: process.env.WECHAT_SERIAL_NO,
+      privateKey: privateKey,
+      key: process.env.WECHAT_APIV3_KEY,
+    });
+    
+    console.log('[wxpay_order] 微信支付 SDK 初始化成功');
+    return wechatPayment;
+  } catch (error) {
+    console.error('[wxpay_order] 微信支付 SDK 初始化失败:', error.message);
+    return null;
+  }
+}
+
 // 降级方案 - 本地默认价格
 const FALLBACK_PACKAGES = {
   basic: { name: '0.01元尝鲜包', amount: 1, description: 'AI全家福-尝鲜包' },
@@ -22,12 +75,18 @@ let priceCacheTime = 0;
 const PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 
 // API基础URL - 从环境变量获取
-const API_BASE_URL = process.env.API_BASE_URL || 'https://your-api-domain.com';
+const API_BASE_URL = process.env.API_BASE_URL;
 
 /**
  * 从API获取价格配置
  */
 async function fetchPricesFromAPI() {
+  // 如果未配置 API_BASE_URL，直接使用降级方案
+  if (!API_BASE_URL) {
+    console.warn('[wxpay_order] API_BASE_URL 未配置，使用降级价格方案');
+    return FALLBACK_PACKAGES;
+  }
+  
   try {
     // 检查缓存
     const now = Date.now();
@@ -168,15 +227,25 @@ async function createJsapiOrder(params) {
 
 /**
  * PC 扫码支付下单 (NATIVE)
- * 注意：cloudbase_module 可能不支持 wxpay_native_order
- * 如果不支持，需要通过后端服务调用微信支付 API v3
+ * 尝试通过 cloudbase_module 调用，如果不支持则使用直接调用方式
+ * 
+ * @param {Object} params - 支付参数
+ * @param {string} params.orderDescription - 订单描述
+ * @param {number} params.orderAmount - 订单金额（分）
+ * @param {string} params.outTradeNo - 商户订单号
+ * @param {string} params.packageType - 套餐类型（用于日志）
+ * @param {string} params.userId - 用户ID（用于日志）
+ * @param {string} params.generationId - 生成任务ID（用于日志）
  */
 async function createNativeOrder(params) {
   const { orderDescription, orderAmount, outTradeNo } = params;
   
-  console.log('[wxpay_order] 尝试调用 cloudbase_module 下单 (NATIVE)...');
+  console.log('[wxpay_order] 创建 Native 支付订单...');
   
+  // 方案 1: 尝试通过 cloudbase_module 调用（优先，复用已有配置）
   try {
+    console.log('[wxpay_order] 尝试通过 cloudbase_module 调用 Native 支付...');
+    
     const res = await cloud.callFunction({
       name: 'cloudbase_module',
       data: {
@@ -189,14 +258,10 @@ async function createNativeOrder(params) {
       }
     });
     
-    console.log('[wxpay_order] cloudbase_module NATIVE 返回:', JSON.stringify(res.result));
+    console.log('[wxpay_order] cloudbase_module Native 返回:', JSON.stringify(res.result));
     
-    if (!res.result) {
-      return { code: -1, msg: '支付服务返回为空' };
-    }
-    
-    // Native 支付返回 code_url
-    if (res.result.code_url) {
+    // 检查返回结果
+    if (res.result && res.result.code_url) {
       return {
         code: 0,
         data: {
@@ -205,7 +270,7 @@ async function createNativeOrder(params) {
           outTradeNo
         }
       };
-    } else if (res.result.code === 0 && res.result.data && res.result.data.code_url) {
+    } else if (res.result && res.result.code === 0 && res.result.data && res.result.data.code_url) {
       return {
         code: 0,
         data: {
@@ -214,27 +279,71 @@ async function createNativeOrder(params) {
           outTradeNo
         }
       };
-    } else if (res.result.errcode && res.result.errmsg) {
+    }
+    
+    // cloudbase_module 不支持或返回错误
+    console.warn('[wxpay_order] cloudbase_module 不支持 Native 支付或返回错误:', res.result);
+  } catch (cloudbaseError) {
+    console.warn('[wxpay_order] cloudbase_module 调用失败:', cloudbaseError.message);
+  }
+  
+  // 方案 2: 使用直接调用方式（需要配置环境变量）
+  try {
+    console.log('[wxpay_order] 尝试直接调用微信支付 API...');
+    
+    const payment = initWechatPaymentSDK();
+    
+    if (!payment) {
       return { 
         code: -1, 
-        msg: res.result.errmsg || 'Native支付下单失败',
-        errcode: res.result.errcode,
-        data: res.result
+        msg: 'Native 支付不可用。cloudbase_module 不支持，且未配置直接调用所需的环境变量。\n' +
+             '请在云函数环境变量中配置: WECHAT_APPID, WECHAT_MCHID, WECHAT_SERIAL_NO, WECHAT_PRIVATE_KEY, WECHAT_APIV3_KEY\n' +
+             '（可复用扩展能力中已配置的相同值）'
       };
     }
     
-    // cloudbase_module 可能不支持 native 支付
-    return { 
-      code: -1, 
-      msg: 'cloudbase_module 可能不支持 Native 支付，请使用后端 API',
-      data: res.result
+    const paymentParams = {
+      description: orderDescription,
+      out_trade_no: outTradeNo,
+      notify_url: process.env.WECHAT_NOTIFY_URL || (API_BASE_URL ? `${API_BASE_URL}/api/payment/callback` : undefined),
+      amount: { 
+        total: orderAmount, 
+        currency: 'CNY' 
+      }
     };
+    
+    // 检查回调地址
+    if (!paymentParams.notify_url) {
+      console.warn('[wxpay_order] 未配置回调地址，支付成功后无法自动更新订单状态');
+    }
+    
+    console.log('[wxpay_order] 调用微信支付 Native API');
+    
+    const result = await payment.transactions_native(paymentParams);
+    
+    console.log('[wxpay_order] 微信支付 Native 返回成功');
+    
+    if (result && result.code_url) {
+      return {
+        code: 0,
+        data: {
+          tradeType: TRADE_TYPES.NATIVE,
+          codeUrl: result.code_url,
+          outTradeNo: outTradeNo
+        }
+      };
+    } else {
+      return { 
+        code: -1, 
+        msg: '微信支付返回格式异常',
+        data: result
+      };
+    }
   } catch (error) {
     console.error('[wxpay_order] Native 支付调用失败:', error);
-    // 如果 cloudbase_module 不支持，返回提示
     return { 
       code: -1, 
-      msg: 'Native 支付需要通过后端服务实现，请调用后端 /api/payment/native 接口',
+      msg: error.message || 'Native 支付调用失败',
       error: error.message
     };
   }
@@ -288,7 +397,10 @@ exports.main = async (event, context) => {
       paymentResult = await createNativeOrder({
         orderDescription,
         orderAmount,
-        outTradeNo
+        outTradeNo,
+        packageType,
+        userId,
+        generationId
       });
     } else {
       // 小程序支付（默认）
