@@ -247,6 +247,80 @@ router.post('/wechat/native', async (req, res) => {
   }
 });
 
+// 内部通知接口（仅供云函数调用）
+router.post('/internal/notify', async (req, res) => {
+  try {
+    console.log('收到云函数内部通知');
+    
+    // 验证内部调用（如果配置了密钥）
+    const internalSecret = process.env.INTERNAL_API_SECRET;
+    if (internalSecret) {
+      const requestSecret = req.headers['x-internal-secret'];
+      if (requestSecret !== internalSecret) {
+        console.error('内部通知验证失败：密钥不匹配');
+        return res.status(403).json({ error: '无权访问' });
+      }
+    }
+    
+    const { outTradeNo, transactionId, status, packageType, generationId, openid } = req.body;
+    
+    if (!outTradeNo) {
+      return res.status(400).json({ error: '缺少订单号' });
+    }
+    
+    console.log(`处理内部通知: 订单 ${outTradeNo}, 状态 ${status}`);
+    
+    const connection = await db.pool.getConnection();
+    try {
+      // 1. 更新订单状态（双重保险）
+      const [orderRows] = await connection.execute(
+        'SELECT * FROM payment_orders WHERE id = ?',
+        [outTradeNo]
+      );
+      
+      if (orderRows.length > 0) {
+        const order = orderRows[0];
+        
+        // 只有订单状态为 pending 时才更新
+        if (order.status === 'pending' && status === 'paid') {
+          await connection.execute(
+            'UPDATE payment_orders SET status = ?, transaction_id = ?, updated_at = NOW() WHERE id = ?',
+            [status, transactionId, outTradeNo]
+          );
+          
+          // 更新用户权益
+          if (order.user_id && packageType) {
+            await connection.execute(
+              'UPDATE users SET payment_status = ?, updated_at = NOW() WHERE id = ?',
+              [packageType, order.user_id]
+            );
+          }
+          
+          console.log(`订单 ${outTradeNo} 状态已更新为 ${status}`);
+        } else {
+          console.log(`订单 ${outTradeNo} 已处理，当前状态: ${order.status}`);
+        }
+      } else {
+        console.warn(`订单 ${outTradeNo} 不存在于后端数据库`);
+      }
+      
+      // 2. TODO: 这里可以添加实时推送逻辑
+      // 例如：通过 WebSocket 推送给前端
+      // io.to(`order:${outTradeNo}`).emit('payment:status', { outTradeNo, status });
+      
+      res.json({ success: true, message: '处理成功' });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('处理内部通知失败:', error);
+    await errorLogService.logError('INTERNAL_NOTIFY_FAILED', error.message, {
+      outTradeNo: req.body.outTradeNo
+    });
+    res.status(500).json({ error: '处理失败', message: error.message });
+  }
+});
+
 // 微信支付回调
 router.post('/callback', async (req, res) => {
   try {

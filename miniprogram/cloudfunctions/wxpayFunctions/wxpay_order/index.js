@@ -15,7 +15,7 @@ let WxPay = null;
 let wechatPayment = null;
 
 /**
- * 初始化微信支付 SDK（仅用于 Native 支付）
+ * 初始化微信支付 SDK（用于 Native 支付）
  */
 function initWechatPaymentSDK() {
   if (wechatPayment) {
@@ -41,24 +41,68 @@ function initWechatPaymentSDK() {
       WxPay = require('wechatpay-node-v3');
     }
     
-    // 处理私钥 - 处理换行符
+    // 处理私钥 - 处理换行符和格式
     let privateKey = process.env.WECHAT_PRIVATE_KEY;
     if (privateKey) {
+      // 处理各种可能的换行符格式
+      privateKey = privateKey.replace(/\\\\n/g, '\n');
       privateKey = privateKey.replace(/\\n/g, '\n');
+      
+      // 确保私钥格式正确（包含头尾标记）
+      if (!privateKey.includes('BEGIN PRIVATE KEY')) {
+        privateKey = `-----BEGIN PRIVATE KEY-----\n${privateKey}\n-----END PRIVATE KEY-----`;
+      }
+      
+      privateKey = privateKey.trim();
     }
     
-    wechatPayment = new WxPay({
+    // 处理平台公钥证书（可选，用于验证回调签名）
+    let publicKey = process.env.WECHAT_PUBLIC_KEY;
+    if (publicKey) {
+      // 处理换行符
+      publicKey = publicKey.replace(/\\\\n/g, '\n');
+      publicKey = publicKey.replace(/\\n/g, '\n');
+      
+      // 确保公钥格式正确
+      if (!publicKey.includes('BEGIN CERTIFICATE')) {
+        publicKey = `-----BEGIN CERTIFICATE-----\n${publicKey}\n-----END CERTIFICATE-----`;
+      }
+      
+      publicKey = publicKey.trim();
+    }
+    
+    console.log('[wxpay_order] 初始化微信支付 SDK，配置信息:', {
+      appid: process.env.WECHAT_APPID,
+      mchid: process.env.WECHAT_MCHID,
+      serial_no: process.env.WECHAT_SERIAL_NO,
+      hasPrivateKey: !!privateKey,
+      privateKeyLength: privateKey ? privateKey.length : 0,
+      hasPublicKey: !!publicKey,
+      publicKeyLength: publicKey ? publicKey.length : 0,
+      hasApiv3Key: !!process.env.WECHAT_APIV3_KEY
+    });
+    
+    // 初始化配置
+    const config = {
       appid: process.env.WECHAT_APPID,
       mchid: process.env.WECHAT_MCHID,
       serial_no: process.env.WECHAT_SERIAL_NO,
       privateKey: privateKey,
       key: process.env.WECHAT_APIV3_KEY,
-    });
+    };
+    
+    // 如果提供了平台公钥，添加到配置中
+    if (publicKey) {
+      config.publicKey = publicKey;
+    }
+    
+    wechatPayment = new WxPay(config);
     
     console.log('[wxpay_order] 微信支付 SDK 初始化成功');
     return wechatPayment;
   } catch (error) {
     console.error('[wxpay_order] 微信支付 SDK 初始化失败:', error.message);
+    console.error('[wxpay_order] 错误详情:', error);
     return null;
   }
 }
@@ -305,7 +349,7 @@ async function createNativeOrder(params) {
     const paymentParams = {
       description: orderDescription,
       out_trade_no: outTradeNo,
-      notify_url: process.env.WECHAT_NOTIFY_URL || (API_BASE_URL ? `${API_BASE_URL}/api/payment/callback` : undefined),
+      notify_url: process.env.WECHAT_NOTIFY_URL || (API_BASE_URL ? `${API_BASE_URL}/api/payment/callback` : `https://placeholder.com/callback`),
       amount: { 
         total: orderAmount, 
         currency: 'CNY' 
@@ -313,8 +357,12 @@ async function createNativeOrder(params) {
     };
     
     // 检查回调地址
-    if (!paymentParams.notify_url) {
-      console.warn('[wxpay_order] 未配置回调地址，支付成功后无法自动更新订单状态');
+    if (!process.env.WECHAT_NOTIFY_URL && !API_BASE_URL) {
+      console.warn('[wxpay_order] 未配置回调地址，使用占位符地址。支付成功后需要手动查询订单状态');
+    } else if (!process.env.WECHAT_NOTIFY_URL) {
+      console.log('[wxpay_order] 使用 API_BASE_URL 生成回调地址:', paymentParams.notify_url);
+    } else {
+      console.log('[wxpay_order] 使用配置的回调地址:', paymentParams.notify_url);
     }
     
     console.log('[wxpay_order] 调用微信支付 Native API');
