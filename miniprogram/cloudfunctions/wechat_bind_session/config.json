@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "openapi": []
+  },
+  "env": {
+    "API_BASE_URL": "",
+    "INTERNAL_API_SECRET": ""
+  }
+}

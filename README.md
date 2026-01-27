@@ -8,6 +8,26 @@ AI全家福是一个基于AI技术的全家福照片生成应用,支持多种模
 - **时空拼图**: 将分散各地的家人照片合成为完美全家福
 - **富贵变身**: 一键更换照片背景,让普通照片变身豪门大片
 
+---
+
+## 📚 业务接入文档
+
+### 微信扫码登录
+
+**业务接入文档**: [`WECHAT_LOGIN_INTEGRATION_GUIDE.md`](./WECHAT_LOGIN_INTEGRATION_GUIDE.md)
+
+Web 端微信扫码登录接入指南，包含：
+- 云函数 API 调用方式
+- 前端登录组件实现
+- 后端认证中间件
+- 用户数据结构说明
+
+### 支付系统
+
+**支付对接文档**: [`miniprogram/cloudfunctions/wxpayFunctions/BACKEND_API_INTEGRATION.md`](./miniprogram/cloudfunctions/wxpayFunctions/BACKEND_API_INTEGRATION.md)
+
+---
+
 ## 快速开始
 
 ### 环境要求

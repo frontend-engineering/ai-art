@@ -1,0 +1,10 @@
+{
+  "name": "wechat_bind_session",
+  "version": "1.0.0",
+  "description": "绑定登录会话云函数（Web扫码登录）",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "~2.6.3",
+    "axios": "^1.6.0"
+  }
+}
