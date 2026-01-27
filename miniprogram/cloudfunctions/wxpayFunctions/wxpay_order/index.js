@@ -371,12 +371,28 @@ async function createNativeOrder(params) {
     
     console.log('[wxpay_order] 微信支付 Native 返回成功');
     
+    // 处理不同的返回格式
+    let codeUrl = null;
+    
+    // 格式1: { code_url: "..." }
     if (result && result.code_url) {
+      codeUrl = result.code_url;
+    }
+    // 格式2: { status: 200, data: { code_url: "..." } }
+    else if (result && result.data && result.data.code_url) {
+      codeUrl = result.data.code_url;
+    }
+    // 格式3: { status: 200, data: "weixin://..." }
+    else if (result && result.data && typeof result.data === 'string' && result.data.startsWith('weixin://')) {
+      codeUrl = result.data;
+    }
+    
+    if (codeUrl) {
       return {
         code: 0,
         data: {
           tradeType: TRADE_TYPES.NATIVE,
-          codeUrl: result.code_url,
+          codeUrl: codeUrl,
           outTradeNo: outTradeNo
         }
       };
@@ -471,24 +487,176 @@ exports.main = async (event, context) => {
     return { code: -1, msg: error.message || '调用支付服务失败' };
   }
   
-  // 存储订单到数据库（非核心流程，失败不影响支付）
+  // 存储订单到数据库（关键流程，必须成功或有明确的失败处理）
+  let dbInsertSuccess = false;
   try {
-    await safeDb.insert('orders', {
-      out_trade_no: outTradeNo,
-      package_type: packageType,
-      generation_id: generationId || null,
-      user_id: userId || null,
-      openid: effectiveOpenid || null,
-      amount: orderAmount,
-      description: orderDescription,
-      trade_type: tradeType,
-      status: 'pending',
-      created_at: new Date()
+    // 生成 UUID 作为订单 ID
+    const orderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    // 确保 user_id 存在（如果没有，先创建用户记录）
+    let effectiveUserId = userId;
+    
+    // 如果提供了 userId，先验证用户是否存在
+    if (effectiveUserId) {
+      try {
+        const { data: existingUsers, skipped } = await safeDb.select('users', 'id', effectiveUserId);
+        if (!skipped && (!existingUsers || existingUsers.length === 0)) {
+          // 用户不存在，尝试创建
+          console.log('[wxpay_order] 用户不存在，尝试创建:', effectiveUserId);
+          const wxContext = cloud.getWXContext();
+          const userInsertResult = await safeDb.insert('users', {
+            id: effectiveUserId,
+            openid: effectiveOpenid || null,
+            unionid: wxContext.UNIONID || null,
+            payment_status: 'free',
+            regenerate_count: 3
+            // last_login_at 和 created_at, updated_at 由数据库自动生成
+          });
+          
+          if (userInsertResult.error && !userInsertResult.skipped) {
+            console.error('[wxpay_order] ❌ 创建用户失败:', userInsertResult.error);
+            throw new Error(`用户创建失败: ${userInsertResult.error}`);
+          }
+        }
+      } catch (userError) {
+        console.error('[wxpay_order] ❌ 用户验证/创建失败:', userError.message);
+        throw userError;
+      }
+    } else if (effectiveOpenid) {
+      // 没有 userId，通过 openid 查找或创建用户
+      try {
+        const { data: existingUsers } = await safeDb.select('users', 'openid', effectiveOpenid);
+        if (existingUsers && existingUsers.length > 0) {
+          effectiveUserId = existingUsers[0].id;
+          console.log('[wxpay_order] 找到已存在用户:', effectiveUserId);
+        } else {
+          // 创建新用户
+          effectiveUserId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          const wxContext = cloud.getWXContext();
+          const userInsertResult = await safeDb.insert('users', {
+            id: effectiveUserId,
+            openid: effectiveOpenid,
+            unionid: wxContext.UNIONID || null,
+            payment_status: 'free',
+            regenerate_count: 3
+            // last_login_at, created_at, updated_at 由数据库自动生成
+          });
+          
+          if (!userInsertResult.error && !userInsertResult.skipped) {
+            console.log('[wxpay_order] ✅ 创建新用户成功:', effectiveUserId);
+          } else {
+            console.error('[wxpay_order] ❌ 创建用户失败:', userInsertResult.error);
+            throw new Error(`用户创建失败: ${userInsertResult.error || '数据库不可用'}`);
+          }
+        }
+      } catch (userError) {
+        console.error('[wxpay_order] ❌ 用户查询/创建失败:', userError.message);
+        throw userError;
+      }
+    }
+    
+    if (!effectiveUserId) {
+      throw new Error('无法确定有效的 user_id');
+    }
+    
+    // 插入订单记录
+    const dbResult = await safeDb.insert('payment_orders', {
+      id: orderId,
+      user_id: effectiveUserId,
+      generation_id: generationId || effectiveUserId, // generation_id 是 NOT NULL，使用 user_id 作为默认值
+      amount: (orderAmount / 100).toFixed(2), // 转换为元（DECIMAL 类型）
+      package_type: packageType || 'basic',
+      payment_method: 'wechat',
+      trade_type: tradeType || 'JSAPI',
+      out_trade_no: outTradeNo, // 商户订单号（用于查询）
+      transaction_id: null, // 支付成功后由回调更新为微信交易号
+      _openid: effectiveOpenid || '',
+      status: 'pending'
+      // created_at 和 updated_at 由数据库自动生成
     });
-    console.log('[wxpay_order] 订单已存储到数据库');
+    
+    if (dbResult.skipped) {
+      console.error('[wxpay_order] ⚠️ 数据库不可用！订单信息:', {
+        orderId, outTradeNo, amount: orderAmount, packageType, userId: effectiveUserId, tradeType
+      });
+      // 数据库不可用，立即通知后端备份
+      await notifyBackendOrderCreated({
+        orderId, outTradeNo, userId: effectiveUserId, 
+        openid: effectiveOpenid,
+        amount: orderAmount, packageType, tradeType, status: 'pending',
+        reason: 'db_unavailable'
+      });
+    } else if (dbResult.error) {
+      console.error('[wxpay_order] ❌ 数据库存储失败！错误:', dbResult.error);
+      console.error('[wxpay_order] 订单信息:', {
+        orderId, outTradeNo, amount: orderAmount, packageType, userId: effectiveUserId, tradeType
+      });
+      // 数据库写入失败，立即通知后端
+      await notifyBackendOrderCreated({
+        orderId, outTradeNo, userId: effectiveUserId,
+        openid: effectiveOpenid,
+        amount: orderAmount, packageType, tradeType, status: 'pending', 
+        dbError: dbResult.error,
+        reason: 'db_insert_failed'
+      });
+    } else {
+      console.log('[wxpay_order] ✅ 订单已成功存储到数据库, ID:', orderId);
+      dbInsertSuccess = true;
+    }
   } catch (dbError) {
-    console.error('[wxpay_order] 数据库存储失败（不影响支付）:', dbError.message);
+    console.error('[wxpay_order] ❌ 数据库操作异常！', dbError.message);
+    console.error('[wxpay_order] 订单信息:', {
+      outTradeNo, amount: orderAmount, packageType, openid: effectiveOpenid, tradeType
+    });
+    // 异常情况，立即通知后端备份
+    await notifyBackendOrderCreated({
+      outTradeNo, userId, 
+      openid: effectiveOpenid,
+      amount: orderAmount, 
+      packageType, tradeType, status: 'pending', 
+      dbError: dbError.message,
+      reason: 'db_exception'
+    });
   }
   
-  return { code: 0, msg: 'success', data: paymentResult.data };
+  // 如果数据库写入失败，在返回结果中添加警告
+  const result = { code: 0, msg: 'success', data: paymentResult.data };
+  if (!dbInsertSuccess) {
+    result.warning = 'order_not_saved_to_db';
+    result.warningMsg = '订单已创建但未保存到数据库，已通知后端备份';
+    console.warn('[wxpay_order] ⚠️ 订单未保存到数据库，但支付流程正常');
+  }
+  
+  return result;
 };
+
+/**
+ * 通知后端订单创建（用于数据库失败时的备份）
+ */
+async function notifyBackendOrderCreated(orderData) {
+  const apiBaseUrl = process.env.API_BASE_URL;
+  if (!apiBaseUrl) {
+    console.error('[wxpay_order] ❌ API_BASE_URL 未配置，无法通知后端！订单可能丢失！');
+    console.error('[wxpay_order] 订单数据:', orderData);
+    return;
+  }
+  
+  try {
+    const axios = require('axios');
+    const response = await axios.post(
+      `${apiBaseUrl}/api/payment/internal/order-created`, 
+      orderData, 
+      {
+        timeout: 5000,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Internal-Secret': process.env.INTERNAL_API_SECRET || ''
+        }
+      }
+    );
+    console.log('[wxpay_order] ✅ 已通知后端订单创建:', response.data);
+  } catch (error) {
+    console.error('[wxpay_order] ❌ 通知后端失败！订单可能丢失！', error.message);
+    console.error('[wxpay_order] 订单数据:', orderData);
+  }
+}

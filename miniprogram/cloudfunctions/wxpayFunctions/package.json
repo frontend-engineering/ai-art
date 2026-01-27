@@ -9,9 +9,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "wx-server-sdk": "~2.4.0",
-    "@cloudbase/node-sdk": "^2.0.0",
+    "@cloudbase/node-sdk": "^3.17.0",
+    "axios": "^1.6.0",
     "wechatpay-node-v3": "^2.2.1",
-    "axios": "^1.6.0"
+    "wx-server-sdk": "~2.4.0"
   }
 }

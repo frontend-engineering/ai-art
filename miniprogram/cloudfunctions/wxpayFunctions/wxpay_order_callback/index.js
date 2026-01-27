@@ -2,7 +2,7 @@
  * 微信支付 - 支付结果回调
  */
 const cloud = require('wx-server-sdk');
-const { safeDb } = require('../db/mysql');
+const { safeDb, formatMySQLDateTime } = require('../db/mysql');
 const axios = require('axios');
 
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -128,31 +128,84 @@ exports.main = async (event, context) => {
     
     console.log('[wxpay_order_callback] 处理订单:', { outTradeNo, transactionId });
     
-    // 查询订单
+    // 查询订单（使用 out_trade_no 字段查询）
     let order = null;
     try {
-      const { data: orders } = await safeDb.select('orders', 'out_trade_no', outTradeNo);
-      order = orders && orders[0];
+      const { data: orders, skipped } = await safeDb.select('payment_orders', 'out_trade_no', outTradeNo);
+      
+      if (skipped) {
+        console.log('[wxpay_order_callback] 数据库不可用，跳过订单查询（订单由后端管理）');
+      } else {
+        order = orders && orders[0];
+      }
     } catch (dbError) {
-      console.error('[wxpay_order_callback] 查询订单失败:', dbError.message);
+      console.warn('[wxpay_order_callback] 查询订单失败:', dbError.message);
     }
     
     if (!order) {
-      console.warn('[wxpay_order_callback] 订单不存在:', outTradeNo);
+      console.log('[wxpay_order_callback] 订单不存在或数据库不可用，尝试补录订单');
       try {
-        await safeDb.insert('orders', {
+        // 生成订单 ID（基于 out_trade_no 确保唯一性）
+        const orderId = `order-${outTradeNo}`;
+        
+        // 尝试查找或创建用户
+        let userId = null;
+        const payerOpenid = payer?.openid;
+        
+        if (payerOpenid) {
+          const { data: existingUsers } = await safeDb.select('users', 'openid', payerOpenid);
+          if (existingUsers && existingUsers.length > 0) {
+            userId = existingUsers[0].id;
+            console.log('[wxpay_order_callback] 找到已存在用户:', userId);
+          } else {
+            // 创建新用户
+            userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            await safeDb.insert('users', {
+              id: userId,
+              openid: payerOpenid,
+              payment_status: 'free',
+              regenerate_count: 3
+              // last_login_at, created_at, updated_at 由数据库自动生成
+            });
+            console.log('[wxpay_order_callback] 创建新用户:', userId);
+          }
+        } else {
+          // 没有 openid，生成临时用户 ID
+          userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        
+        const insertResult = await safeDb.insert('payment_orders', {
+          id: orderId,
+          user_id: userId,
+          generation_id: userId,  // 使用 user_id 作为默认值（与创建订单逻辑一致）
           out_trade_no: outTradeNo,
           transaction_id: transactionId,
-          openid: payer?.openid,
-          amount: amount?.total,
+          amount: ((amount?.total || 0) / 100).toFixed(2),
+          package_type: 'basic',  // 默认套餐，后续可以通过金额推断
+          payment_method: 'wechat',
+          trade_type: 'JSAPI',  // 默认类型，可以从回调数据推断
+          _openid: payerOpenid || '',
           status: 'paid',
-          paid_at: new Date(),
-          created_at: new Date()
+          paid_at: formatMySQLDateTime()
         });
-        console.log('[wxpay_order_callback] 已补录订单');
+        
+        if (!insertResult.skipped && !insertResult.error) {
+          console.log('[wxpay_order_callback] 已补录订单');
+        }
       } catch (e) {
-        console.error('[wxpay_order_callback] 补录订单失败:', e.message);
+        console.warn('[wxpay_order_callback] 补录订单失败:', e.message);
       }
+      
+      // 即使数据库操作失败，也要通知后端
+      notifyBackend({
+        outTradeNo,
+        transactionId,
+        status: 'paid',
+        openid: payer?.openid
+      }).catch(err => {
+        console.error('[wxpay_order_callback] 通知后端失败:', err.message);
+      });
+      
       return { code: 'SUCCESS', message: '订单已处理' };
     }
     
@@ -163,53 +216,32 @@ exports.main = async (event, context) => {
     
     // 更新订单状态
     try {
-      await safeDb.update('orders', 'out_trade_no', outTradeNo, {
+      const updateResult = await safeDb.update('payment_orders', 'out_trade_no', outTradeNo, {
         status: 'paid',
-        transaction_id: transactionId,
-        paid_at: new Date(),
-        paid_amount: amount?.total || order.amount
+        transaction_id: transactionId, // 更新为真实的微信交易号
+        paid_at: formatMySQLDateTime() // 记录实际支付完成时间
+        // updated_at 由数据库自动更新
       });
-      console.log('[wxpay_order_callback] 订单状态已更新:', outTradeNo);
-    } catch (updateError) {
-      console.error('[wxpay_order_callback] 更新订单失败:', updateError.message);
-      return { code: 'FAIL', message: '更新订单失败' };
-    }
-    
-    // 更新用户权益
-    const openid = payer?.openid || order.openid;
-    if (openid && order.package_type) {
-      try {
-        await updateUserBenefits(openid, order);
-      } catch (benefitError) {
-        console.error('[wxpay_order_callback] 更新用户权益失败:', benefitError.message);
+      
+      if (updateResult.skipped) {
+        console.log('[wxpay_order_callback] 数据库不可用，订单状态将由后端更新');
+      } else if (updateResult.error) {
+        console.warn('[wxpay_order_callback] 更新订单失败（不影响通知）:', updateResult.error);
+      } else {
+        console.log('[wxpay_order_callback] 订单状态已更新:', outTradeNo);
       }
+    } catch (updateError) {
+      console.warn('[wxpay_order_callback] 更新订单异常（不影响通知）:', updateError.message);
     }
     
-    // 记录日志
-    try {
-      await safeDb.insert('payment_logs', {
-        type: 'callback',
-        out_trade_no: outTradeNo,
-        transaction_id: transactionId,
-        openid,
-        package_type: order.package_type,
-        generation_id: order.generation_id,
-        event_type: eventType,
-        amount_total: amount?.total,
-        created_at: new Date()
-      });
-    } catch (logError) {
-      console.error('[wxpay_order_callback] 记录日志失败:', logError.message);
-    }
-    
-    // 异步通知后端（不阻塞返回）
+    // 通知后端处理业务逻辑（包括用户权益更新）
     notifyBackend({
       outTradeNo,
       transactionId,
       status: 'paid',
       packageType: order.package_type,
       generationId: order.generation_id,
-      openid
+      openid: payer?.openid
     }).catch(err => {
       console.error('[wxpay_order_callback] 通知后端失败:', err.message);
       // 不影响主流程，后端可以通过轮询获取订单状态
@@ -264,36 +296,5 @@ async function notifyBackend(paymentData) {
     } else {
       console.error('[wxpay_order_callback] 通知后端失败:', error.message);
     }
-  }
-}
-
-async function updateUserBenefits(openid, order) {
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-  
-  const { data: users } = await safeDb.select('users', 'openid', openid);
-  const user = users && users[0];
-  
-  const benefitData = {
-    is_paid: 1,
-    current_package: order.package_type,
-    package_expires_at: expiresAt,
-    last_order_id: order.out_trade_no,
-    updated_at: new Date()
-  };
-  
-  if (user) {
-    const packageLevel = { free: 0, basic: 1, premium: 2 };
-    const currentLevel = packageLevel[user.current_package] || 0;
-    const newLevel = packageLevel[order.package_type] || 0;
-    
-    if (newLevel >= currentLevel) {
-      await safeDb.update('users', 'openid', openid, benefitData);
-      console.log('[wxpay_order_callback] 用户权益已更新:', { openid, package: order.package_type });
-    } else {
-      console.log('[wxpay_order_callback] 用户已有更高等级套餐，跳过更新');
-    }
-  } else {
-    await safeDb.insert('users', { openid, ...benefitData, created_at: new Date() });
-    console.log('[wxpay_order_callback] 新用户权益已创建:', { openid, package: order.package_type });
   }
 }
