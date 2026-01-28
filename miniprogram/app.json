@@ -31,7 +31,6 @@
     "loading": "/components/loading/loading",
     "four-grid-selector": "/components/four-grid-selector/four-grid-selector",
     "fireworks": "/components/fireworks/fireworks",
-    "payment-modal": "/components/payment-modal/payment-modal",
     "share-modal": "/components/share-modal/share-modal",
     "product-recommendation": "/components/product-recommendation/product-recommendation",
     "usage-display": "/components/usage-display/usage-display",

@@ -10,7 +10,7 @@
 // ============================================
 // 🔧 本地调试开关
 // true: 连接本地后端 http://localhost:3001
-// false: 连接云托管服务
+// false: 连接云托管服务网
 // ============================================
 const USE_LOCAL_SERVER = false;  // 改为 true 以使用本地后端
 const LOCAL_SERVER_URL = 'http://localhost:3001';
