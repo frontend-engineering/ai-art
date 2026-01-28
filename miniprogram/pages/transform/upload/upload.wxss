@@ -42,7 +42,6 @@
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
-  margin-top: 120rpx;
 }
 
 /* 标题说明 */

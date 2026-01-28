@@ -2,6 +2,7 @@
   "navigationBarTitleText": "时空拼图",
   "navigationBarBackgroundColor": "#D4302B",
   "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
   "disableScroll": true,
   "usingComponents": {
     "corner-background": "/components/corner-background/corner-background",

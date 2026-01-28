@@ -2,6 +2,7 @@
   "navigationBarTitleText": "富贵变身",
   "navigationBarBackgroundColor": "#D4AF37",
   "navigationBarTextStyle": "white",
+  "navigationStyle": "custom",
   "disableScroll": true,
   "usingComponents": {
     "corner-background": "/components/corner-background/corner-background",
