@@ -16,11 +16,12 @@ const adminRoutes = require('./adminRoutes');
 const wechatRoutes = require('./wechatRoutes');
 const usageRoutes = require('./usageRoutes');
 const inviteRoutes = require('./inviteRoutes');
-const adminAuthRoutes = require('./adminAuthRoutes');
-const priceConfigRoutes = require('./priceConfigRoutes');
-const adminUserRoutes = require('./adminUserRoutes');
-const adminOrderRoutes = require('./adminOrderRoutes');
-const adminStatsRoutes = require('./adminStatsRoutes');
+// 临时注释：缺少 bcrypt 依赖，以下路由需要 adminAuth 中间件
+// const adminAuthRoutes = require('./adminAuthRoutes');
+// const priceConfigRoutes = require('./priceConfigRoutes');
+// const adminUserRoutes = require('./adminUserRoutes');
+// const adminOrderRoutes = require('./adminOrderRoutes');
+// const adminStatsRoutes = require('./adminStatsRoutes');
 
 /**
  * 注册所有路由
@@ -69,23 +70,25 @@ function registerRoutes(app) {
   
   // 邀请系统
   app.use('/api/invite', inviteRoutes);
+  
+  // 临时禁用：以下管理后台路由需要 bcrypt 依赖
   // 管理后台认证接口
-  app.use('/admin-api/auth', adminAuthRoutes);
+  // app.use('/admin-api/auth', adminAuthRoutes);
   
   // 价格配置接口（管理后台）
-  app.use('/admin-api/prices', priceConfigRoutes);
+  // app.use('/admin-api/prices', priceConfigRoutes);
   
   // 价格查询接口（公开API）
-  app.use('/api/prices', priceConfigRoutes);
+  // app.use('/api/prices', priceConfigRoutes);
   
   // 用户管理接口（管理后台）
-  app.use('/admin-api/users', adminUserRoutes);
+  // app.use('/admin-api/users', adminUserRoutes);
   
   // 订单管理接口（管理后台）
-  app.use('/admin-api/orders', adminOrderRoutes);
+  // app.use('/admin-api/orders', adminOrderRoutes);
   
   // 统计数据接口（管理后台）
-  app.use('/admin-api/stats', adminStatsRoutes);
+  // app.use('/admin-api/stats', adminStatsRoutes);
 }
 
 module.exports = {

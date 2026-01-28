@@ -3,6 +3,8 @@
  * Requirements: 2.2, 10.1-10.3
  */
 
+/* 导航栏样式使用通用样式文件 common-navigation.wxss */
+
 /* 页面容器 - 固定一屏高度，禁止滚动 */
 .puzzle-launch-page {
   position: fixed;
@@ -18,7 +20,7 @@
 
 /* 背景渐变层 */
 .launch-bg {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -84,53 +86,16 @@
   50% { transform: translateY(-16rpx); }
 }
 
-/* 顶部工具栏 */
-.toolbar {
-  position: absolute;
-  top: calc(16rpx + env(safe-area-inset-top));
-  left: 32rpx;
-  right: 32rpx;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 100;
-}
-
-.back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-festival-red);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
-}
-
-.toolbar-right {
-  display: flex;
-  flex-direction: row;
-  gap: 16rpx;
-}
-
 /* 主内容区 - 使用 flex 布局自适应一屏 */
 .launch-content {
   position: absolute;
-  top: calc(88rpx + env(safe-area-inset-top));
+  top: 0;
   left: 0;
   right: 0;
   bottom: env(safe-area-inset-bottom);
   z-index: 10;
   padding: 24rpx 40rpx;
+  padding-top: calc(env(safe-area-inset-top) + 144rpx);
   display: flex;
   flex-direction: column;
   align-items: center;

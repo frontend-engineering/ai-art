@@ -2,7 +2,7 @@
   邀请好友页面
   显示邀请码、统计信息和邀请记录
 -->
-<view class="invite-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="invite-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
@@ -15,10 +15,14 @@
   </view>
   
   <!-- 顶部导航栏 -->
-  <view class="navbar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
+  <view class="nav-bar">
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
     </view>
+    <text class="nav-title">邀请好友</text>
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->

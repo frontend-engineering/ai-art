@@ -1,31 +1,17 @@
 /* 邀请好友页面样式 */
 
-/* 大小字切换按钮 - 在返回键下方 */
-.elder-mode-toggle-fixed {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 100rpx);
-  left: 32rpx;
-  z-index: 999;
-}
-
-.elder-mode .elder-mode-toggle-fixed {
-  top: calc(env(safe-area-inset-top) + 120rpx);
-}
+/* 导航栏样式使用通用样式文件 common-navigation.wxss */
 
 .invite-page {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 /* 背景渐变 */
 .invite-bg {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -34,45 +20,16 @@
     rgba(255, 248, 220, 0.9) 0%, 
     rgba(255, 240, 204, 0.95) 100%
   );
-  z-index: 1;
-}
-
-/* 顶部导航栏 */
-.navbar {
-  position: absolute;
-  top: calc(16rpx + env(safe-area-inset-top));
-  left: 32rpx;
-  z-index: 100;
-}
-
-.back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-festival-gold);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
+  z-index: 0;
+  pointer-events: none;
 }
 
 /* 主内容区 */
 .invite-content {
-  position: absolute;
-  top: calc(88rpx + env(safe-area-inset-top));
-  left: 0;
-  right: 0;
-  bottom: env(safe-area-inset-bottom);
+  position: relative;
   z-index: 10;
   padding: 24rpx 32rpx;
+  padding-bottom: calc(24rpx + env(safe-area-inset-bottom));
 }
 
 /* 邀请卡片 */
