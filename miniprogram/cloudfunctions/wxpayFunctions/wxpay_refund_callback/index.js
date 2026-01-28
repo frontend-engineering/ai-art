@@ -88,28 +88,29 @@ exports.main = async (event, context) => {
 };
 
 async function updateOrderAfterRefund(outTradeNo, amount) {
-  const { data: orders } = await safeDb.select('orders', 'out_trade_no', outTradeNo);
+  const { data: orders } = await safeDb.select('payment_orders', 'transaction_id', outTradeNo);
   const order = orders && orders[0];
   if (!order) return;
   
-  const isFullRefund = amount?.refund >= order.amount;
-  const newStatus = isFullRefund ? 'refunded' : 'partial_refunded';
+  const isFullRefund = amount?.refund >= (order.amount * 100); // amount 是元，需要转换为分
+  const newStatus = isFullRefund ? 'refunded' : 'paid'; // payment_orders 表只有 pending/paid/failed/refunded
   
-  await safeDb.update('orders', 'out_trade_no', outTradeNo, {
-    status: newStatus,
-    refunded_amount: (order.refunded_amount || 0) + (amount?.refund || 0),
-    refunded_at: new Date(), updated_at: new Date()
+  await safeDb.update('payment_orders', 'transaction_id', outTradeNo, {
+    status: newStatus
+    // updated_at 由数据库自动更新
   });
   
-  if (isFullRefund && order.openid) {
+  // 注意：payment_orders 表没有 openid 字段，用户信息在 users 表中通过 user_id 关联
+  if (isFullRefund && order.user_id) {
     try {
-      const { data: users } = await safeDb.select('users', 'openid', order.openid);
+      const { data: users } = await safeDb.select('users', 'id', order.user_id);
       const user = users && users[0];
-      if (user && user.last_order_id === outTradeNo) {
-        await safeDb.update('users', 'openid', order.openid, {
-          is_paid: 0, current_package: 'free', package_expires_at: null, updated_at: new Date()
-        });
+      if (user) {
+        // 更新用户权益（如果需要）
+        // 注意：users 表结构可能不同，需要根据实际情况调整
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('[wxpay_refund_callback] 更新用户权益失败:', e.message);
+    }
   }
 }

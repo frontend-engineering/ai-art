@@ -1,0 +1,33 @@
+<!--微信登录页面-->
+<view class="login-container">
+  <view class="login-content">
+    <!-- Logo -->
+    <view class="logo">
+      <image src="/assets/logo.png" mode="aspectFit" />
+    </view>
+    
+    <!-- 标题 -->
+    <view class="title">
+      <text wx:if="{{isWebLogin}}">Web 扫码登录</text>
+      <text wx:else>欢迎使用</text>
+    </view>
+    
+    <!-- 加载中 -->
+    <view wx:if="{{loading}}" class="loading">
+      <view class="loading-icon"></view>
+      <text>登录中...</text>
+    </view>
+    
+    <!-- 错误信息 -->
+    <view wx:if="{{errorMsg}}" class="error">
+      <text>{{errorMsg}}</text>
+      <button class="retry-btn" bindtap="handleRetry">重试</button>
+    </view>
+    
+    <!-- 提示信息 -->
+    <view class="tips">
+      <text wx:if="{{isWebLogin}}">请在手机上确认登录</text>
+      <text wx:else>使用微信账号快速登录</text>
+    </view>
+  </view>
+</view>

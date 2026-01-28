@@ -235,7 +235,8 @@ const cloudContainerRequest = (options) => {
       loadingText = '加载中...',
       showError: shouldShowError = true,
       noRetry = false,
-      retryCount = 0
+      retryCount = 0,
+      timeout = 60000  // 默认 60 秒超时
     } = options;
 
     // 检查是否已初始化
@@ -272,7 +273,7 @@ const cloudContainerRequest = (options) => {
       requestHeader['Authorization'] = `Bearer ${token}`;
     }
 
-    console.log('[CloudBase Request]', method, path, { env: CLOUDBASE_CONFIG.env, service: CLOUDBASE_CONFIG.serviceName });
+    console.log('[CloudBase Request]', method, path, { env: CLOUDBASE_CONFIG.env, service: CLOUDBASE_CONFIG.serviceName, timeout });
 
     // 发起云托管请求
     wx.cloud.callContainer({
@@ -283,7 +284,8 @@ const cloudContainerRequest = (options) => {
       method: method,
       header: requestHeader,
       data: data,
-      dataType: 'json'
+      dataType: 'json',
+      timeout: timeout  // 设置超时时间
     }).then(res => {
       // 隐藏加载提示
       if (showLoading) {

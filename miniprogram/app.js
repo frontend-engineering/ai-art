@@ -27,7 +27,8 @@ App({
     useCloudBase: true,  // 使用云托管
     cloudbaseInitialized: false, // CloudBase 是否已初始化
     usageCount: 0,       // 剩余使用次数
-    userType: 'free'     // 用户类型 ('free' | 'paid')
+    userType: 'free',     // 用户类型 ('free' | 'paid')
+    apiBaseUrl: 'https://your-api-domain.com' // API基础URL，请替换为实际值
   },
 
   /**

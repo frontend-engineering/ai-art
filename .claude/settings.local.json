@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(npm search:*)",
+      "Bash(ln:*)",
+      "Bash(pip3 install:*)",
+      "Bash(source:*)",
+      "Bash(pip install:*)",
+      "Bash(brew list:*)",
+      "Bash(brew install:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(python3:*)",
+      "Bash(/usr/local/bin/python3.12:*)",
+      "Bash(/Users/aaronzheng/.claude/videocut-env/bin/python3:*)"
+    ]
+  }
+}

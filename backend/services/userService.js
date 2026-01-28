@@ -106,7 +106,9 @@ async function createUserWithOpenid(userId, openid) {
 async function getUserByOpenid(openid) {
   try {
     const sql = `
-      SELECT id, openid, created_at, updated_at, payment_status, regenerate_count
+      SELECT id, openid, unionid, nickname, avatar_url, phone, level, status,
+             daily_limit, used_today, total_quota, used_quota,
+             created_at, updated_at, payment_status, regenerate_count, last_login_at
       FROM users
       WHERE openid = ?
     `;
@@ -125,6 +127,34 @@ async function getUserByOpenid(openid) {
 }
 
 /**
+ * 根据微信unionid获取用户
+ * @param {string} unionid 微信unionid
+ * @returns {Promise<Object|null>} 用户对象,如果不存在则返回null
+ */
+async function getUserByUnionid(unionid) {
+  try {
+    const sql = `
+      SELECT id, openid, unionid, nickname, avatar_url, phone, level, status,
+             daily_limit, used_today, total_quota, used_quota,
+             created_at, updated_at, payment_status, regenerate_count, last_login_at
+      FROM users
+      WHERE unionid = ?
+    `;
+    
+    const rows = await query(sql, [unionid]);
+    
+    if (rows.length === 0) {
+      return null;
+    }
+    
+    return rows[0];
+  } catch (error) {
+    console.error('根据unionid查询用户失败:', error);
+    throw new Error(`根据unionid查询用户失败: ${error.message}`);
+  }
+}
+
+/**
  * 根据ID获取用户
  * @param {string} userId 用户ID
  * @returns {Promise<Object|null>} 用户对象,如果不存在则返回null
@@ -132,7 +162,9 @@ async function getUserByOpenid(openid) {
 async function getUserById(userId) {
   try {
     const sql = `
-      SELECT id, openid, created_at, updated_at, payment_status, regenerate_count
+      SELECT id, openid, unionid, nickname, avatar_url, phone, level, status,
+             daily_limit, used_today, total_quota, used_quota,
+             created_at, updated_at, payment_status, regenerate_count, last_login_at
       FROM users
       WHERE id = ?
     `;
@@ -541,6 +573,7 @@ module.exports = {
   createUserWithOpenid,
   getUserById,
   getUserByOpenid,
+  getUserByUnionid,
   updateUserPaymentStatus,
   updateUserRegenerateCount,
   decrementRegenerateCount,

@@ -12,8 +12,8 @@
 // 云函数名称
 const CLOUD_FUNCTION_NAME = 'wxpayFunctions';
 
-// 套餐配置
-const PACKAGES = {
+// 套餐配置（降级方案 - 当API获取失败时使用）
+const FALLBACK_PACKAGES = {
   free: {
     id: 'free',
     name: '免费版',
@@ -24,9 +24,9 @@ const PACKAGES = {
   },
   basic: {
     id: 'basic',
-    name: '9.9元尝鲜包',
-    price: 9.9,
-    amount: 990,  // 分
+    name: '0.01元尝鲜包',
+    price: 0.01,
+    amount: 1,  // 分
     description: 'AI全家福-尝鲜包',
     features: ['高清无水印', '3-5人合成', '热门模板']
   },
@@ -40,6 +40,11 @@ const PACKAGES = {
     recommended: true
   }
 };
+
+// 价格缓存
+let priceCache = null;
+let priceCacheTime = 0;
+const PRICE_CACHE_DURATION = 5 * 60 * 1000; // 5分钟缓存
 
 // 订单状态
 const ORDER_STATUS = {
@@ -65,20 +70,81 @@ const log = (message, data = null) => {
 };
 
 /**
- * 获取套餐配置
- * @param {string} packageType 套餐类型
- * @returns {Object|null} 套餐配置
+ * 从API获取最新价格配置
+ * @returns {Promise<Object>} 价格配置
  */
-const getPackageConfig = (packageType) => {
-  return PACKAGES[packageType] || null;
+const fetchPricesFromAPI = async () => {
+  try {
+    // 检查缓存
+    const now = Date.now();
+    if (priceCache && (now - priceCacheTime) < PRICE_CACHE_DURATION) {
+      log('使用缓存的价格配置');
+      return priceCache;
+    }
+
+    log('从API获取价格配置');
+    
+    // 调用价格查询API
+    const result = await wx.request({
+      url: `${getApp().globalData.apiBaseUrl || 'https://your-api-domain.com'}/api/prices/current`,
+      method: 'GET',
+      timeout: 5000
+    });
+
+    if (result.statusCode === 200 && result.data && result.data.success) {
+      const apiPrices = result.data.data;
+      
+      // 转换API返回的价格格式为本地格式
+      const packages = {
+        free: {
+          ...FALLBACK_PACKAGES.free,
+          price: apiPrices.packages?.free || 0,
+          amount: (apiPrices.packages?.free || 0) * 100
+        },
+        basic: {
+          ...FALLBACK_PACKAGES.basic,
+          price: apiPrices.packages?.basic || 0.01,
+          amount: Math.round((apiPrices.packages?.basic || 0.01) * 100)
+        },
+        premium: {
+          ...FALLBACK_PACKAGES.premium,
+          price: apiPrices.packages?.premium || 29.9,
+          amount: Math.round((apiPrices.packages?.premium || 29.9) * 100)
+        }
+      };
+
+      // 更新缓存
+      priceCache = packages;
+      priceCacheTime = now;
+      
+      log('价格配置获取成功', packages);
+      return packages;
+    }
+
+    throw new Error('API返回数据格式错误');
+  } catch (error) {
+    log('从API获取价格失败，使用降级方案', error);
+    return FALLBACK_PACKAGES;
+  }
 };
 
 /**
- * 获取所有套餐配置
- * @returns {Object} 所有套餐配置
+ * 获取套餐配置（优先从API获取，失败时使用降级方案）
+ * @param {string} packageType 套餐类型
+ * @returns {Promise<Object|null>} 套餐配置
  */
-const getAllPackages = () => {
-  return { ...PACKAGES };
+const getPackageConfig = async (packageType) => {
+  const packages = await fetchPricesFromAPI();
+  return packages[packageType] || null;
+};
+
+/**
+ * 获取所有套餐配置（优先从API获取，失败时使用降级方案）
+ * @returns {Promise<Object>} 所有套餐配置
+ */
+const getAllPackages = async () => {
+  const packages = await fetchPricesFromAPI();
+  return { ...packages };
 };
 
 /**
@@ -140,8 +206,8 @@ const callPaymentFunction = async (type, data = {}) => {
 const createOrder = async (params) => {
   const { packageType, generationId, userId } = params;
   
-  // 验证套餐类型
-  const packageConfig = getPackageConfig(packageType);
+  // 获取套餐配置（从API或降级方案）
+  const packageConfig = await getPackageConfig(packageType);
   if (!packageConfig) {
     throw new Error(`无效的套餐类型: ${packageType}`);
   }
@@ -158,7 +224,7 @@ const createOrder = async (params) => {
     };
   }
   
-  log('创建支付订单', { packageType, generationId, userId });
+  log('创建支付订单', { packageType, generationId, userId, price: packageConfig.price });
   
   try {
     const result = await callPaymentFunction('wxpay_order', {
@@ -472,11 +538,12 @@ const pay = async (params) => {
 
 module.exports = {
   // 配置
-  PACKAGES,
+  FALLBACK_PACKAGES,  // 导出降级方案供外部使用
   ORDER_STATUS,
   CLOUD_FUNCTION_NAME,
   getPackageConfig,
   getAllPackages,
+  fetchPricesFromAPI,  // 导出价格获取函数
   
   // 支付流程
   createOrder,

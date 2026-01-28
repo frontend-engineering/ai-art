@@ -1,0 +1,15 @@
+{
+  "enabled": true,
+  "name": "Git提交信息助手",
+  "description": "当用户提交代码时，自动提醒使用 Sentry 提交信息规范",
+  "version": "1",
+  "when": {
+    "type": "userTriggered"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "帮我按照 Sentry 提交信息规范（#sentry-commit-conventions）生成提交信息。请先检查 git status 查看变更，然后生成符合规范的提交信息，包括：1) 合适的 type 和 scope，2) 清晰的 subject，3) 详细的 body 说明变更原因，4) 如果需要，添加 issue 引用和 Co-Authored-By。"
+  },
+  "workspaceFolderName": "ai-art",
+  "shortName": "sentry-commit-helper"
+}

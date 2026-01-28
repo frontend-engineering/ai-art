@@ -1,0 +1,16 @@
+{
+  "enabled": true,
+  "name": "pnpm 使用提醒",
+  "description": "当 package.json 文件被修改时，提醒使用 pnpm 而非 npm 安装依赖",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/package.json"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "package.json 已修改。提醒：必须使用 'pnpm install' 安装依赖，禁止使用 npm。如果需要安装依赖，使用 pnpm 命令。"
+  }
+}

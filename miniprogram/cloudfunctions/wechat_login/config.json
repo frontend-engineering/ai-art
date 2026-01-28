@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "openapi": [
+      "wxacode.get",
+      "security.msgSecCheck"
+    ]
+  },
+  "env": {
+    "JWT_SECRET": "",
+    "ENCRYPTION_KEY": "",
+    "API_BASE_URL": "",
+    "INTERNAL_API_SECRET": ""
+  }
+}
