@@ -182,16 +182,22 @@ router.post('/callback', async (req, res) => {
         
         if (tradeState === 'SUCCESS') {
           const [orderRows] = await connection.execute(
-            'SELECT user_id, package_type FROM payment_orders WHERE id = ?', [orderId]
+            'SELECT user_id, package_type, amount FROM payment_orders WHERE id = ?', [orderId]
           );
           
           if (orderRows.length > 0) {
-            const { user_id, package_type } = orderRows[0];
-            await connection.execute(
-              'UPDATE users SET payment_status = ?, updated_at = NOW() WHERE id = ?',
-              [package_type, user_id]
-            );
-            console.log(`用户 ${user_id} 付费状态已更新为 ${package_type}`);
+            const { user_id, package_type, amount } = orderRows[0];
+            
+            // 使用 processPaymentUpgrade 处理付费升级
+            // 这会自动更新 usage_count, has_ever_paid, first_payment_at, last_payment_at
+            try {
+              await userService.processPaymentUpgrade(user_id, package_type, amount);
+              console.log(`用户 ${user_id} 付费升级成功: ${package_type}, 金额: ${amount}`);
+            } catch (upgradeError) {
+              console.error(`用户 ${user_id} 付费升级失败:`, upgradeError);
+              // 如果升级失败，回滚事务
+              throw upgradeError;
+            }
           }
         }
         
@@ -290,10 +296,19 @@ router.put('/order/:orderId/status', async (req, res) => {
       }
       
       if (status === 'paid' && order.status !== 'paid') {
-        await connection.execute(
-          'UPDATE users SET payment_status = ?, updated_at = NOW() WHERE id = ?',
-          [order.package_type, order.user_id]
+        // 使用 processPaymentUpgrade 处理付费升级
+        const [orderDetails] = await connection.execute(
+          'SELECT amount FROM payment_orders WHERE id = ?', [orderId]
         );
+        const amount = orderDetails[0]?.amount || 0;
+        
+        try {
+          await userService.processPaymentUpgrade(order.user_id, order.package_type, amount);
+          console.log(`用户 ${order.user_id} 付费升级成功: ${order.package_type}`);
+        } catch (upgradeError) {
+          console.error(`用户 ${order.user_id} 付费升级失败:`, upgradeError);
+          throw upgradeError;
+        }
       }
       
       await connection.commit();

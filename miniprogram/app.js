@@ -25,7 +25,9 @@ App({
     openid: '',          // 微信openid
     isElderMode: false,  // 老年模式
     useCloudBase: true,  // 使用云托管
-    cloudbaseInitialized: false // CloudBase 是否已初始化
+    cloudbaseInitialized: false, // CloudBase 是否已初始化
+    usageCount: 0,       // 剩余使用次数
+    userType: 'free'     // 用户类型 ('free' | 'paid')
   },
 
   /**
@@ -336,6 +338,8 @@ App({
       this.globalData.userInfo = null;
       this.globalData.userId = '';
       this.globalData.openid = '';
+      this.globalData.usageCount = 0;
+      this.globalData.userType = 'free';
       
       console.log('[App] 已退出登录');
     } catch (err) {
@@ -344,6 +348,191 @@ App({
       this.globalData.userInfo = null;
       this.globalData.userId = '';
       this.globalData.openid = '';
+      this.globalData.usageCount = 0;
+      this.globalData.userType = 'free';
+    }
+  },
+
+  /**
+   * 更新使用次数
+   * 从服务器获取最新的使用次数并更新全局状态
+   * @returns {Promise<Object>} { usageCount, userType, paymentStatus, canGenerate }
+   */
+  async updateUsageCount() {
+    try {
+      const userId = this.globalData.userId;
+      if (!userId) {
+        console.warn('[App] 用户未登录，无法更新使用次数');
+        // 返回默认值
+        return {
+          usageCount: 3,
+          userType: 'free',
+          paymentStatus: 'free',
+          canGenerate: true
+        };
+      }
+
+      const cloudbaseRequest = require('./utils/cloudbase-request');
+      const res = await cloudbaseRequest.get(`/api/usage/check/${userId}`);
+
+      if (res && res.success) {
+        const { usage_count, user_type, can_generate } = res.data;
+        
+        // 从本地存储获取paymentStatus
+        const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+        
+        // 更新全局状态
+        this.globalData.usageCount = usage_count;
+        this.globalData.userType = user_type;
+        
+        console.log('[App] 使用次数已更新:', usage_count, '类型:', user_type);
+        
+        // 通知所有页面更新
+        this.notifyPagesUsageUpdate({
+          usageCount: usage_count,
+          userType: user_type,
+          paymentStatus: paymentStatus,
+          canGenerate: can_generate
+        });
+        
+        return {
+          usageCount: usage_count,
+          userType: user_type,
+          paymentStatus: paymentStatus,
+          canGenerate: can_generate
+        };
+      } else {
+        console.error('[App] 更新使用次数失败:', res);
+        // 返回默认值
+        return {
+          usageCount: 3,
+          userType: 'free',
+          paymentStatus: 'free',
+          canGenerate: true
+        };
+      }
+    } catch (err) {
+      console.error('[App] 更新使用次数异常:', err);
+      // 返回默认值
+      return {
+        usageCount: 3,
+        userType: 'free',
+        paymentStatus: 'free',
+        canGenerate: true
+      };
+    }
+  },
+
+  /**
+   * 通知所有页面使用次数已更新
+   * @param {Object} data - 使用次数数据
+   */
+  notifyPagesUsageUpdate(data) {
+    try {
+      const pages = getCurrentPages();
+      pages.forEach(page => {
+        if (typeof page.onUsageCountUpdate === 'function') {
+          page.onUsageCountUpdate(data);
+        }
+      });
+    } catch (err) {
+      console.error('[App] 通知页面更新失败:', err);
+    }
+  },
+
+  /**
+   * 扣减使用次数
+   * @param {string} generationId - 生成记录ID
+   * @returns {Promise<Object>} { success, remainingCount }
+   */
+  async decrementUsageCount(generationId) {
+    try {
+      const userId = this.globalData.userId;
+      if (!userId) {
+        throw new Error('用户未登录');
+      }
+
+      const cloudbaseRequest = require('./utils/cloudbase-request');
+      const res = await cloudbaseRequest.post('/api/usage/decrement', {
+        userId,
+        generationId
+      });
+
+      if (res && res.success) {
+        const { remaining_count } = res;
+        
+        // 更新全局状态
+        this.globalData.usageCount = remaining_count;
+        
+        console.log('[App] 使用次数已扣减，剩余:', remaining_count);
+        
+        // 从本地存储获取paymentStatus
+        const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+        
+        // 通知页面更新
+        this.notifyPagesUsageUpdate({
+          usageCount: remaining_count,
+          userType: this.globalData.userType,
+          paymentStatus: paymentStatus,
+          canGenerate: remaining_count > 0
+        });
+        
+        return {
+          success: true,
+          remainingCount: remaining_count
+        };
+      } else {
+        throw new Error(res.message || '扣减使用次数失败');
+      }
+    } catch (err) {
+      console.error('[App] 扣减使用次数失败:', err);
+      throw err;
+    }
+  },
+
+  /**
+   * 恢复使用次数（生成失败时）
+   * @param {string} generationId - 生成记录ID
+   * @returns {Promise<Object>} { success, remainingCount }
+   */
+  async restoreUsageCount(generationId) {
+    try {
+      const userId = this.globalData.userId;
+      if (!userId) {
+        throw new Error('用户未登录');
+      }
+
+      const cloudbaseRequest = require('./utils/cloudbase-request');
+      const res = await cloudbaseRequest.post('/api/usage/restore', {
+        userId,
+        generationId
+      });
+
+      if (res && res.success) {
+        const { remaining_count } = res;
+        
+        // 更新全局状态
+        this.globalData.usageCount = remaining_count;
+        
+        console.log('[App] 使用次数已恢复，剩余:', remaining_count);
+        
+        // 通知页面更新
+        this.notifyPagesUsageUpdate({
+          usageCount: remaining_count,
+          userType: this.globalData.userType,
+          canGenerate: remaining_count > 0
+        });
+        
+        return {
+          success: true,
+          remainingCount: remaining_count
+        };
+      } else {
+        throw new Error(res.message || '恢复使用次数失败');
+      }
+    } catch (err) {
+      console.error('[App] 恢复使用次数失败:', err);
+      throw err;
     }
   }
 });

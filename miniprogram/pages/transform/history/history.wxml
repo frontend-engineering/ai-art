@@ -9,6 +9,11 @@
   <!-- 背景 -->
   <view class="history-bg"></view>
   
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
+  </view>
+  
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
     <text class="mode-icon">👑</text>
@@ -17,11 +22,13 @@
   
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
     </view>
     <text class="nav-title">我的记录</text>
-    <elder-mode-toggle />
+    <view class="nav-right"></view>
   </view>
   
   <!-- 内容区域 -->

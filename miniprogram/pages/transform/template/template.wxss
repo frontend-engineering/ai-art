@@ -259,7 +259,7 @@
 
 .tip-value {
   font-size: 28rpx;
-  color: var(--color-festival-gold);
+  color: #FFFFFF;
   font-weight: 500;
 }
 

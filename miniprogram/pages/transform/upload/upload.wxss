@@ -187,10 +187,11 @@
 
 .status-text {
   font-size: 36rpx;
-  color: #000000;
+  color: rgb(242, 139, 84);
   font-weight: bold;
   text-align: center;
   white-space: nowrap;
+  text-shadow: 0 0 10rpx rgba(242, 139, 84, 0.5);
 }
 
 .progress-bar {

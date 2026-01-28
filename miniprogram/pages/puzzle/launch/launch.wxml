@@ -9,18 +9,20 @@
   <!-- 红色渐变背景 -->
   <view class="launch-bg"></view>
   
-  <!-- 顶部工具栏 -->
-  <view class="toolbar">
-    <view class="back-btn" bindtap="goBack">
-      <text class="back-icon">‹</text>
-    </view>
-    <view class="toolbar-right">
-      <elder-mode-toggle />
-    </view>
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
   </view>
   
   <!-- 主内容区 -->
   <view class="launch-content">
+    <!-- 使用次数显示 -->
+    <usage-display 
+      usageCount="{{usageCount}}" 
+      userType="{{userType}}"
+      isElderMode="{{isElderMode}}"
+    />
+    
     <!-- 标题区域 -->
     <view class="title-section animate-fade-in">
       <text class="slogan-text">这个春节，让爱没有距离</text>
@@ -73,12 +75,12 @@
     
     <!-- 立即制作按钮 -->
     <view class="action-section">
-      <view class="start-btn" bindtap="handleStart" hover-class="start-btn-hover">
+      <view class="start-btn {{buttonDisabled ? 'disabled' : ''}}" bindtap="handleStart" hover-class="{{buttonDisabled ? '' : 'start-btn-hover'}}">
         <view class="btn-inner">
-          <text class="btn-text">{{modeConfig.buttonText}}</text>
+          <text class="btn-text">{{buttonText}}</text>
         </view>
         <!-- 光效动画 -->
-        <view class="btn-shine"></view>
+        <view class="btn-shine" wx:if="{{!buttonDisabled}}"></view>
       </view>
       
       <!-- 历史记录入口 -->
@@ -93,4 +95,23 @@
       </view>
     </view>
   </view>
+  
+  <!-- 使用次数模态框 -->
+  <usage-modal
+    visible="{{showModal}}"
+    modalType="{{modalType}}"
+    usageCount="{{usageCount}}"
+    isElderMode="{{isElderMode}}"
+    bind:close="onModalClose"
+    bind:payment="onModalPayment"
+    bind:share="onModalShare"
+  />
+  
+  <!-- 支付模态框 -->
+  <payment-modal
+    visible="{{showPaymentModal}}"
+    isElderMode="{{isElderMode}}"
+    bind:complete="onPaymentComplete"
+    bind:close="closePaymentModal"
+  />
 </view>

@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "邀请好友",
+  "usingComponents": {
+    "corner-background": "/components/corner-background/corner-background",
+    "elder-mode-toggle": "/components/elder-mode-toggle/elder-mode-toggle"
+  }
+}

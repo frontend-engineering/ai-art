@@ -461,3 +461,20 @@
 .template-page .back-icon {
   color: #FFD700;
 }
+
+/* 覆盖 Transform 的金色背景，改为红色 */
+.template-page .page-with-nav::before {
+  background: #d4302b !important;
+}
+
+.template-page .mode-subtitle-bar {
+  background: #d4302b !important;
+}
+
+.template-page .nav-bar {
+  background: #d4302b !important;
+}
+
+.template-page .nav-title {
+  color: #FFD700 !important;
+}

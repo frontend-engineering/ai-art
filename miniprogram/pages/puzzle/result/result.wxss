@@ -397,10 +397,37 @@
   margin-left: 8rpx;
 }
 
+/* 返回首页按钮 */
+.btn-inner.blue {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  border: 2rpx solid rgba(59, 130, 246, 0.3);
+}
+
+.btn-inner.blue .btn-text {
+  color: #FFFFFF;
+}
+
 /* ========================================
    时空拼图模式导航栏覆盖
    ======================================== */
 
 .result-page .back-icon {
   color: #FFD700;
+}
+
+/* 覆盖 Transform 的金色背景，改为红色 */
+.result-page .page-with-nav::before {
+  background: #d4302b !important;
+}
+
+.result-page .mode-subtitle-bar {
+  background: #d4302b !important;
+}
+
+.result-page .nav-bar {
+  background: #d4302b !important;
+}
+
+.result-page .nav-title {
+  color: #FFD700 !important;
 }

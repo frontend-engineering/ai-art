@@ -12,3 +12,20 @@
 .history-page .back-icon {
   color: #FFD700;
 }
+
+/* 覆盖 Transform 的金色背景，改为红色 */
+.history-page .page-with-nav::before {
+  background: #d4302b !important;
+}
+
+.history-page .mode-subtitle-bar {
+  background: #d4302b !important;
+}
+
+.history-page .nav-bar {
+  background: #d4302b !important;
+}
+
+.history-page .nav-title {
+  color: #FFD700 !important;
+}

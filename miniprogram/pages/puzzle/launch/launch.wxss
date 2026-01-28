@@ -319,6 +319,20 @@
   box-shadow: 0 6rpx 24rpx rgba(212, 48, 43, 0.4);
 }
 
+.start-btn.disabled {
+  opacity: 0.6;
+  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
+}
+
+.start-btn.disabled .btn-inner {
+  background: linear-gradient(135deg, #CCCCCC 0%, #999999 100%);
+  border-color: #CCCCCC;
+}
+
+.start-btn.disabled .btn-text {
+  color: #666666;
+}
+
 .start-btn-hover {
   transform: scale(0.98);
   box-shadow: 0 4rpx 16rpx rgba(212, 48, 43, 0.3);

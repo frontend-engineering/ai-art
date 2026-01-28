@@ -14,6 +14,8 @@ const templateRoutes = require('./templateRoutes');
 const uploadRoutes = require('./uploadRoutes');
 const adminRoutes = require('./adminRoutes');
 const wechatRoutes = require('./wechatRoutes');
+const usageRoutes = require('./usageRoutes');
+const inviteRoutes = require('./inviteRoutes');
 
 /**
  * 注册所有路由
@@ -56,6 +58,12 @@ function registerRoutes(app) {
   
   // 微信小程序接口
   app.use('/api/wechat', wechatRoutes);
+  
+  // 使用次数管理
+  app.use('/api/usage', usageRoutes);
+  
+  // 邀请系统
+  app.use('/api/invite', inviteRoutes);
 }
 
 module.exports = {
@@ -70,5 +78,7 @@ module.exports = {
   templateRoutes,
   uploadRoutes,
   adminRoutes,
-  wechatRoutes
+  wechatRoutes,
+  usageRoutes,
+  inviteRoutes
 };

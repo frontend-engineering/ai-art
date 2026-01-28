@@ -262,6 +262,15 @@ Page({
       
       const taskId = result.data.taskId;
       
+      // 扣减使用次数
+      try {
+        await app.decrementUsageCount(taskId);
+        console.log('[TransformTemplate] 使用次数已扣减');
+      } catch (err) {
+        console.error('[TransformTemplate] 扣减使用次数失败:', err);
+        // 扣减失败不影响生成流程，继续执行
+      }
+      
       // 存储任务信息
       app.globalData.transformData = {
         ...transformData,

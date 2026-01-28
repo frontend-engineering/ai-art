@@ -13,6 +13,11 @@
     "db:verify": "node scripts/verify-database.js",
     "db:migrate": "node db/migrate.js",
     "db:migrate:status": "node db/migrate.js status",
+    "migrate": "node scripts/run-migrations.js",
+    "usage:init": "node scripts/init-usage-system.js",
+    "usage:verify-indexes": "node scripts/verify-indexes.js",
+    "usage:reset": "node scripts/reset-usage-count.js",
+    "usage:list": "node scripts/reset-usage-count.js --list",
     "db:cloudbase": "node db/sync-cloudbase.js",
     "db:cloudbase:sql": "node db/sync-cloudbase.js sql",
     "db:test": "node -e \"require('./db/connection').testConnection().then(() => process.exit(0)).catch(() => process.exit(1))\"",
@@ -29,12 +34,14 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "mysql2": "^3.15.3",
+    "nanoid": "^5.1.6",
     "node-cron": "^4.2.1",
     "uuid": "^9.0.0",
     "wechatpay-node-v3": "^2.2.1"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
+    "fast-check": "^4.5.3",
     "jest": "^30.2.0",
     "nodemon": "^3.0.1",
     "supertest": "^7.2.2"

@@ -1,9 +1,9 @@
 /**
- * 时空拼图模式上传页
+ * 时空拼图模式上传页 - 5个独立图片框
  * Requirements: 2.2, 6.1-6.5
  * 
  * 功能：
- * - 与富贵变身保持一致的 UI 样式
+ * - 5个独立图片框，可单独上传和删除
  * - 实现多图上传（最多5张）
  * - 实现人脸检测
  */
@@ -15,7 +15,9 @@ const pageMixin = require('../../../utils/page-mixin');
 Page({
   data: {
     isElderMode: false,
-    isUploading: false,
+    selectedImages: [null, null, null, null, null], // 5个图片框
+    uploadedCount: 0,
+    isProcessing: false,
     statusText: '',
     errorMessage: '',
     uploadProgress: 0
@@ -34,37 +36,47 @@ Page({
   },
 
   /**
-   * 点击上传区域
+   * 点击上传框
    * Requirements: 6.1
    */
-  async handleUploadClick() {
-    if (this.data.isUploading) return;
+  async handleUploadClick(e) {
+    if (this.data.isProcessing) return;
     
-    console.log('[PuzzleUpload] 用户点击上传区域');
+    const index = e.currentTarget.dataset.index;
+    console.log('[PuzzleUpload] 点击上传框:', index);
+    
     this.setData({ errorMessage: '' });
     
     try {
-      // 选择图片（最多5张）
-      const tempFiles = await chooseImage(5);
+      // 选择单张图片
+      const tempFiles = await chooseImage(1);
       if (!tempFiles || tempFiles.length === 0) {
         console.log('[PuzzleUpload] 用户取消选择');
         return;
       }
       
-      console.log('[PuzzleUpload] 选择的文件数量:', tempFiles.length);
+      const file = tempFiles[0];
+      console.log('[PuzzleUpload] 选择的文件:', file);
       
       // 检查文件大小
-      for (const file of tempFiles) {
-        if (file.size > 10 * 1024 * 1024) {
-          this.setData({
-            errorMessage: '图片文件过大，请上传小于10MB的图片'
-          });
-          return;
-        }
+      if (file.size > 10 * 1024 * 1024) {
+        this.setData({
+          errorMessage: '图片文件过大，请上传小于10MB的图片'
+        });
+        return;
       }
       
-      // 开始上传流程
-      await this.processUpload(tempFiles);
+      // 显示临时图片
+      const selectedImages = [...this.data.selectedImages];
+      selectedImages[index] = file.path;
+      
+      // 计算已上传数量
+      const uploadedCount = selectedImages.filter(img => img !== null).length;
+      
+      this.setData({
+        selectedImages,
+        uploadedCount
+      });
       
     } catch (err) {
       console.error('[PuzzleUpload] 选择图片失败:', err);
@@ -78,12 +90,47 @@ Page({
   },
 
   /**
-   * 处理上传流程
+   * 删除图片
+   */
+  removeImage(e) {
+    const index = e.currentTarget.dataset.index;
+    console.log('[PuzzleUpload] 删除图片:', index);
+    
+    const selectedImages = [...this.data.selectedImages];
+    selectedImages[index] = null;
+    
+    // 计算已上传数量
+    const uploadedCount = selectedImages.filter(img => img !== null).length;
+    
+    this.setData({
+      selectedImages,
+      uploadedCount
+    });
+  },
+
+  /**
+   * 进入模板选择页
    * Requirements: 6.2-6.5
    */
-  async processUpload(tempFiles) {
+  async goToTemplate() {
+    if (this.data.isProcessing) return;
+    
+    const validImages = this.data.selectedImages.filter(img => img !== null);
+    
+    console.log('[PuzzleUpload] 进入模板选择，图片数量:', validImages.length);
+    
+    // 如果没有上传图片，直接跳转到模板选择页
+    if (validImages.length === 0) {
+      console.log('[PuzzleUpload] 无图片，直接跳转模板选择');
+      wx.navigateTo({
+        url: '/pages/puzzle/template/template'
+      });
+      return;
+    }
+    
+    // 如果有图片，先上传和检测人脸
     this.setData({
-      isUploading: true,
+      isProcessing: true,
       statusText: '正在上传图片...',
       uploadProgress: 0,
       errorMessage: ''
@@ -92,14 +139,14 @@ Page({
     try {
       // 1. 上传所有图片
       const uploadedUrls = [];
-      for (let i = 0; i < tempFiles.length; i++) {
-        const file = tempFiles[i];
+      for (let i = 0; i < validImages.length; i++) {
+        const imagePath = validImages[i];
         this.setData({
-          statusText: `正在上传第 ${i + 1}/${tempFiles.length} 张...`,
-          uploadProgress: Math.round((i / tempFiles.length) * 50)
+          statusText: `正在上传第 ${i + 1}/${validImages.length} 张...`,
+          uploadProgress: Math.round((i / validImages.length) * 50)
         });
         
-        const url = await uploadImage(file.path);
+        const url = await uploadImage(imagePath);
         uploadedUrls.push(url);
       }
       
@@ -119,7 +166,7 @@ Page({
       
       if (!result.success || !result.data?.faces || result.data.faces.length === 0) {
         this.setData({
-          isUploading: false,
+          isProcessing: false,
           statusText: '',
           errorMessage: result.message || '未检测到人脸，请上传包含清晰人脸的照片'
         });
@@ -146,7 +193,7 @@ Page({
           fail: (err) => {
             console.error('[PuzzleUpload] 跳转失败:', err);
             this.setData({
-              isUploading: false,
+              isProcessing: false,
               statusText: '',
               errorMessage: '页面跳转失败，请重试'
             });
@@ -155,11 +202,11 @@ Page({
       }, 300);
       
     } catch (err) {
-      console.error('[PuzzleUpload] 上传处理失败:', err);
+      console.error('[PuzzleUpload] 处理失败:', err);
       this.setData({
-        isUploading: false,
+        isProcessing: false,
         statusText: '',
-        errorMessage: err.message || '上传失败，请重试'
+        errorMessage: err.message || '处理失败，请重试'
       });
     }
   },

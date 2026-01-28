@@ -14,13 +14,11 @@
     <!-- 主灯笼动画 -->
     <view class="lantern-wrapper animate-bounce">
       <view class="lantern-glow"></view>
-      <video 
+      <image 
         class="main-lantern"
-        src="../../../assets/lantern.mp4"
-        autoplay
-        loop
-        muted
-      ></video>
+        src="../../../assets/lantern.png"
+        mode="aspectFit"
+      ></image>
     </view>
     
     <!-- 标题 -->

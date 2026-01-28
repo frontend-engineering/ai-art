@@ -13,6 +13,7 @@ const { getShareAppMessage, getShareTimeline, savePosterToAlbum } = require('../
 const { saveHistory } = require('../../../utils/storage');
 const { videoAPI } = require('../../../utils/api');
 const cloudbasePayment = require('../../../utils/cloudbase-payment');
+const { checkAndShowModal } = require('../../../utils/usageModal');
 
 Page({
   data: {
@@ -34,7 +35,11 @@ Page({
     isPremiumUser: false,
     // 付费状态
     paymentStatus: 'free',
-    generationId: ''
+    generationId: '',
+    // 使用次数模态框
+    showUsageModal: false,
+    usageModalType: '',
+    usageCount: 0
   },
 
   // 视频轮询定时器
@@ -91,7 +96,7 @@ Page({
     }
   },
 
-  onShow() {
+  async onShow() {
     const app = getApp();
     const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
     this.setData({
@@ -99,6 +104,32 @@ Page({
       isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
       paymentStatus: paymentStatus
     });
+    
+    // 加载使用次数
+    await this.loadUsageCount();
+    
+    // 检查并显示使用次数提醒模态框
+    this.checkUsageModal();
+  },
+
+  /**
+   * 加载使用次数
+   */
+  async loadUsageCount() {
+    try {
+      const app = getApp();
+      const result = await app.updateUsageCount();
+      
+      if (result) {
+        this.setData({
+          usageCount: result.usageCount,
+          userType: result.userType,
+          paymentStatus: result.paymentStatus || 'free'
+        });
+      }
+    } catch (err) {
+      console.error('[TransformResult] 加载使用次数失败:', err);
+    }
   },
 
   onUnload() {
@@ -107,6 +138,63 @@ Page({
       clearInterval(this.videoPollingTimer);
       this.videoPollingTimer = null;
     }
+  },
+
+  /**
+   * 使用次数更新回调（由app.js调用）
+   */
+  onUsageCountUpdate(data) {
+    console.log('[TransformResult] 使用次数已更新:', data);
+    this.setData({
+      usageCount: data.usageCount,
+      userType: data.userType,
+      paymentStatus: data.paymentStatus || 'free'
+    });
+  },
+
+  /**
+   * 检查并显示使用次数提醒模态框
+   */
+  async checkUsageModal() {
+    const userId = wx.getStorageSync('userId');
+    if (!userId) return;
+    
+    const modalConfig = await checkAndShowModal(userId, 'result');
+    if (modalConfig) {
+      this.setData({
+        showUsageModal: true,
+        usageModalType: modalConfig.modalType,
+        usageCount: modalConfig.usageCount
+      });
+    }
+  },
+
+  /**
+   * 关闭使用次数模态框
+   */
+  onUsageModalClose() {
+    this.setData({ showUsageModal: false });
+  },
+
+  /**
+   * 使用次数模态框 - 分享按钮
+   */
+  onUsageModalShare() {
+    this.setData({ showUsageModal: false });
+    // 跳转到邀请页面
+    wx.navigateTo({
+      url: '/pages/invite/invite'
+    });
+  },
+
+  /**
+   * 使用次数模态框 - 购买按钮
+   */
+  onUsageModalPayment() {
+    this.setData({ 
+      showUsageModal: false,
+      showPaymentModal: true 
+    });
   },
 
   /**
@@ -418,7 +506,7 @@ Page({
    * 执行保存图片
    */
   async doSaveImage() {
-    const { selectedImage } = this.data;
+    const { selectedImage, generationId } = this.data;
     
     this.setData({ isSaving: true });
     
@@ -624,6 +712,22 @@ Page({
    * 返回上一页
    */
   goBack() {
+    // 手动触发 Launch 页面刷新使用次数
+    const pages = getCurrentPages();
+    if (pages.length >= 2) {
+      const prevPage = pages[pages.length - 2];
+      // 检查上一个页面是否是 Launch 页面
+      if (prevPage && prevPage.route && prevPage.route.includes('launch')) {
+        console.log('[TransformResult] 触发 Launch 页面刷新');
+        // 延迟执行，确保页面切换完成后再刷新
+        setTimeout(() => {
+          if (typeof prevPage.loadUsageCount === 'function') {
+            prevPage.loadUsageCount();
+          }
+        }, 300);
+      }
+    }
+    
     wx.navigateBack({
       fail: () => {
         wx.redirectTo({

@@ -17,8 +17,8 @@
     <text class="lantern lantern-4 animate-pulse-slow">🏮</text>
   </view>
   
-  <!-- 顶部工具栏 -->
-  <view class="toolbar">
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
     <elder-mode-toggle />
   </view>
   

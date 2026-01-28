@@ -1,0 +1,105 @@
+<!--
+  使用次数模态框组件
+  根据不同的modalType显示不同的内容
+-->
+<view class="usage-modal {{visible ? 'show' : ''}}" wx:if="{{visible}}">
+  <view class="modal-mask" bindtap="onMaskTap"></view>
+  <view class="modal-content {{isElderMode ? 'elder-mode' : ''}}">
+    <!-- 免费用户提醒模态框（剩余 ≤ 2次）-->
+    <view wx:if="{{modalType === 'free_reminder'}}" class="modal-body">
+      <view class="modal-icon">⚠️</view>
+      <view class="modal-title">温馨提示</view>
+      <view class="modal-desc">您的免费次数仅剩 {{usageCount}} 次</view>
+      
+      <view class="modal-benefits">
+        <view class="benefits-title">付费套餐优势：</view>
+        <view class="benefit-item">
+          <text class="benefit-icon">✓</text>
+          <text class="benefit-text">无水印 - 高清原图下载</text>
+        </view>
+        <view class="benefit-item">
+          <text class="benefit-icon">✓</text>
+          <text class="benefit-text">无广告 - 纯净使用体验</text>
+        </view>
+        <view class="benefit-item">
+          <text class="benefit-icon">✓</text>
+          <text class="benefit-text">更多次数 - 体验版+5次，尊享版+20次</text>
+        </view>
+        <view class="benefit-item">
+          <text class="benefit-icon">✓</text>
+          <text class="benefit-text">高清画质 - 体验版2K，尊享版4K</text>
+        </view>
+      </view>
+      
+      <view class="modal-actions">
+        <button class="btn btn-secondary" bindtap="onClose">知道了</button>
+        <button class="btn btn-primary" bindtap="onShare">邀请好友获取次数</button>
+        <button class="btn btn-primary" bindtap="onPayment">查看套餐</button>
+      </view>
+    </view>
+
+    <!-- 免费用户次数用尽模态框（剩余 = 0次）-->
+    <view wx:elif="{{modalType === 'free_exhausted'}}" class="modal-body">
+      <view class="modal-icon">🚫</view>
+      <view class="modal-title">免费次数已用尽</view>
+      <view class="modal-desc">您的免费次数已经用尽，请选择是否继续体验</view>
+      
+      <view class="modal-actions">
+        <button class="btn btn-secondary" bindtap="onShare">邀请好友获取次数</button>
+        <button class="btn btn-primary" bindtap="onPayment">选择套餐</button>
+      </view>
+    </view>
+
+    <!-- 付费用户续费/升级模态框（体验版）-->
+    <view wx:elif="{{modalType === 'paid_renewal_basic'}}" class="modal-body">
+      <view class="modal-icon">💎</view>
+      <view class="modal-title">次数已用完</view>
+      <view class="modal-desc">您的使用次数已用完，继续享受服务</view>
+      
+      <view class="modal-packages">
+        <view class="package-title">套餐选项：</view>
+        <view class="package-item">
+          <text class="package-name">续费体验版</text>
+          <text class="package-price">¥9.9</text>
+          <text class="package-desc">再获得5次使用机会</text>
+        </view>
+        <view class="package-item highlight">
+          <text class="package-name">升级尊享版</text>
+          <text class="package-price">¥29.9</text>
+          <text class="package-desc">再获得20次使用机会</text>
+        </view>
+      </view>
+      
+      <view class="modal-actions">
+        <button class="btn btn-secondary" bindtap="onClose">暂不续费</button>
+        <button class="btn btn-primary" bindtap="onPayment">选择套餐</button>
+      </view>
+    </view>
+
+    <!-- 付费用户续费模态框（尊享版）-->
+    <view wx:elif="{{modalType === 'paid_renewal_premium'}}" class="modal-body">
+      <view class="modal-icon">💎</view>
+      <view class="modal-title">次数已用完</view>
+      <view class="modal-desc">您的使用次数已用完，继续享受服务</view>
+      
+      <view class="modal-packages">
+        <view class="package-title">套餐选项：</view>
+        <view class="package-item highlight">
+          <text class="package-name">续费尊享版</text>
+          <text class="package-price">¥29.9</text>
+          <text class="package-desc">再获得20次使用机会</text>
+        </view>
+      </view>
+      
+      <view class="modal-actions">
+        <button class="btn btn-secondary" bindtap="onClose">暂不续费</button>
+        <button class="btn btn-primary" bindtap="onPayment">续费尊享版</button>
+      </view>
+    </view>
+
+    <!-- 关闭按钮（仅在可关闭的模态框显示）-->
+    <view class="modal-close" bindtap="onClose" wx:if="{{modalType !== 'free_exhausted' && modalType !== 'paid_renewal_basic' && modalType !== 'paid_renewal_premium'}}">
+      <text>✕</text>
+    </view>
+  </view>
+</view>

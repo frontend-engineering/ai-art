@@ -1,5 +1,5 @@
 /**
- * 时空拼图上传页样式 - 与富贵变身保持一致的设计
+ * 时空拼图上传页样式 - 5个独立图片框布局
  * Requirements: 2.2, 6.1-6.5, 10.1-10.3
  */
 
@@ -65,149 +65,6 @@
   color: #8B4513;
 }
 
-/* 上传区域 - 虚线框 */
-.upload-area {
-  width: 100%;
-  max-width: 500rpx;
-  border: 4rpx dashed var(--color-chinese-red);
-  border-radius: 32rpx;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  transition: all 0.3s ease;
-  overflow: hidden;
-  margin: 0 auto 32rpx;
-  position: relative;
-  padding-bottom: 100%;
-}
-
-.upload-area-hover {
-  transform: scale(0.98);
-  border-style: solid;
-}
-
-/* 上传提示容器 */
-.upload-prompt {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-}
-
-/* 相机图片 - 655:718 比例 */
-.camera-image {
-  width: 100%;
-  height: 100%;
-}
-
-/* 文本部分 - 框外 */
-.upload-text-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  margin-top: 16rpx;
-}
-
-.upload-text {
-  font-size: 32rpx;
-  font-weight: bold;
-  color: var(--color-chinese-red);
-  margin-bottom: 8rpx;
-}
-
-.upload-hint {
-  font-size: 24rpx;
-  color: #9CA3AF;
-  margin-bottom: 24rpx;
-}
-
-/* 示例提示 */
-.example-tips {
-  display: flex;
-  flex-direction: column;
-  gap: 12rpx;
-  background: rgba(212, 48, 43, 0.05);
-  padding: 20rpx 28rpx;
-  border-radius: 16rpx;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.tip-item {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.tip-icon {
-  font-size: 22rpx;
-  color: #10B981;
-  font-weight: bold;
-}
-
-.tip-text {
-  font-size: 24rpx;
-  color: #6B7280;
-}
-
-/* 上传中状态 - 页面居中显示 */
-.uploading-state {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 24rpx;
-  z-index: 1000;
-  margin-top: 60rpx;
-}
-
-.loading-spinner {
-  width: 100rpx;
-  height: 100rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.status-text {
-  font-size: 36rpx;
-  color: #000000;
-  font-weight: bold;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.progress-bar {
-  width: 400rpx;
-  height: 8rpx;
-  background: rgba(212, 48, 43, 0.2);
-  border-radius: 4rpx;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-chinese-red), #E85A50);
-  border-radius: 4rpx;
-  transition: width 0.3s ease;
-}
-
 /* 错误提示 */
 .error-toast {
   width: 100%;
@@ -248,9 +105,164 @@
   color: #9CA3AF;
 }
 
+/* 5个图片框布局 */
+.upload-grid {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.upload-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 20rpx;
+}
+
+.upload-box {
+  position: relative;
+  width: 200rpx;
+  height: 200rpx;
+  border: 4rpx dashed var(--color-chinese-red);
+  border-radius: 24rpx;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.5);
+  transition: all 0.3s ease;
+}
+
+.upload-box:active {
+  transform: scale(0.95);
+  border-style: solid;
+}
+
+/* 占位图片 */
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+}
+
+/* 已上传的图片 */
+.uploaded-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 删除按钮 */
+.delete-btn {
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  width: 48rpx;
+  height: 48rpx;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.delete-icon {
+  font-size: 28rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 提示文字 */
+.upload-tips {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 24rpx;
+}
+
+.tips-count {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: var(--color-chinese-red);
+}
+
+.tips-hint {
+  font-size: 24rpx;
+  color: #9CA3AF;
+}
+
+/* 示例提示 */
+.example-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  background: rgba(212, 48, 43, 0.05);
+  padding: 20rpx 28rpx;
+  border-radius: 16rpx;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 24rpx;
+}
+
+.tip-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.tip-icon {
+  font-size: 22rpx;
+  color: #10B981;
+  font-weight: bold;
+}
+
+.tip-text {
+  font-size: 24rpx;
+  color: #6B7280;
+}
+
+/* 操作按钮 */
+.action-buttons {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24rpx;
+}
+
+.next-btn {
+  width: 400rpx;
+  height: 88rpx;
+  background: #d4302b;
+  color: #FFFFFF;
+  font-size: 32rpx;
+  font-weight: bold;
+  border-radius: 44rpx;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(212, 48, 43, 0.3);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 88rpx;
+}
+
+.next-btn::after {
+  border: none;
+}
+
+.next-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 4rpx 12rpx rgba(212, 48, 43, 0.3);
+}
+
+.next-btn.disabled {
+  opacity: 0.6;
+  transform: none;
+}
+
 /* 底部提示 */
 .bottom-tips {
-  margin-top: 32rpx;
   padding: 24rpx;
   text-align: center;
 }
@@ -258,6 +270,64 @@
 .tips-text {
   font-size: 24rpx;
   color: #9CA3AF;
+}
+
+/* 处理中遮罩 */
+.processing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.processing-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20rpx;
+  background: #FFD700;
+  width: 400rpx;
+  height: 400rpx;
+  border-radius: 32rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.15);
+}
+
+.loading-spinner {
+  width: 120rpx;
+  height: 120rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-text {
+  font-size: 32rpx;
+  color: #8B4513;
+  font-weight: bold;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.progress-bar {
+  width: 320rpx;
+  height: 8rpx;
+  background: rgba(139, 69, 19, 0.2);
+  border-radius: 4rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #8B4513;
+  border-radius: 4rpx;
+  transition: width 0.3s ease;
 }
 
 /* ========================================
@@ -272,20 +342,26 @@
   font-size: 34rpx;
 }
 
-.elder-mode .upload-area {
-  height: 480rpx;
+.elder-mode .upload-box {
+  width: 220rpx;
+  height: 220rpx;
 }
 
-.elder-mode .upload-text {
+.elder-mode .tips-count {
   font-size: 38rpx;
 }
 
-.elder-mode .upload-hint {
+.elder-mode .tips-hint {
   font-size: 30rpx;
 }
 
 .elder-mode .tip-text {
   font-size: 30rpx;
+}
+
+.elder-mode .next-btn {
+  font-size: 38rpx;
+  height: 96rpx;
 }
 
 .elder-mode .status-text {
@@ -306,4 +382,21 @@
 
 .upload-page .back-icon {
   color: #FFD700;
+}
+
+/* 覆盖 Transform 的金色背景，改为红色 */
+.upload-page .page-with-nav::before {
+  background: #d4302b !important;
+}
+
+.upload-page .mode-subtitle-bar {
+  background: #d4302b !important;
+}
+
+.upload-page .nav-bar {
+  background: #d4302b !important;
+}
+
+.upload-page .nav-title {
+  color: #FFD700 !important;
 }

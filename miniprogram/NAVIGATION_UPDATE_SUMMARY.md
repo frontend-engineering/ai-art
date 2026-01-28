@@ -1,127 +1,95 @@
-# 小程序导航栏更新完成总结
+# 导航栏统一更新总结
 
-## ✅ 已完成的所有修改
+## 更新完成时间
+2026-01-28
 
-### 1. 导航栏样式更新（11个页面）
-- 时空拼图模式：5个页面
-- 富贵变身模式：5个页面  
-- 拜年贺卡：1个页面
+## 更新内容
 
-所有页面都添加了：
-- 模式名称副标题栏（🧩/👑/🎊）
-- 统一的主导航栏样式
-- elder-mode-toggle 组件
-- 灵动岛区域背景色填充
+已完成所有页面的导航栏布局统一，确保：
+1. 每个页面只有系统返回键（左上角）
+2. 大小字切换按钮固定在返回键正下方
+3. 使用统一的 `.elder-mode-toggle-fixed` 样式类
 
-### 2. 灵动岛适配
-- 在 `common-navigation.wxss` 中添加了 `.page-with-nav` 类
-- 使用 `::before` 伪元素填充灵动岛区域背景色 `#6B0000`
-- 所有页面根容器都添加了 `page-with-nav` 类
+## 更新的页面（共16个）
 
-### 3. 老年模式功能修复
+### 时空拼图模式 (Puzzle) - 6个页面
+- ✅ launch - 启动页
+- ✅ upload - 上传页
+- ✅ template - 模板选择页
+- ✅ result-selector - 结果选择页
+- ✅ result - 结果页
+- ✅ history - 历史记录页
+- ℹ️ generating - 生成中页（无导航栏，无需修改）
 
-#### 问题修复：
-1. ✅ 修复了小程序不支持 `calc()` 函数的问题
-2. ✅ 创建了 `utils/page-mixin.js` 提供统一的老年模式处理
-3. ✅ 更新了 `elder-mode-toggle` 组件，切换时通知所有页面
-4. ✅ 修复了组件位置问题（从 fixed 改为 relative）
+### 富贵变身模式 (Transform) - 6个页面
+- ✅ launch - 启动页
+- ✅ upload - 上传页
+- ✅ template - 模板选择页
+- ✅ result-selector - 结果选择页
+- ✅ result - 结果页
+- ✅ history - 历史记录页
+- ℹ️ generating - 生成中页（无导航栏，无需修改）
 
-#### 老年模式样式（app.wxss）：
+### 其他页面 - 2个页面
+- ✅ invite - 邀请好友页
+- ✅ launch - 主启动页
+
+## 技术实现
+
+### 1. 通用样式 (miniprogram/styles/common-navigation.wxss)
 ```css
-.elder-mode .text-title { font-size: 67rpx; }
-.elder-mode .text-subtitle { font-size: 58rpx; }
-.elder-mode .text-body { font-size: 38rpx; }
-.elder-mode .text-caption { font-size: 34rpx; }
-.elder-mode .btn-festival { transform: scale(1.15); }
+/* elder-mode-toggle 固定位置样式 - 在系统返回键下方 */
+.elder-mode-toggle-fixed {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 100rpx);
+  left: 32rpx;
+  z-index: 999;
+}
+
+/* 大字模式下的位置调整 */
+.elder-mode .elder-mode-toggle-fixed {
+  top: calc(env(safe-area-inset-top) + 120rpx);
+}
 ```
 
-#### 页面集成方法：
-```javascript
-const pageMixin = require('../../utils/page-mixin');
+### 2. WXML 结构
+所有页面统一使用以下结构：
+```xml
+<!-- 大小字切换按钮（左上角固定位置） -->
+<view class="elder-mode-toggle-fixed">
+  <elder-mode-toggle />
+</view>
 
-Page({
-  data: { isElderMode: false },
-  
-  onLoad() {
-    pageMixin.onLoad.call(this);
-  },
-  
-  onShow() {
-    pageMixin.onShow.call(this);
-  },
-  
-  onElderModeChange(isElderMode) {
-    pageMixin.onElderModeChange.call(this, isElderMode);
-  }
-});
+<!-- 导航栏只保留返回键 -->
+<view class="nav-bar">
+  <view class="nav-left">
+    <view class="back-btn" bindtap="goBack">
+      <text class="back-icon">‹</text>
+    </view>
+  </view>
+  <text class="nav-title">页面标题</text>
+  <view class="nav-right"></view>
+</view>
 ```
 
-## 测试老年模式
+### 3. 移除的旧结构
+- 移除了导航栏中的 `elder-mode-toggle` 组件
+- 移除了 `toolbar` 中的 `elder-mode-toggle` 组件
+- 移除了 `.nav-left elder-mode-toggle` 相关样式
 
-### 验证步骤：
-1. 打开小程序任意页面
-2. 点击右上角的老年模式切换按钮（圆形按钮，显示"小字"或"大字"）
-3. 观察页面变化：
-   - ✅ 按钮应该从白色变为红色
-   - ✅ 页面文字应该立即变大（120%）
-   - ✅ 按钮尺寸应该放大（115%）
-   - ✅ Toast 提示"已开启大字模式"
-4. 跳转到其他页面，验证状态保持
-5. 关闭小程序重新打开，验证状态持久化
+## 用户体验改进
 
-### 调试方法：
+1. **一致性**：所有页面导航布局统一，用户体验更流畅
+2. **可访问性**：大小字切换按钮位置固定，方便老年用户快速找到
+3. **简洁性**：每页只有一个返回键，避免混淆
+4. **响应式**：大字模式下按钮位置自动调整（top + 20rpx），确保不遮挡内容
 
-打开微信开发者工具控制台，查看日志：
-```
-[App] 老年模式状态: 开启/关闭
-[ElderModeToggle] 切换前状态: true/false
-[ElderModeToggle] 切换后状态: true/false
-[PageMixin] onElderModeChange - 新状态: true/false
-```
+## 注意事项
 
-在控制台执行命令：
-```javascript
-// 查看当前状态
-getApp().globalData.isElderMode
-
-// 查看本地存储
-wx.getStorageSync('isElderMode')
-
-// 查看当前页面状态
-getCurrentPages()[getCurrentPages().length - 1].data.isElderMode
-```
-
-### 如果不生效，检查：
-1. ✅ 页面 JS 是否引入了 `pageMixin`
-2. ✅ 页面 JS 是否实现了 `onElderModeChange` 方法
-3. ✅ 页面 WXML 根元素是否有 `{{isElderMode ? 'elder-mode' : ''}}` 类绑定
-4. ✅ 页面 WXSS 是否定义了 `.elder-mode` 相关样式
-5. ✅ app.json 是否注册了 `elder-mode-toggle` 组件
-
-## 文件清单
-
-### 新增文件：
-- `miniprogram/styles/common-navigation.wxss` - 通用导航栏样式
-- `miniprogram/utils/page-mixin.js` - 页面通用 Mixin
-
-### 修改文件：
-- `miniprogram/app.wxss` - 修复老年模式样式（移除 calc）
-- `miniprogram/app.json` - 注册全局组件
-- `miniprogram/components/elder-mode-toggle/*` - 更新组件逻辑和样式
-- 所有 11 个页面的 wxml 文件 - 添加 `page-with-nav` 类
-- 所有页面的 wxss 文件 - 移除重复的导航栏样式
-
-## 完成时间
-2026-01-16
-
-## 最终状态
-
-所有功能已完成并测试：
-- ✅ 灵动岛区域背景色统一（#6B0000）
-- ✅ 导航栏样式统一（11个页面）
-- ✅ 老年模式切换立即生效（字体+按钮）
-- ✅ 老年模式状态跨页面保持
-- ✅ 老年模式状态持久化存储
+- generating 页面（生成中页）没有导航栏，保持原样
+- 所有页面的 JSON 配置应使用系统导航栏（`navigationStyle: "default"`）
+- elder-mode-toggle 组件本身不需要修改，只是改变了其在页面中的位置
+- 按钮使用 fixed 定位，不受页面滚动影响
 
 ## 修改人员
 AI Assistant (Kiro)

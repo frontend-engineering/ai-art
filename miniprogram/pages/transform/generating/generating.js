@@ -231,7 +231,7 @@ Page({
       if (generatedImages.length === 1) {
         // 只有一张图片，直接跳转到结果页
         wx.redirectTo({
-          url: `/pages/transform/result/result?image=${encodeURIComponent(generatedImages[0])}`
+          url: `/pages/transform/result/result?image=${encodeURIComponent(generatedImages[0])}&generationId=${this.data.taskId}`
         });
       } else {
         // 多张图片，跳转到选择页

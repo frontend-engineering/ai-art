@@ -74,3 +74,20 @@
 .result-selector-page .back-icon {
   color: #FFD700;
 }
+
+/* 覆盖 Transform 的金色背景，改为红色 */
+.result-selector-page .page-with-nav::before {
+  background: #d4302b !important;
+}
+
+.result-selector-page .mode-subtitle-bar {
+  background: #d4302b !important;
+}
+
+.result-selector-page .nav-bar {
+  background: #d4302b !important;
+}
+
+.result-selector-page .nav-title {
+  color: #FFD700 !important;
+}

@@ -1,5 +1,5 @@
 <!--
-  时空拼图模式上传页 - 复用原网页 UploadPage 样式
+  时空拼图模式上传页 - 5个独立图片框
   Requirements: 2.2, 6.1-6.5
 -->
 <view class="upload-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
@@ -8,6 +8,11 @@
   
   <!-- 背景 -->
   <view class="upload-bg"></view>
+  
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
+  </view>
   
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
@@ -21,7 +26,6 @@
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
       </view>
-      <elder-mode-toggle />
     </view>
     <text class="nav-title">上传照片</text>
     <view class="nav-right"></view>
@@ -32,11 +36,11 @@
     <!-- 标题说明 -->
     <view class="title-section">
       <text class="title-text">上传家人照片</text>
-      <text class="subtitle-text">最多可选择{{maxImages}}张，AI将为您合成时空全家福</text>
+      <text class="subtitle-text">最多可选择5张，AI将为您合成时空全家福</text>
     </view>
     
     <!-- 错误提示 -->
-    <view class="error-toast" wx:if="{{errorMessage && !isUploading}}">
+    <view class="error-toast" wx:if="{{errorMessage}}">
       <text class="error-icon">⚠️</text>
       <text class="error-text">{{errorMessage}}</text>
       <view class="error-close" bindtap="clearError">
@@ -44,55 +48,154 @@
       </view>
     </view>
     
-    <!-- 上传区域 -->
-    <view 
-      class="upload-area" 
-      wx:if="{{!isUploading}}"
-      bindtap="handleUploadClick"
-      hover-class="upload-area-hover"
-    >
-      <!-- 上传提示 -->
-      <view class="upload-prompt">
-        <image class="camera-image" src="../../../assets/camera-upload.png" mode="scaleToFill" />
+    <!-- 5个图片框布局 -->
+    <view class="upload-grid">
+      <!-- 第一行：2个框 -->
+      <view class="upload-row">
+        <view class="upload-box" bindtap="handleUploadClick" data-index="0">
+          <image 
+            wx:if="{{selectedImages[0]}}" 
+            class="uploaded-image" 
+            src="{{selectedImages[0]}}" 
+            mode="aspectFill"
+          />
+          <image 
+            wx:else 
+            class="placeholder-image" 
+            src="../../../assets/camera-upload.png" 
+            mode="scaleToFill"
+          />
+          <view wx:if="{{selectedImages[0]}}" class="delete-btn" catchtap="removeImage" data-index="0">
+            <text class="delete-icon">✕</text>
+          </view>
+        </view>
+        
+        <view class="upload-box" bindtap="handleUploadClick" data-index="1">
+          <image 
+            wx:if="{{selectedImages[1]}}" 
+            class="uploaded-image" 
+            src="{{selectedImages[1]}}" 
+            mode="aspectFill"
+          />
+          <image 
+            wx:else 
+            class="placeholder-image" 
+            src="../../../assets/camera-upload.png" 
+            mode="scaleToFill"
+          />
+          <view wx:if="{{selectedImages[1]}}" class="delete-btn" catchtap="removeImage" data-index="1">
+            <text class="delete-icon">✕</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 第二行：3个框 -->
+      <view class="upload-row">
+        <view class="upload-box" bindtap="handleUploadClick" data-index="2">
+          <image 
+            wx:if="{{selectedImages[2]}}" 
+            class="uploaded-image" 
+            src="{{selectedImages[2]}}" 
+            mode="aspectFill"
+          />
+          <image 
+            wx:else 
+            class="placeholder-image" 
+            src="../../../assets/camera-upload.png" 
+            mode="scaleToFill"
+          />
+          <view wx:if="{{selectedImages[2]}}" class="delete-btn" catchtap="removeImage" data-index="2">
+            <text class="delete-icon">✕</text>
+          </view>
+        </view>
+        
+        <view class="upload-box" bindtap="handleUploadClick" data-index="3">
+          <image 
+            wx:if="{{selectedImages[3]}}" 
+            class="uploaded-image" 
+            src="{{selectedImages[3]}}" 
+            mode="aspectFill"
+          />
+          <image 
+            wx:else 
+            class="placeholder-image" 
+            src="../../../assets/camera-upload.png" 
+            mode="scaleToFill"
+          />
+          <view wx:if="{{selectedImages[3]}}" class="delete-btn" catchtap="removeImage" data-index="3">
+            <text class="delete-icon">✕</text>
+          </view>
+        </view>
+        
+        <view class="upload-box" bindtap="handleUploadClick" data-index="4">
+          <image 
+            wx:if="{{selectedImages[4]}}" 
+            class="uploaded-image" 
+            src="{{selectedImages[4]}}" 
+            mode="aspectFill"
+          />
+          <image 
+            wx:else 
+            class="placeholder-image" 
+            src="../../../assets/camera-upload.png" 
+            mode="scaleToFill"
+          />
+          <view wx:if="{{selectedImages[4]}}" class="delete-btn" catchtap="removeImage" data-index="4">
+            <text class="delete-icon">✕</text>
+          </view>
+        </view>
       </view>
     </view>
     
-    <!-- 文本部分 - 在框外下方 -->
-    <view class="upload-text-section" wx:if="{{!isUploading}}">
-      <text class="upload-text">点击上传照片</text>
-      <text class="upload-hint">支持 JPG、PNG 格式，最大 10MB</text>
-      
-      <!-- 示例提示 -->
-      <view class="example-tips">
-        <view class="tip-item">
-          <text class="tip-icon">✓</text>
-          <text class="tip-text">可上传不同年代的照片</text>
-        </view>
-        <view class="tip-item">
-          <text class="tip-icon">✓</text>
-          <text class="tip-text">人脸清晰可见</text>
-        </view>
-        <view class="tip-item">
-          <text class="tip-icon">✓</text>
-          <text class="tip-text">最多5张照片</text>
-        </view>
+    <!-- 提示文字 -->
+    <view class="upload-tips">
+      <text class="tips-count">已上传 {{uploadedCount}}/5 张照片</text>
+      <text class="tips-hint">点击框内上传或更换照片</text>
+    </view>
+    
+    <!-- 下一步按钮 - 始终显示 -->
+    <view class="action-buttons">
+      <button 
+        class="next-btn {{isProcessing ? 'disabled' : ''}}" 
+        bindtap="goToTemplate"
+        disabled="{{isProcessing}}"
+      >
+        下一步：选择模板
+      </button>
+    </view>
+    
+    <!-- 示例提示 -->
+    <view class="example-tips">
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text class="tip-text">可上传不同年代的照片</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text class="tip-text">人脸清晰可见</text>
+      </view>
+      <view class="tip-item">
+        <text class="tip-icon">✓</text>
+        <text class="tip-text">支持 JPG、PNG 格式，最大 10MB</text>
       </view>
     </view>
     
     <!-- 底部提示 -->
-    <view class="bottom-tips" wx:if="{{!isUploading}}">
+    <view class="bottom-tips">
       <text class="tips-text">💡 提示：上传不同年代的家人照片，AI将合成穿越时空的全家福</text>
     </view>
   </view>
   
-  <!-- 上传中状态 - 页面居中 -->
-  <view class="uploading-state" wx:if="{{isUploading}}">
-    <view class="loading-spinner">
-      <loading />
-    </view>
-    <text class="status-text">{{statusText}}</text>
-    <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">
-      <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
+  <!-- 处理中状态 - 页面居中 -->
+  <view class="processing-overlay" wx:if="{{isProcessing}}">
+    <view class="processing-content">
+      <view class="loading-spinner">
+        <loading showText="{{false}}" />
+      </view>
+      <text class="status-text">{{statusText}}</text>
+      <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">
+        <view class="progress-fill" style="width: {{uploadProgress}}%"></view>
+      </view>
     </view>
   </view>
 </view>

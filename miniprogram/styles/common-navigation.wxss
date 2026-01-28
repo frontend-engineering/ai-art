@@ -18,7 +18,7 @@
   left: 0;
   right: 0;
   height: env(safe-area-inset-top);
-  background: #6B0000;
+  background: #d4302b;
   z-index: 99;
   pointer-events: none;
 }
@@ -29,7 +29,7 @@
   top: 0;
   z-index: 101;
   width: 100%;
-  background: #6B0000;
+  background: #d4302b;
   padding-top: env(safe-area-inset-top);
   padding-bottom: 12rpx;
   padding-left: 32rpx;
@@ -64,7 +64,7 @@
   align-items: center;
   justify-content: center;
   padding: 24rpx 32rpx;
-  background: #6B0000;
+  background: #d4302b;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
   position: relative;
@@ -116,29 +116,42 @@
   width: 64rpx;
 }
 
-/* elder-mode-toggle 在导航栏中的位置 - 紧挨着返回键 */
-.nav-left elder-mode-toggle {
-  margin-left: 50rpx;
-  flex-shrink: 0;
+/* elder-mode-toggle 固定位置样式 - 在系统返回键下方 */
+.elder-mode-toggle-fixed {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 100rpx);
+  left: 32rpx;
+  z-index: 999;
 }
 
-/* elder-mode-toggle 在导航栏中的样式 */
-.nav-bar .elder-toggle .toggle-btn {
-  width: 56rpx;
-  height: 56rpx;
-  border: 2rpx solid rgba(212, 175, 55, 0.4);
+/* 大字模式下的位置调整 */
+.elder-mode .elder-mode-toggle-fixed {
+  top: calc(env(safe-area-inset-top) + 120rpx);
 }
 
-.nav-bar .elder-toggle .icon-text {
-  font-size: 20rpx;
+/* ========================================
+   大字模式适配
+   ======================================== */
+
+.elder-mode .back-btn {
+  width: 120rpx;
+  height: 120rpx;
 }
 
-.nav-bar .elder-toggle.active .icon-text {
-  font-size: 24rpx;
+.elder-mode .back-icon {
+  font-size: 100rpx;
 }
 
-.nav-bar .elder-toggle .icon-label {
-  font-size: 14rpx;
+.elder-mode .nav-title {
+  font-size: 42rpx;
+}
+
+.elder-mode .mode-icon {
+  font-size: 38rpx;
+}
+
+.elder-mode .mode-name {
+  font-size: 34rpx;
 }
 
 /* ========================================

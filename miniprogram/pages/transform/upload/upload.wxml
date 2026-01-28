@@ -9,6 +9,11 @@
   <!-- 背景 -->
   <view class="upload-bg"></view>
   
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
+  </view>
+  
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
     <text class="mode-icon">👑</text>
@@ -21,7 +26,6 @@
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
       </view>
-      <elder-mode-toggle />
     </view>
     <text class="nav-title">上传照片</text>
     <view class="nav-right"></view>
@@ -88,7 +92,7 @@
   <!-- 上传中状态 - 页面居中 -->
   <view class="uploading-state" wx:if="{{isUploading}}">
     <view class="loading-spinner">
-      <loading />
+      <loading showText="{{false}}" />
     </view>
     <text class="status-text">{{statusText}}</text>
     <view class="progress-bar" wx:if="{{uploadProgress > 0 && uploadProgress < 100}}">

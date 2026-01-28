@@ -1,0 +1,77 @@
+/* 使用次数显示组件样式 */
+
+.usage-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16rpx 32rpx;
+  background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+  border-radius: 50rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 165, 0, 0.3);
+  margin: 20rpx auto;
+  width: fit-content;
+}
+
+.usage-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.usage-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.usage-label {
+  font-size: 24rpx;
+  color: #8B4513;
+  font-weight: 500;
+  margin-bottom: 4rpx;
+}
+
+.usage-count {
+  font-size: 48rpx;
+  color: #8B0000;
+  font-weight: bold;
+  line-height: 1;
+}
+
+/* 老年模式样式 */
+.usage-display.elder-mode {
+  padding: 24rpx 48rpx;
+}
+
+.usage-display.elder-mode .usage-icon {
+  font-size: 56rpx;
+  margin-right: 24rpx;
+}
+
+.usage-display.elder-mode .usage-label {
+  font-size: 32rpx;
+  margin-bottom: 8rpx;
+}
+
+.usage-display.elder-mode .usage-count {
+  font-size: 64rpx;
+}
+
+/* 低次数警告样式 */
+.usage-display.low-count {
+  background: linear-gradient(135deg, #FF6B6B 0%, #FF4757 100%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.usage-display.low-count .usage-label,
+.usage-display.low-count .usage-count {
+  color: #FFFFFF;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}

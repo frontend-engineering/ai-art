@@ -280,6 +280,16 @@
   margin-left: 8rpx;
 }
 
+/* 返回首页按钮 */
+.btn-inner.blue {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+  border: 2rpx solid rgba(59, 130, 246, 0.3);
+}
+
+.btn-inner.blue .btn-text {
+  color: #FFFFFF;
+}
+
 /* AI标识 */
 .ai-badge {
   position: absolute;

@@ -7,6 +7,11 @@
   
   <view class="history-bg"></view>
   
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
+  </view>
+  
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
     <text class="mode-icon">🧩</text>
@@ -19,7 +24,6 @@
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
       </view>
-      <elder-mode-toggle />
     </view>
     <text class="nav-title">我的记录</text>
     <view class="nav-right"></view>

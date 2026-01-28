@@ -251,6 +251,15 @@ Page({
       
       const taskId = result.data.taskId;
       
+      // 扣减使用次数
+      try {
+        await app.decrementUsageCount(taskId);
+        console.log('[PuzzleTemplate] 使用次数已扣减');
+      } catch (err) {
+        console.error('[PuzzleTemplate] 扣减使用次数失败:', err);
+        // 扣减失败不影响生成流程，继续执行
+      }
+      
       // 存储任务信息
       app.globalData.puzzleData = {
         ...puzzleData,

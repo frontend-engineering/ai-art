@@ -1,0 +1,11 @@
+<!--
+  使用次数显示组件
+  显示用户剩余的生成次数
+-->
+<view class="usage-display {{isElderMode ? 'elder-mode' : ''}}">
+  <view class="usage-icon">🎫</view>
+  <view class="usage-text">
+    <text class="usage-label">剩余次数</text>
+    <text class="usage-count">{{usageCount}}</text>
+  </view>
+</view>

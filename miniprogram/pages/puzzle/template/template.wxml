@@ -9,6 +9,11 @@
   <!-- 背景 -->
   <view class="template-bg"></view>
   
+  <!-- 大小字切换按钮（左上角固定位置） -->
+  <view class="elder-mode-toggle-fixed">
+    <elder-mode-toggle />
+  </view>
+  
   <!-- 模式名称副标题栏 -->
   <view class="mode-subtitle-bar">
     <text class="mode-icon">🧩</text>
@@ -21,7 +26,6 @@
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
       </view>
-      <elder-mode-toggle />
     </view>
     <text class="nav-title">选择模板</text>
     <view class="nav-right"></view>
@@ -109,7 +113,7 @@
     >
       <view class="btn-inner">
         <text class="btn-icon" wx:if="{{!isGenerating}}">✨</text>
-        <loading wx:if="{{isGenerating}}" />
+        <loading wx:if="{{isGenerating}}" showText="{{false}}" text="" />
         <text class="btn-text">{{isGenerating ? '生成中...' : '立即生成'}}</text>
       </view>
       <view class="btn-shine" wx:if="{{selectedTemplate && !isGenerating}}"></view>

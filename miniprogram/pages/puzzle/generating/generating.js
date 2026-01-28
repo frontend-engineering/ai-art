@@ -146,7 +146,7 @@ Page({
     }, 100);
   },
 
-  handleTaskComplete(task) {
+  async handleTaskComplete(task) {
     const app = getApp();
     const puzzleData = app.globalData.puzzleData || {};
     
@@ -159,7 +159,7 @@ Page({
     
     setTimeout(() => {
       if (generatedImages.length === 1) {
-        wx.redirectTo({ url: `/pages/puzzle/result/result?image=${encodeURIComponent(generatedImages[0])}` });
+        wx.redirectTo({ url: `/pages/puzzle/result/result?image=${encodeURIComponent(generatedImages[0])}&generationId=${this.data.taskId}` });
       } else {
         wx.redirectTo({ url: '/pages/puzzle/result-selector/result-selector' });
       }

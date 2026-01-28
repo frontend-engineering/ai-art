@@ -17,7 +17,7 @@ Component({
     // 是否显示文字
     showText: {
       type: Boolean,
-      value: true
+      value: false
     }
   },
   
