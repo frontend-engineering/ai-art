@@ -171,51 +171,38 @@ tcb fn deploy --name express --envId prod-9gxl9eb37627e2
 ## 状态
 
 - ✅ 代码已修复（改进版）
-- ✅ 已提交到 Git 仓库（commit: af71efc, 316b20a）
-- ⏳ 等待部署到生产环境
+- ✅ 已提交到 Git 仓库（commit: af71efc, 316b20a, 2828dd6）
+- ✅ 已部署到生产环境（2026-01-28 17:49:17）
 - ⏳ 等待验证
 
 ## 下一步
 
-### 1. 部署到腾讯云托管
+### 验证修复
 
-**通过腾讯云控制台部署：**
+✅ **部署已完成**（2026-01-28 17:49:17）
 
-1. 访问：https://console.cloud.tencent.com/tcb
-2. 选择环境：`prod-9gxl9eb37627e2`
-3. 进入"云托管" -> 找到 `express` 服务
-4. 点击"版本管理" -> "新建版本"
-5. 选择代码来源：
-   - 推荐使用 Git 仓库（自动拉取最新代码）
-   - 或手动上传代码包
-6. 部署新版本
-7. 等待部署完成（约 3-5 分钟）
+现在需要在小程序中测试验证：
 
-### 2. 验证修复
+**测试步骤：**
 
-部署完成后，在小程序中测试：
+1. **打开小程序**，生成一张图片
 
-**测试 1: 生成图片**
-- 打开小程序，生成一张图片
-- 查看云托管日志，应该看到：
-  ```
-  [CloudBase RDB] 匹配到表达式: { leftField: 'usage_count', ... }
-  [CloudBase RDB] 计算: usage_count = 3 - 1 -> 2
-  [CloudBase RDB] 最终 updateData: { usage_count: 2 }
-  ```
-- 确认没有报错
+2. **查看云托管日志**：
+   - 访问：https://console.cloud.tencent.com/tcb
+   - 路径：云托管 → express 服务 → 日志
+   - 查找包含以下内容的日志：
+     ```
+     [CloudBase RDB] 匹配到表达式: { leftField: 'usage_count', ... }
+     [CloudBase RDB] 计算: usage_count = X - 1 -> Y
+     [CloudBase RDB] 最终 updateData: { usage_count: Y }
+     ```
 
-**测试 2: 检查日志**
-- 在云托管控制台查看实时日志
-- 确认没有 `Error 1064` 错误
-- 确认 UPDATE 操作成功
+3. **确认结果**：
+   - ✅ 没有 `Error 1064` 错误
+   - ✅ 看到详细的表达式解析和计算日志
+   - ✅ UPDATE 操作成功执行
 
-### 3. 如有问题
-
-如果仍然报错，查看日志中的详细信息：
-- `[CloudBase RDB] 解析 SET 子句:` - 查看解析结果
-- `[CloudBase RDB] 匹配到表达式:` - 查看正则匹配
-- `[CloudBase RDB] 当前值:` - 查看查询结果
-- `[CloudBase RDB] 计算:` - 查看计算过程
-
-根据日志定位具体问题。
+**如果仍有问题**：
+- 查看日志中的详细调试信息
+- 检查是否有其他错误
+- 确认代码已正确部署（检查部署时间）
