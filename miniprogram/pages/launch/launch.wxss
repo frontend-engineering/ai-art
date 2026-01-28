@@ -3,6 +3,18 @@
  * Requirements: 2.1, 10.1-10.3
  */
 
+/* 大小字切换按钮 - 在返回键下方 */
+.elder-mode-toggle-fixed {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 100rpx);
+  left: 32rpx;
+  z-index: 999;
+}
+
+.elder-mode .elder-mode-toggle-fixed {
+  top: calc(env(safe-area-inset-top) + 120rpx);
+}
+
 /* 页面容器 - 固定一屏高度 */
 .launch-page {
   position: fixed;
@@ -353,7 +365,7 @@
 .ai-notice {
   display: block;
   font-size: 22rpx;
-  color: rgba(255, 215, 0, 0.7);
+  color: rgba(139, 0, 0, 0.6);
   text-align: center;
   margin-top: 12rpx;
   line-height: 1.5;

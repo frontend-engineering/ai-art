@@ -24,7 +24,7 @@
         <view 
           wx:for="{{packages}}" 
           wx:key="id"
-          class="package-item {{selectedPackage === item.id ? 'selected' : ''}} {{item.id === 'free' ? 'free' : ''}} {{item.recommended ? 'premium' : ''}}"
+          class="package-item {{selectedPackage === item.id ? 'selected' : ''}} {{item.id === 'free' ? 'free' : ''}} {{item.recommended ? 'premium' : ''}} {{item.id === 'free' && isFreeExhausted ? 'disabled' : ''}}"
           bindtap="selectPackage"
           data-id="{{item.id}}"
         >
@@ -46,11 +46,6 @@
             <view class="package-price">
               <text class="price-text">{{item.price === 0 ? '免费' : '¥' + item.price}}</text>
             </view>
-          </view>
-          
-          <!-- 选中指示器 -->
-          <view wx:if="{{selectedPackage === item.id}}" class="selected-indicator">
-            <text class="check-icon">✓</text>
           </view>
         </view>
       </view>

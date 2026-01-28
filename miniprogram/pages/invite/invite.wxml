@@ -14,13 +14,11 @@
     <elder-mode-toggle />
   </view>
   
-  <!-- 顶部工具栏 -->
-  <view class="toolbar">
+  <!-- 顶部导航栏 -->
+  <view class="navbar">
     <view class="back-btn" bindtap="goBack">
       <text class="back-icon">‹</text>
     </view>
-    <view class="toolbar-title">邀请好友</view>
-    <view class="toolbar-right"></view>
   </view>
   
   <!-- 主内容区 -->
@@ -37,16 +35,10 @@
         <text class="highlight">即可获得1次生成机会</text>
       </view>
       
-      <!-- 邀请码显示 -->
-      <view class="invite-code-section">
-        <text class="code-label">我的邀请码</text>
-        <view class="code-display">
-          <text class="code-text">{{inviteCode || '加载中...'}}</text>
-          <view class="copy-btn" bindtap="copyInviteCode">
-            <text class="copy-icon">📋</text>
-            <text class="copy-text">复制</text>
-          </view>
-        </view>
+      <!-- 分享说明 -->
+      <view class="share-hint">
+        <text class="hint-icon">💡</text>
+        <text class="hint-text">点击下方按钮分享给好友，好友通过您的分享链接注册后，您将自动获得奖励</text>
       </view>
       
       <!-- 分享按钮 -->
@@ -106,15 +98,15 @@
       <view class="rules-list">
         <view class="rule-item">
           <text class="rule-number">1</text>
-          <text class="rule-text">分享邀请码给好友，好友使用邀请码注册</text>
+          <text class="rule-text">点击"分享给好友"按钮，将邀请链接分享给好友</text>
         </view>
         <view class="rule-item">
           <text class="rule-number">2</text>
-          <text class="rule-text">好友成功注册后，您将获得1次生成机会</text>
+          <text class="rule-text">好友通过您的分享链接注册后，您将自动获得1次生成机会</text>
         </view>
         <view class="rule-item">
           <text class="rule-number">3</text>
-          <text class="rule-text">每位好友只能被邀请一次，不能使用自己的邀请码</text>
+          <text class="rule-text">每位好友只能被邀请一次</text>
         </view>
         <view class="rule-item">
           <text class="rule-number">4</text>

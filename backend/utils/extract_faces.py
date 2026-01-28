@@ -72,30 +72,40 @@ def extract_faces(image_paths, output_dir=None, min_face_size=80, confidence_thr
         
         # 加载人脸检测模型
         # 尝试多个可能的模型路径
-        cascade_paths = [
+        cascade_paths = []
+        
+        # 优先使用 cv2.data.haarcascades（适用于大多数安装）
+        if hasattr(cv2, 'data') and hasattr(cv2.data, 'haarcascades'):
+            cascade_paths.append(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        
+        # 其他可能的路径
+        cascade_paths.extend([
             'haarcascade_frontalface_default.xml',  # 当前目录
-            cv2.data.haarcascades + 'haarcascade_frontalface_default.xml' if hasattr(cv2, 'data') else None,  # OpenCV数据目录
             '/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',  # Alpine Linux
             '/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml',  # 其他Linux
-        ]
+            'C:\\ProgramData\\Miniconda3\\lib\\site-packages\\cv2\\data\\haarcascade_frontalface_default.xml',  # Windows Miniconda
+        ])
         
         face_cascade = None
-        for path in cascade_paths:
-            if path is None:
+        for cascade_path in cascade_paths:
+            if cascade_path is None:
                 continue
             try:
-                cascade = cv2.CascadeClassifier(path)
+                print(f'尝试加载模型: {cascade_path}', file=sys.stderr)
+                cascade = cv2.CascadeClassifier(cascade_path)
                 if not cascade.empty():
                     face_cascade = cascade
+                    print(f'成功加载模型: {cascade_path}', file=sys.stderr)
                     break
-            except:
+            except Exception as e:
+                print(f'加载模型失败 ({cascade_path}): {str(e)}', file=sys.stderr)
                 continue
         
         if face_cascade is None or face_cascade.empty():
             return {
                 'success': False,
                 'faces': [],
-                'message': '无法加载人脸检测模型'
+                'message': '无法加载人脸检测模型，请确保OpenCV已正确安装'
             }
         
         # 处理每张图片

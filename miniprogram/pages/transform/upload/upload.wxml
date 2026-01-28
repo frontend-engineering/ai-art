@@ -14,12 +14,6 @@
     <elder-mode-toggle />
   </view>
   
-  <!-- 模式名称副标题栏 -->
-  <view class="mode-subtitle-bar">
-    <text class="mode-icon">👑</text>
-    <text class="mode-name">富贵变身</text>
-  </view>
-  
   <!-- 顶部导航栏 -->
   <view class="nav-bar">
     <view class="nav-left">

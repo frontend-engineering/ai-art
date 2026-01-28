@@ -97,8 +97,8 @@
       </view>
     </view>
 
-    <!-- 关闭按钮（仅在可关闭的模态框显示）-->
-    <view class="modal-close" bindtap="onClose" wx:if="{{modalType !== 'free_exhausted' && modalType !== 'paid_renewal_basic' && modalType !== 'paid_renewal_premium'}}">
+    <!-- 关闭按钮（所有模态框都显示）-->
+    <view class="modal-close" bindtap="onClose">
       <text>✕</text>
     </view>
   </view>

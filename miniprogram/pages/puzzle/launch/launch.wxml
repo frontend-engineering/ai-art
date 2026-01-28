@@ -2,7 +2,7 @@
   时空拼图模式启动页 - 复用原网页 PuzzleLaunchScreen 样式
   Requirements: 2.2
 -->
-<view class="puzzle-launch-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="puzzle-launch-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
@@ -12,6 +12,17 @@
   <!-- 大小字切换按钮（左上角固定位置） -->
   <view class="elder-mode-toggle-fixed">
     <elder-mode-toggle />
+  </view>
+  
+  <!-- 顶部导航栏 -->
+  <view class="nav-bar">
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+    </view>
+    <text class="nav-title">时空拼图</text>
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->

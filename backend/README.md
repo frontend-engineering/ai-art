@@ -238,6 +238,38 @@ GET /api/invite/records/:userId?page=1&pageSize=20
 
 ## 测试
 
+### 测试模式（开发调试）
+
+**方法1: 启用测试模式**（跳过使用次数检查）
+
+在 `.env` 文件中设置：
+```env
+TEST_MODE=true
+```
+
+测试模式效果：
+- 使用次数检查返回 999 次
+- 跳过实际扣减操作
+- 用户类型显示为 `test`
+
+⚠️ **注意**：生产环境必须设置 `TEST_MODE=false`
+
+**方法2: 修改用户使用次数**
+
+```bash
+# 交互式模式（推荐）
+node backend/scripts/reset-usage-count.js -i
+
+# 列出所有用户
+node backend/scripts/reset-usage-count.js --list
+
+# 修改指定用户为 100 次
+node backend/scripts/reset-usage-count.js <userId> 100
+
+# 修改所有用户为 50 次
+node backend/scripts/reset-usage-count.js all 50
+```
+
 ### 运行所有测试
 
 ```bash

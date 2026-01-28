@@ -23,36 +23,6 @@
   pointer-events: none;
 }
 
-/* 模式名称副标题栏 */
-.mode-subtitle-bar {
-  position: sticky;
-  top: 0;
-  z-index: 101;
-  width: 100%;
-  background: #d4302b;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: 12rpx;
-  padding-left: 32rpx;
-  padding-right: 32rpx;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
-}
-
-.mode-icon {
-  font-size: 32rpx;
-  margin-right: 12rpx;
-}
-
-.mode-name {
-  font-size: 28rpx;
-  font-weight: 500;
-  color: rgba(255, 215, 0, 0.9);
-}
-
 /* 顶部导航栏 - 有返回按钮版本 */
 .nav-bar {
   position: sticky;
@@ -63,7 +33,10 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 24rpx 32rpx;
+  padding-top: calc(env(safe-area-inset-top) + 24rpx);
+  padding-bottom: 24rpx;
+  padding-left: 32rpx;
+  padding-right: 32rpx;
   background: #d4302b;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
@@ -100,7 +73,7 @@
 }
 
 .nav-title {
-  font-size: 36rpx;
+  font-size: 48rpx;
   font-weight: bold;
   color: #FFD700;
   flex: 1;
@@ -124,9 +97,24 @@
   z-index: 999;
 }
 
+/* 有导航栏的页面 - 大小字按钮在导航栏下方 */
+.page-with-nav .elder-mode-toggle-fixed {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 144rpx);
+  left: 32rpx;
+  z-index: 999;
+}
+
 /* 大字模式下的位置调整 */
 .elder-mode .elder-mode-toggle-fixed {
   top: calc(env(safe-area-inset-top) + 120rpx);
+}
+
+/* 有导航栏的页面 - 大字模式 */
+.page-with-nav.elder-mode .elder-mode-toggle-fixed {
+  top: calc(env(safe-area-inset-top) + 168rpx);
+  left: 32rpx;
+  z-index: 999;
 }
 
 /* ========================================
@@ -143,52 +131,49 @@
 }
 
 .elder-mode .nav-title {
-  font-size: 42rpx;
-}
-
-.elder-mode .mode-icon {
-  font-size: 38rpx;
-}
-
-.elder-mode .mode-name {
-  font-size: 34rpx;
+  font-size: 56rpx;
 }
 
 /* ========================================
    富贵变身模式 (Transform) 导航栏覆盖
    ======================================== */
 
-.template-page .page-with-nav::before,
-.result-page .page-with-nav::before,
-.result-selector-page .page-with-nav::before,
-.upload-page .page-with-nav::before {
+/* Transform 模式页面安全区域背景色 */
+.transform-launch-page.page-with-nav::before,
+.template-page.page-with-nav::before,
+.result-page.page-with-nav::before,
+.result-selector-page.page-with-nav::before,
+.upload-page.page-with-nav::before,
+.history-page.page-with-nav::before {
   background: #D4AF37;
 }
 
-.template-page .mode-subtitle-bar,
-.result-page .mode-subtitle-bar,
-.result-selector-page .mode-subtitle-bar,
-.upload-page .mode-subtitle-bar {
-  background: #D4AF37;
-}
-
+/* Transform 模式导航栏背景色 */
+.transform-launch-page .nav-bar,
 .template-page .nav-bar,
 .result-page .nav-bar,
 .result-selector-page .nav-bar,
-.upload-page .nav-bar {
+.upload-page .nav-bar,
+.history-page .nav-bar {
   background: #D4AF37;
 }
 
+/* Transform 模式返回按钮颜色 */
+.transform-launch-page .back-icon,
 .template-page .back-icon,
 .result-page .back-icon,
 .result-selector-page .back-icon,
-.upload-page .back-icon {
+.upload-page .back-icon,
+.history-page .back-icon {
   color: #DC143C;
 }
 
+/* Transform 模式标题颜色 */
+.transform-launch-page .nav-title,
 .template-page .nav-title,
 .result-page .nav-title,
 .result-selector-page .nav-title,
-.upload-page .nav-title {
+.upload-page .nav-title,
+.history-page .nav-title {
   color: #8B4513;
 }

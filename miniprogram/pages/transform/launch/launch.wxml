@@ -2,7 +2,7 @@
   富贵变身模式启动页 - 复用原网页 TransformLaunchScreen 样式
   Requirements: 2.3
 -->
-<view class="transform-launch-page {{isElderMode ? 'elder-mode' : ''}}">
+<view class="transform-launch-page page-with-nav {{isElderMode ? 'elder-mode' : ''}}">
   <!-- 四角装饰背景 -->
   <corner-background />
   
@@ -13,6 +13,17 @@
   <view class="elder-mode-toggle-fixed">
     <elder-mode-toggle />
   </view>
+  
+  <!-- 顶部导航栏 -->
+  <!-- <view class="nav-bar">
+    <view class="nav-left">
+      <view class="back-btn" bindtap="goBack">
+        <text class="back-icon">‹</text>
+      </view>
+    </view>
+    <text class="nav-title">富贵变身</text>
+    <view class="nav-right"></view>
+  </view> -->
   
   <!-- 主内容区 -->
   <view class="launch-content">

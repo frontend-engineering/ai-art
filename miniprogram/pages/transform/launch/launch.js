@@ -63,7 +63,7 @@ Page({
    * 加载使用次数
    */
   async loadUsageCount() {
-    try {    try {
+    try {
       const app = getApp();
       
       // 确保已登录

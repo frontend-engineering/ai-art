@@ -48,13 +48,7 @@ Component({
      * 关闭模态框
      */
     onClose() {
-      // 对于exhausted类型，不允许直接关闭（必须选择操作）
-      if (this.data.modalType === 'free_exhausted') {
-        return;
-      }
-      
-      // 对于renewal类型，允许通过"暂不续费"按钮关闭
-      // 对于reminder类型，允许通过"知道了"按钮或X按钮关闭
+      // 所有类型都允许关闭
       this.triggerEvent('close');
     },
 
@@ -62,19 +56,8 @@ Component({
      * 点击遮罩
      */
     onMaskTap() {
-      // exhausted类型不允许点击遮罩关闭
-      if (this.data.modalType === 'free_exhausted') {
-        return;
-      }
-      
-      // renewal类型不允许点击遮罩关闭
-      if (this.data.modalType === 'paid_renewal_basic' || 
-          this.data.modalType === 'paid_renewal_premium') {
-        return;
-      }
-      
-      // reminder类型允许点击遮罩关闭
-      if (this.data.maskClosable && this.data.modalType === 'free_reminder') {
+      // 所有类型都允许点击遮罩关闭
+      if (this.data.maskClosable) {
         this.onClose();
       }
     },

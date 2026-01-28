@@ -2,6 +2,7 @@
 ## pages/launch/launch更改
 - 所有页面的“本服务为AI……”的与pages/transform/launch/launch
 上的颜色字体保持一致
+- 富贵变身的“欧式豪门背景”改为“豪门背景”
 ## pages/transform/launch/launch弹窗更改
 - 免费次数已经用尽添加关闭弹窗按钮
 - 免费次数已用尽后，在选择套餐页面不能点击免费版购买（“使用免费版”按钮变灰）

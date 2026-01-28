@@ -43,7 +43,9 @@ Component({
     isPaying: false,
     paymentStatus: 'idle', // idle, processing, success, failed
     error: null,
-    outTradeNo: null
+    outTradeNo: null,
+    // 是否免费次数已用尽
+    isFreeExhausted: false
   },
 
   observers: {
@@ -66,12 +68,25 @@ Component({
         return pkgLevel >= currentLevel;
       });
       
-      // 默认选中第一个可用套餐
-      const defaultSelected = filteredPackages.length > 0 ? filteredPackages[0].id : 'free';
+      // 检查是否免费次数已用尽（当前状态为free且打开支付弹窗）
+      const isFreeExhausted = currentStatus === 'free';
+      
+      // 默认选中第一个付费套餐（如果免费次数已用尽）或第一个可用套餐
+      let defaultSelected = 'free';
+      if (isFreeExhausted && filteredPackages.length > 1) {
+        // 选择第一个非免费套餐
+        const paidPackage = filteredPackages.find(pkg => pkg.id !== 'free');
+        if (paidPackage) {
+          defaultSelected = paidPackage.id;
+        }
+      } else if (filteredPackages.length > 0) {
+        defaultSelected = filteredPackages[0].id;
+      }
       
       this.setData({
         packages: filteredPackages,
         selectedPackage: defaultSelected,
+        isFreeExhausted: isFreeExhausted,
         paymentStatus: 'idle',
         error: null
       });
@@ -80,6 +95,12 @@ Component({
     // 选择套餐
     selectPackage(e) {
       const { id } = e.currentTarget.dataset;
+      
+      // 如果免费次数已用尽，禁止选择免费版
+      if (this.data.isFreeExhausted && id === 'free') {
+        return;
+      }
+      
       this.setData({
         selectedPackage: id,
         error: null

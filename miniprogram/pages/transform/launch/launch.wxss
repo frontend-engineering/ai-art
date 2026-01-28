@@ -84,44 +84,6 @@
   50% { transform: translateY(-16rpx); }
 }
 
-/* 顶部工具栏 */
-.toolbar {
-  position: absolute;
-  top: calc(16rpx + env(safe-area-inset-top));
-  left: 32rpx;
-  right: 32rpx;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  z-index: 100;
-}
-
-.back-btn {
-  width: 64rpx;
-  height: 64rpx;
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
-}
-
-.back-icon {
-  font-size: 48rpx;
-  color: var(--color-festival-gold);
-  font-weight: bold;
-  line-height: 1;
-  margin-right: 4rpx;
-}
-
-.toolbar-right {
-  display: flex;
-  flex-direction: row;
-  gap: 16rpx;
-}
-
 /* 主内容区 - 使用 flex 布局自适应一屏 */
 .launch-content {
   position: absolute;
