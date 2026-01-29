@@ -3,7 +3,7 @@
   <view class="lantern-image-wrapper" style="width: {{lanternSize}}; height: {{lanternSize}};">
     <image 
       class="lantern-image"
-      src="../../assets/lantern.png"
+      src="{{lanternUrl}}"
       mode="aspectFit"
     ></image>
   </view>

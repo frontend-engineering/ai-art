@@ -3,6 +3,8 @@
  * 复用原网页 FourGridSelector 样式
  * 实现四宫格图片选择和选中高亮效果
  */
+const { getAssetUrl } = require('../../utils/oss-assets');
+
 Component({
   properties: {
     // 图片URL数组
@@ -28,7 +30,9 @@ Component({
     // 揭幕动画状态
     revealStates: [false, false, false, false],
     // 提示信息显示状态
-    showHint: false
+    showHint: false,
+    // OSS 资源 URL
+    lanternUrl: getAssetUrl('lantern.png')
   },
   
   observers: {

@@ -18,10 +18,10 @@ Component({
   
   data: {
     // OSS 图片 URL
-    topLeftUrl: getAssetUrl('images/bg-corners/top-left.png'),
-    topRightUrl: getAssetUrl('images/bg-corners/top-right.png'),
-    bottomLeftUrl: getAssetUrl('images/bg-corners/bottom-left.png'),
-    bottomRightUrl: getAssetUrl('images/bg-corners/bottom-right.png'),
+    topLeftUrl: getAssetUrl('bg-corners/top-left.png'),
+    topRightUrl: getAssetUrl('bg-corners/top-right.png'),
+    bottomLeftUrl: getAssetUrl('bg-corners/bottom-left.png'),
+    bottomRightUrl: getAssetUrl('bg-corners/bottom-right.png'),
   },
   
   methods: {}

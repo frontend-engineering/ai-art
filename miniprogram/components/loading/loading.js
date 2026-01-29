@@ -2,6 +2,8 @@
  * 加载组件
  * 复用原网页灯笼旋转动画样式
  */
+const { getAssetUrl } = require('../../utils/oss-assets');
+
 Component({
   properties: {
     // 加载提示文字
@@ -22,7 +24,8 @@ Component({
   },
   
   data: {
-    lanternSize: '80rpx'
+    lanternSize: '80rpx',
+    lanternUrl: getAssetUrl('lantern.png')
   },
   
   lifetimes: {
