@@ -9,10 +9,16 @@
  */
 
 const usageModal = require('../../../utils/usageModal');
+const { initNavigation } = require('../../../utils/navigation-helper');
+const devMode = require('../../../utils/devMode');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     // 模式配置
     modeConfig: {
       name: '时空拼图',
@@ -22,6 +28,8 @@ Page({
       uploadGuide: '上传2-5张家人照片，AI将为您合成一张完美全家福',
       buttonText: '立即制作全家福'
     },
+    // OSS 资源
+    commonBgUrl: getAssetUrl('common-bg.jpg'),
     // 使用次数相关
     usageCount: 0,
     userType: 'free',
@@ -31,11 +39,17 @@ Page({
     showModal: false,
     modalType: null,
     // 支付模态框
-    showPaymentModal: false
+    showPaymentModal: false,
+    // 开发者模式
+    devModeActive: false,
+    showDevPanel: false
   },
 
   async onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });
@@ -302,5 +316,39 @@ Page({
       title: '时空拼图 - 多人合成全家福',
       imageUrl: '/assets/images/share-puzzle.png'
     };
+  },
+
+  /**
+   * 导航栏点击 - 用于激活开发者模式
+   */
+  onNavBarTap() {
+    devMode.handleTap(() => {
+      this.setData({ devModeActive: true });
+      this.showDevPanel();
+    });
+  },
+
+  /**
+   * 显示开发者面板
+   */
+  showDevPanel() {
+    this.setData({ showDevPanel: true });
+  },
+
+  /**
+   * 关闭开发者面板
+   */
+  closeDevPanel() {
+    this.setData({ showDevPanel: false });
+  },
+
+  /**
+   * 开发者面板更新使用次数
+   */
+  onDevPanelUpdate(e) {
+    const { usageCount } = e.detail;
+    console.log('[PuzzleLaunch] 开发者面板更新使用次数:', usageCount);
+    this.setData({ usageCount });
+    this.updateButtonState();
   }
 });

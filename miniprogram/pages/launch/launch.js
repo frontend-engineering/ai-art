@@ -8,10 +8,13 @@
  * - 页面跳转逻辑
  */
 
+const { getAssetUrl } = require('../../utils/oss-assets');
+
 Page({
   data: {
     isElderMode: false,
-    userCount: '15,430' // 已生成家庭数量
+    userCount: '15,430', // 已生成家庭数量
+    commonBgUrl: getAssetUrl('common-bg.jpg')
   },
 
   onLoad() {

@@ -11,19 +11,30 @@
 const { chooseImage, uploadImage } = require('../../../utils/upload');
 const { faceAPI } = require('../../../utils/api');
 const pageMixin = require('../../../utils/page-mixin');
+const { initNavigation } = require('../../../utils/navigation-helper');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     selectedImages: [null, null, null, null, null], // 5个图片框
     uploadedCount: 0,
     isProcessing: false,
     statusText: '',
     errorMessage: '',
-    uploadProgress: 0
+    uploadProgress: 0,
+    // OSS 资源
+    cameraUploadUrl: getAssetUrl('camera-upload.png')
   },
 
   onLoad() {
+    const app = getApp();
+    
+    initNavigation(this);
+    
     pageMixin.onLoad.call(this);
   },
 

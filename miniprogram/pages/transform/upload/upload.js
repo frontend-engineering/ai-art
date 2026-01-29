@@ -10,18 +10,29 @@
 
 const { chooseImage, uploadImage } = require('../../../utils/upload');
 const { faceAPI } = require('../../../utils/api');
+const { initNavigation } = require('../../../utils/navigation-helper');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     isUploading: false,
     statusText: '',
     errorMessage: '',
-    uploadProgress: 0
+    uploadProgress: 0,
+    // OSS 资源
+    cameraUploadUrl: getAssetUrl('camera-upload.png'),
+    commonBgUrl: getAssetUrl('common-bg.jpg')
   },
 
   onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

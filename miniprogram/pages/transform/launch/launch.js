@@ -10,10 +10,16 @@
  */
 
 const usageModal = require('../../../utils/usageModal');
+const devMode = require('../../../utils/devMode');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 Page({
   data: {
     isElderMode: false,
+    // 导航栏高度
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0, // 胶囊按钮右侧位置
     // 模式配置
     modeConfig: {
       name: '富贵变身',
@@ -23,6 +29,11 @@ Page({
       uploadGuide: '上传一张全家福，AI将为您更换高端背景',
       buttonText: '立即变身豪门'
     },
+    // OSS 资源
+    wealthIconUrl: getAssetUrl('wealth-icon.png'),
+    previewBeforeUrl: getAssetUrl('preview-before.png'),
+    previewAfterUrl: getAssetUrl('preview-after.png'),
+    commonBgUrl: getAssetUrl('common-bg.jpg'),
     // 使用次数相关
     usageCount: 0,
     userType: 'free',
@@ -32,13 +43,32 @@ Page({
     showModal: false,
     modalType: null,
     // 支付模态框
-    showPaymentModal: false
+    showPaymentModal: false,
+    // 开发者模式
+    devModeActive: false,
+    showDevPanel: false
   },
 
   async onLoad() {
     const app = getApp();
+    const menuButtonInfo = app.globalData.menuButtonInfo;
+    
+    // 计算胶囊按钮右侧位置（屏幕宽度 - 胶囊右边距）
+    const systemInfo = wx.getSystemInfoSync();
+    const menuRight = systemInfo.windowWidth - menuButtonInfo.right;
+    
     this.setData({
-      isElderMode: app.globalData.isElderMode
+      isElderMode: app.globalData.isElderMode,
+      statusBarHeight: app.globalData.statusBarHeight || 0,
+      navBarHeight: app.globalData.navBarHeight || 44,
+      menuRight: menuRight
+    });
+    
+    console.log('[TransformLaunch] 导航栏信息:', {
+      statusBarHeight: this.data.statusBarHeight,
+      navBarHeight: this.data.navBarHeight,
+      menuRight: menuRight,
+      menuButtonInfo: menuButtonInfo
     });
     
     // 加载使用次数
@@ -321,5 +351,39 @@ Page({
       title: '图片加载失败',
       icon: 'none'
     });
+  },
+
+  /**
+   * 导航栏点击 - 用于激活开发者模式
+   */
+  onNavBarTap() {
+    devMode.handleTap(() => {
+      this.setData({ devModeActive: true });
+      this.showDevPanel();
+    });
+  },
+
+  /**
+   * 显示开发者面板
+   */
+  showDevPanel() {
+    this.setData({ showDevPanel: true });
+  },
+
+  /**
+   * 关闭开发者面板
+   */
+  closeDevPanel() {
+    this.setData({ showDevPanel: false });
+  },
+
+  /**
+   * 开发者面板更新使用次数
+   */
+  onDevPanelUpdate(e) {
+    const { usageCount } = e.detail;
+    console.log('[TransformLaunch] 开发者面板更新使用次数:', usageCount);
+    this.setData({ usageCount });
+    this.updateButtonState();
   }
 });

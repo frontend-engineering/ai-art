@@ -7,15 +7,16 @@
   <corner-background />
   
   <!-- 背景 -->
+  <image class="upload-bg-image" src="{{commonBgUrl}}" mode="aspectFill" />
   <view class="upload-bg"></view>
   
-  <!-- 大小字切换按钮（左上角固定位置） -->
-  <view class="elder-mode-toggle-fixed">
+  <!-- 大小字切换按钮（右上角，胶囊按钮下方） -->
+  <view class="elder-mode-toggle-fixed" style="top: {{statusBarHeight + navBarHeight + 16}}px; right: {{menuRight}}px; left: auto;">
     <elder-mode-toggle />
   </view>
   
   <!-- 顶部导航栏 -->
-  <view class="nav-bar">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;">
     <view class="nav-left">
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
@@ -26,7 +27,7 @@
   </view>
   
   <!-- 主内容区 -->
-  <view class="upload-content">
+  <view class="upload-content" style="padding-top: {{statusBarHeight + navBarHeight + 32}}px;">
     <!-- 标题说明 -->
     <view class="title-section">
       <text class="title-text">上传家人照片</text>
@@ -56,7 +57,7 @@
           <image 
             wx:else 
             class="placeholder-image" 
-            src="../../../assets/camera-upload.png" 
+            src="{{cameraUploadUrl}}" 
             mode="scaleToFill"
           />
           <view wx:if="{{selectedImages[0]}}" class="delete-btn" catchtap="removeImage" data-index="0">
@@ -74,7 +75,7 @@
           <image 
             wx:else 
             class="placeholder-image" 
-            src="../../../assets/camera-upload.png" 
+            src="{{cameraUploadUrl}}" 
             mode="scaleToFill"
           />
           <view wx:if="{{selectedImages[1]}}" class="delete-btn" catchtap="removeImage" data-index="1">
@@ -95,7 +96,7 @@
           <image 
             wx:else 
             class="placeholder-image" 
-            src="../../../assets/camera-upload.png" 
+            src="{{cameraUploadUrl}}" 
             mode="scaleToFill"
           />
           <view wx:if="{{selectedImages[2]}}" class="delete-btn" catchtap="removeImage" data-index="2">
@@ -113,7 +114,7 @@
           <image 
             wx:else 
             class="placeholder-image" 
-            src="../../../assets/camera-upload.png" 
+            src="{{cameraUploadUrl}}" 
             mode="scaleToFill"
           />
           <view wx:if="{{selectedImages[3]}}" class="delete-btn" catchtap="removeImage" data-index="3">
@@ -131,7 +132,7 @@
           <image 
             wx:else 
             class="placeholder-image" 
-            src="../../../assets/camera-upload.png" 
+            src="{{cameraUploadUrl}}" 
             mode="scaleToFill"
           />
           <view wx:if="{{selectedImages[4]}}" class="delete-btn" catchtap="removeImage" data-index="4">

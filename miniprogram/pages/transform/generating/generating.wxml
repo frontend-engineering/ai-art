@@ -16,7 +16,7 @@
       <view class="lantern-glow"></view>
       <image 
         class="main-lantern"
-        src="../../../assets/lantern.png"
+        src="{{lanternImageUrl}}"
         mode="aspectFit"
       ></image>
     </view>

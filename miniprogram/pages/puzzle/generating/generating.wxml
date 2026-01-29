@@ -16,7 +16,7 @@
       <view class="lantern-glow"></view>
       <video 
         class="main-lantern"
-        src="../../../assets/lantern.mp4"
+        src="{{lanternVideoUrl}}"
         autoplay
         loop
         muted

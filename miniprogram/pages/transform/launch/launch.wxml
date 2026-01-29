@@ -7,15 +7,16 @@
   <corner-background />
   
   <!-- 金色渐变背景 -->
+  <image class="launch-bg-image" src="{{commonBgUrl}}" mode="aspectFill" />
   <view class="launch-bg"></view>
   
-  <!-- 大小字切换按钮（左上角固定位置） -->
-  <view class="elder-mode-toggle-fixed">
+  <!-- 大小字切换按钮（右上角，胶囊按钮下方） -->
+  <view class="elder-mode-toggle-fixed" style="top: {{statusBarHeight + navBarHeight + 16}}px; right: {{menuRight}}px; left: auto;">
     <elder-mode-toggle />
   </view>
   
   <!-- 顶部导航栏 -->
-  <view class="nav-bar">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;" bindtap="onNavBarTap">
     <view class="nav-left">
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
@@ -42,13 +43,7 @@
     <!-- 模式图标和名称 -->
     <view class="mode-section animate-scale-in">
       <view class="mode-icon-wrapper">
-        <image 
-          class="mode-icon-image" 
-          src="/assets/wealth-icon.png" 
-          mode="aspectFill"
-          binderror="onImageError"
-          bindload="onImageLoad"
-        />
+        <text class="mode-icon-emoji">👑</text>
       </view>
       <text class="mode-name">{{modeConfig.name}}</text>
       <text class="mode-slogan">{{modeConfig.slogan}}</text>
@@ -59,7 +54,7 @@
       <view class="preview-card">
         <view class="preview-before">
           <view class="preview-placeholder">
-            <image class="preview-image" src="/assets/preview-before.png" mode="aspectFill" />
+            <text class="preview-label">普通背景</text>
           </view>
         </view>
         <view class="preview-arrow">
@@ -67,7 +62,7 @@
         </view>
         <view class="preview-after">
           <view class="preview-placeholder gold">
-            <image class="preview-image" src="/assets/preview-after.png" mode="aspectFill" />
+            <text class="preview-label">豪门背景</text>
           </view>
         </view>
       </view>
@@ -123,5 +118,13 @@
     isElderMode="{{isElderMode}}"
     bind:complete="onPaymentComplete"
     bind:close="closePaymentModal"
+  />
+  
+  <!-- 开发者模式面板 -->
+  <dev-mode-panel
+    visible="{{showDevPanel}}"
+    usageCount="{{usageCount}}"
+    bind:close="closeDevPanel"
+    bind:update="onDevPanelUpdate"
   />
 </view>

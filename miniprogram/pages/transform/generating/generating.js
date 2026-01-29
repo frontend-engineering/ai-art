@@ -9,6 +9,7 @@
  */
 
 const { generationAPI } = require('../../../utils/api');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 // 进度阶段配置
 const PROGRESS_STAGES = [
@@ -41,7 +42,8 @@ Page({
     error: null,
     isRetrying: false,
     canRetry: true,
-    retryCount: 0
+    retryCount: 0,
+    lanternImageUrl: getAssetUrl('lantern.png')
   },
 
   // 轮询定时器
@@ -218,6 +220,20 @@ Page({
     // 获取生成的图片
     const generatedImages = task.result?.images || [];
     console.log('[TransformGenerating] 生成图片数量:', generatedImages.length);
+    
+    // 保存到历史记录（仅在生成完成时保存一次）
+    const { saveHistory } = require('../../../utils/storage');
+    const historyItem = {
+      id: this.data.taskId,
+      originalImages: transformData.uploadedImages || [],
+      generatedImage: generatedImages[0] || '',
+      generatedImages: generatedImages,
+      createdAt: new Date().toISOString(),
+      isPaid: false,
+      mode: 'transform'
+    };
+    saveHistory(historyItem);
+    console.log('[TransformGenerating] 已保存到历史记录:', this.data.taskId);
     
     // 存储结果
     app.globalData.transformData = {

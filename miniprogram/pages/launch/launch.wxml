@@ -7,6 +7,7 @@
   <corner-background />
   
   <!-- 背景渐变 -->
+  <image class="launch-bg-image" src="{{commonBgUrl}}" mode="aspectFill" />
   <view class="launch-bg"></view>
   
   <!-- 背景装饰灯笼 -->

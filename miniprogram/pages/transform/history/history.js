@@ -11,18 +11,27 @@
 
 const { getHistory, deleteHistory } = require('../../../utils/storage');
 const { cloudRequest } = require('../../../utils/cloudbase-request');
+const { initNavigation } = require('../../../utils/navigation-helper');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     records: [],
     loading: true,
     error: null,
-    isDeleting: false
+    isDeleting: false,
+    commonBgUrl: getAssetUrl('common-bg.jpg')
   },
 
   onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

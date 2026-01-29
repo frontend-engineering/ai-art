@@ -28,6 +28,19 @@
   z-index: 1;
 }
 
+/* 背景图片层 */
+.launch-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
 /* 背景渐变层 - 覆盖在 corner-background 之上 */
 .launch-bg {
   position: absolute;
@@ -36,9 +49,9 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(180deg, 
-    rgba(255, 248, 240, 0.6) 0%, 
-    rgba(255, 248, 240, 0.7) 30%,
-    rgba(255, 229, 229, 0.75) 100%
+    rgba(255, 248, 240, 0.3) 0%, 
+    rgba(255, 248, 240, 0.4) 30%,
+    rgba(255, 229, 229, 0.4) 100%
   );
   z-index: 1;
   pointer-events: none;

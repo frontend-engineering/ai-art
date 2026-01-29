@@ -9,6 +9,7 @@
  */
 
 const { generationAPI } = require('../../../utils/api');
+const { getAssetUrl } = require('../../../utils/oss-assets');
 
 // 进度阶段配置
 const PROGRESS_STAGES = [
@@ -40,7 +41,8 @@ Page({
     error: null,
     isRetrying: false,
     canRetry: true,
-    retryCount: 0
+    retryCount: 0,
+    lanternVideoUrl: getAssetUrl('lantern.mp4')
   },
 
   pollTimer: null,
@@ -154,6 +156,20 @@ Page({
     
     const generatedImages = task.result?.images || [];
     console.log('[PuzzleGenerating] 生成图片数量:', generatedImages.length);
+    
+    // 保存到历史记录（仅在生成完成时保存一次）
+    const { saveHistory } = require('../../../utils/storage');
+    const historyItem = {
+      id: this.data.taskId,
+      originalImages: puzzleData.uploadedImages || [],
+      generatedImage: generatedImages[0] || '',
+      generatedImages: generatedImages,
+      createdAt: new Date().toISOString(),
+      isPaid: false,
+      mode: 'puzzle'
+    };
+    saveHistory(historyItem);
+    console.log('[PuzzleGenerating] 已保存到历史记录:', this.data.taskId);
     
     app.globalData.puzzleData = { ...puzzleData, generatedImages, taskId: this.data.taskId };
     
