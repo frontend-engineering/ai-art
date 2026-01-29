@@ -9,29 +9,24 @@
   <!-- 背景 -->
   <view class="result-bg"></view>
   
-  <!-- 大小字切换按钮（左上角固定位置） -->
-  <view class="elder-mode-toggle-fixed">
+  <!-- 大小字切换按钮（右上角，胶囊按钮下方） -->
+  <view class="elder-mode-toggle-fixed" style="top: {{statusBarHeight + navBarHeight + 16}}px; right: {{menuRight}}px; left: auto;">
     <elder-mode-toggle />
   </view>
   
   <!-- 顶部导航栏 -->
-  <view class="nav-bar">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;">
     <view class="nav-left">
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
       </view>
     </view>
     <text class="nav-title">生成结果</text>
-    <view class="nav-right">
-      <usage-display 
-        usageCount="{{usageCount}}"
-        userType="{{userType}}"
-      />
-    </view>
+    <view class="nav-right"></view>
   </view>
   
   <!-- 主内容区 -->
-  <scroll-view class="result-content" scroll-y>
+  <scroll-view class="result-content" scroll-y style="padding-top: {{statusBarHeight + navBarHeight}}px;">
     <!-- 图片展示区 -->
     <view class="image-section">
       <view class="image-frame">
@@ -160,6 +155,15 @@
       </view>
     </view>
   </scroll-view>
+  
+  <!-- 剩余次数显示框 - 页面底部 -->
+  <view class="usage-count-bar">
+    <view class="usage-count-content">
+      <text class="usage-label">剩余次数：</text>
+      <text class="usage-value">{{usageCount}}</text>
+      <text class="usage-unit">次</text>
+    </view>
+  </view>
   
   <!-- 产品推荐弹窗 -->
   <product-recommendation 

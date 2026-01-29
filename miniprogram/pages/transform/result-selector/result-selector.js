@@ -9,15 +9,23 @@
  * - 高亮显示选中的图片
  */
 
+const { initNavigation } = require('../../../utils/navigation-helper');
+
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     images: [],
     selectedImage: ''
   },
 
   onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

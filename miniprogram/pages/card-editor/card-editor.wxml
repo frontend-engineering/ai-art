@@ -9,13 +9,13 @@
   <!-- 背景 -->
   <view class="editor-bg"></view>
   
-  <!-- 大小字切换按钮（左上角固定位置） -->
-  <view class="elder-mode-toggle-fixed">
+  <!-- 大小字切换按钮（右上角，胶囊按钮下方） -->
+  <view class="elder-mode-toggle-fixed" style="top: {{statusBarHeight + navBarHeight + 16}}px; right: {{menuRight}}px; left: auto;">
     <elder-mode-toggle />
   </view>
   
   <!-- 顶部导航栏 -->
-  <view class="nav-bar">
+  <view class="nav-bar" style="padding-top: {{statusBarHeight}}px; height: {{statusBarHeight + navBarHeight}}px;">
     <view class="nav-left">
       <view class="back-btn" bindtap="goBack">
         <text class="back-icon">‹</text>
@@ -26,7 +26,7 @@
   </view>
   
   <!-- 主内容区 -->
-  <scroll-view class="editor-content" scroll-y>
+  <scroll-view class="editor-content" scroll-y style="padding-top: {{statusBarHeight + navBarHeight}}px;">
     <!-- 预览区域 -->
     <view class="preview-section">
       <view class="preview-card" style="background: {{selectedTemplate.bgColor}}">

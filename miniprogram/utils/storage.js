@@ -150,6 +150,16 @@ const addHistory = (item) => {
       createdAt: item.createdAt || Date.now()
     };
     
+    // 检查是否已存在相同的记录（防止重复）
+    // 如果提供了 ID，检查是否已存在该 ID 的记录
+    if (item.id) {
+      const existingIndex = list.findIndex(r => r.id === item.id);
+      if (existingIndex !== -1) {
+        console.log('[Storage] 记录已存在，跳过添加:', item.id);
+        return true;
+      }
+    }
+    
     // 添加到列表开头
     list.unshift(newItem);
     

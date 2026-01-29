@@ -28,7 +28,11 @@ App({
     cloudbaseInitialized: false, // CloudBase 是否已初始化
     usageCount: 0,       // 剩余使用次数
     userType: 'free',     // 用户类型 ('free' | 'paid')
-    apiBaseUrl: 'https://your-api-domain.com' // API基础URL，请替换为实际值
+    apiBaseUrl: 'https://your-api-domain.com', // API基础URL，请替换为实际值
+    // 导航栏相关
+    statusBarHeight: 0,  // 状态栏高度
+    navBarHeight: 0,     // 导航栏高度
+    menuButtonInfo: null // 胶囊按钮信息
   },
 
   /**
@@ -38,11 +42,51 @@ App({
   onLaunch() {
     console.log('[App] 小程序启动');
     
+    // 获取系统信息和导航栏高度
+    this.getSystemInfo();
+    
     // 恢复老年模式设置
     this.restoreElderMode();
     
+    // 初始化开发者模式
+    this.initDevMode();
+    
     // 初始化云开发并自动登录（顺序执行）
     this.initAndLogin();
+  },
+
+  /**
+   * 获取系统信息和导航栏高度
+   * 使用胶囊按钮位置计算自定义导航栏高度
+   */
+  getSystemInfo() {
+    try {
+      const systemInfo = wx.getSystemInfoSync();
+      const menuButtonInfo = wx.getMenuButtonBoundingClientRect();
+      
+      // 状态栏高度
+      const statusBarHeight = systemInfo.statusBarHeight || 0;
+      
+      // 导航栏高度 = (胶囊按钮top - 状态栏高度) * 2 + 胶囊按钮高度
+      const navBarHeight = (menuButtonInfo.top - statusBarHeight) * 2 + menuButtonInfo.height;
+      
+      this.globalData.statusBarHeight = statusBarHeight;
+      this.globalData.navBarHeight = navBarHeight;
+      this.globalData.menuButtonInfo = menuButtonInfo;
+      
+      console.log('[App] 系统信息:', {
+        statusBarHeight,
+        navBarHeight,
+        menuButton: menuButtonInfo,
+        model: systemInfo.model,
+        system: systemInfo.system
+      });
+    } catch (error) {
+      console.error('[App] 获取系统信息失败:', error);
+      // 设置默认值
+      this.globalData.statusBarHeight = 44;
+      this.globalData.navBarHeight = 44;
+    }
   },
 
   /**
@@ -161,6 +205,23 @@ App({
     } catch (err) {
       console.error('[App] 恢复老年模式设置失败:', err);
       this.globalData.isElderMode = false;
+    }
+  },
+
+  /**
+   * 初始化开发者模式
+   * 在开发环境下启用开发者模式功能
+   */
+  initDevMode() {
+    try {
+      const devMode = require('./utils/devMode');
+      devMode.initDevMode();
+      
+      // 保存到全局数据
+      this.globalData.devModeUtil = devMode;
+      console.log('[App] 开发者模式已初始化');
+    } catch (err) {
+      console.error('[App] 初始化开发者模式失败:', err);
     }
   },
 
@@ -357,7 +418,7 @@ App({
   /**
    * 更新使用次数
    * 从服务器获取最新的使用次数并更新全局状态
-   * @returns {Promise<Object>} { usageCount, userType, paymentStatus, canGenerate }
+   * @returns {Promise<Object>} { usageCount, userType, paymentStatus, canGenerate, modeData }
    */
   async updateUsageCount() {
     try {
@@ -369,7 +430,12 @@ App({
           usageCount: 3,
           userType: 'free',
           paymentStatus: 'free',
-          canGenerate: true
+          canGenerate: true,
+          modeData: {
+            puzzle: { free_count: 3, remaining: 3 },
+            transform: { free_count: 3, remaining: 3 },
+            paid: { count: 0, remaining: 0 }
+          }
         };
       }
 
@@ -377,31 +443,43 @@ App({
       const res = await cloudbaseRequest.get(`/api/usage/check/${userId}`);
 
       if (res && res.success) {
-        const { usage_count, user_type, can_generate } = res.data;
+        const data = res.data;
         
         // 从本地存储获取paymentStatus
         const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
         
+        // 计算总使用次数（向后兼容）
+        const usageCount = (data.puzzle?.remaining || 0) + 
+                          (data.transform?.remaining || 0) + 
+                          (data.paid?.remaining || 0);
+        
         // 更新全局状态
-        this.globalData.usageCount = usage_count;
-        this.globalData.userType = user_type;
+        this.globalData.usageCount = usageCount;
+        this.globalData.userType = data.user_type || 'free';
         
-        console.log('[App] 使用次数已更新:', usage_count, '类型:', user_type);
-        
-        // 通知所有页面更新
-        this.notifyPagesUsageUpdate({
-          usageCount: usage_count,
-          userType: user_type,
-          paymentStatus: paymentStatus,
-          canGenerate: can_generate
+        console.log('[App] 使用次数已更新:', {
+          puzzle: data.puzzle?.remaining,
+          transform: data.transform?.remaining,
+          paid: data.paid?.remaining,
+          total: usageCount
         });
         
-        return {
-          usageCount: usage_count,
-          userType: user_type,
+        const result = {
+          usageCount: usageCount,
+          userType: data.user_type || 'free',
           paymentStatus: paymentStatus,
-          canGenerate: can_generate
+          canGenerate: data.can_generate || false,
+          modeData: {
+            puzzle: data.puzzle || { free_count: 3, remaining: 0 },
+            transform: data.transform || { free_count: 3, remaining: 0 },
+            paid: data.paid || { count: 0, remaining: 0 }
+          }
         };
+        
+        // 通知所有页面更新
+        this.notifyPagesUsageUpdate(result);
+        
+        return result;
       } else {
         console.error('[App] 更新使用次数失败:', res);
         // 返回默认值
@@ -409,7 +487,12 @@ App({
           usageCount: 3,
           userType: 'free',
           paymentStatus: 'free',
-          canGenerate: true
+          canGenerate: true,
+          modeData: {
+            puzzle: { free_count: 3, remaining: 3 },
+            transform: { free_count: 3, remaining: 3 },
+            paid: { count: 0, remaining: 0 }
+          }
         };
       }
     } catch (err) {
@@ -419,7 +502,12 @@ App({
         usageCount: 3,
         userType: 'free',
         paymentStatus: 'free',
-        canGenerate: true
+        canGenerate: true,
+        modeData: {
+          puzzle: { free_count: 3, remaining: 3 },
+          transform: { free_count: 3, remaining: 3 },
+          paid: { count: 0, remaining: 0 }
+        }
       };
     }
   },
@@ -444,9 +532,10 @@ App({
   /**
    * 扣减使用次数
    * @param {string} generationId - 生成记录ID
-   * @returns {Promise<Object>} { success, remainingCount }
+   * @param {string} mode - 生成模式 ('puzzle' | 'transform')，可选，默认 'puzzle'
+   * @returns {Promise<Object>} { success, remaining }
    */
-  async decrementUsageCount(generationId) {
+  async decrementUsageCount(generationId, mode = 'puzzle') {
     try {
       const userId = this.globalData.userId;
       if (!userId) {
@@ -456,31 +545,42 @@ App({
       const cloudbaseRequest = require('./utils/cloudbase-request');
       const res = await cloudbaseRequest.post('/api/usage/decrement', {
         userId,
-        generationId
+        generationId,
+        mode
       });
 
       if (res && res.success) {
-        const { remaining_count } = res;
+        const remaining = res.data;
+        
+        // 计算总使用次数
+        const usageCount = (remaining.puzzle || 0) + 
+                          (remaining.transform || 0) + 
+                          (remaining.paid || 0);
         
         // 更新全局状态
-        this.globalData.usageCount = remaining_count;
+        this.globalData.usageCount = usageCount;
         
-        console.log('[App] 使用次数已扣减，剩余:', remaining_count);
+        console.log('[App] 使用次数已扣减，剩余:', remaining);
         
         // 从本地存储获取paymentStatus
         const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
         
         // 通知页面更新
         this.notifyPagesUsageUpdate({
-          usageCount: remaining_count,
+          usageCount: usageCount,
           userType: this.globalData.userType,
           paymentStatus: paymentStatus,
-          canGenerate: remaining_count > 0
+          canGenerate: usageCount > 0,
+          modeData: {
+            puzzle: { remaining: remaining.puzzle || 0 },
+            transform: { remaining: remaining.transform || 0 },
+            paid: { remaining: remaining.paid || 0 }
+          }
         });
         
         return {
           success: true,
-          remainingCount: remaining_count
+          remaining: remaining
         };
       } else {
         throw new Error(res.message || '扣减使用次数失败');
@@ -494,9 +594,10 @@ App({
   /**
    * 恢复使用次数（生成失败时）
    * @param {string} generationId - 生成记录ID
-   * @returns {Promise<Object>} { success, remainingCount }
+   * @param {string} mode - 生成模式 ('puzzle' | 'transform')，可选，默认 'puzzle'
+   * @returns {Promise<Object>} { success, remaining }
    */
-  async restoreUsageCount(generationId) {
+  async restoreUsageCount(generationId, mode = 'puzzle') {
     try {
       const userId = this.globalData.userId;
       if (!userId) {
@@ -506,27 +607,38 @@ App({
       const cloudbaseRequest = require('./utils/cloudbase-request');
       const res = await cloudbaseRequest.post('/api/usage/restore', {
         userId,
-        generationId
+        generationId,
+        mode
       });
 
       if (res && res.success) {
-        const { remaining_count } = res;
+        const remaining = res.data;
+        
+        // 计算总使用次数
+        const usageCount = (remaining.puzzle || 0) + 
+                          (remaining.transform || 0) + 
+                          (remaining.paid || 0);
         
         // 更新全局状态
-        this.globalData.usageCount = remaining_count;
+        this.globalData.usageCount = usageCount;
         
-        console.log('[App] 使用次数已恢复，剩余:', remaining_count);
+        console.log('[App] 使用次数已恢复，剩余:', remaining);
         
         // 通知页面更新
         this.notifyPagesUsageUpdate({
-          usageCount: remaining_count,
+          usageCount: usageCount,
           userType: this.globalData.userType,
-          canGenerate: remaining_count > 0
+          canGenerate: usageCount > 0,
+          modeData: {
+            puzzle: { remaining: remaining.puzzle || 0 },
+            transform: { remaining: remaining.transform || 0 },
+            paid: { remaining: remaining.paid || 0 }
+          }
         });
         
         return {
           success: true,
-          remainingCount: remaining_count
+          remaining: remaining
         };
       } else {
         throw new Error(res.message || '恢复使用次数失败');

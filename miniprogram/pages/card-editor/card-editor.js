@@ -11,6 +11,7 @@
 
 const { savePosterToAlbum } = require('../../utils/share');
 const { greetingCardAPI } = require('../../utils/api');
+const { initNavigation } = require('../../utils/navigation-helper');
 
 // 贺卡模板配置（使用渐变背景色代替图片）
 const CARD_TEMPLATES = [
@@ -60,6 +61,9 @@ const PRESET_BLESSINGS = [
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     imageUrl: '',
     templates: CARD_TEMPLATES,
     presetBlessings: PRESET_BLESSINGS,
@@ -75,6 +79,9 @@ Page({
 
   onLoad(options) {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

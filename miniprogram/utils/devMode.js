@@ -1,0 +1,104 @@
+/**
+ * 开发者模式管理工具
+ * 用于激活和管理开发者模式
+ */
+
+let devModeActive = false;
+let tapCount = 0;
+let lastTapTime = 0;
+const TAP_THRESHOLD = 500; // 毫秒
+const REQUIRED_TAPS = 5; // 需要的点击次数
+
+/**
+ * 初始化开发者模式
+ * 通过快速点击状态栏5次来激活
+ */
+function initDevMode() {
+  // 检查环境变量
+  const isDev = __DEV__ || process.env.NODE_ENV === 'development';
+  
+  if (!isDev) {
+    console.log('[DevMode] 非开发环境，开发者模式不可用');
+    return;
+  }
+
+  console.log('[DevMode] 开发者模式已初始化，快速点击状态栏5次来激活');
+}
+
+/**
+ * 处理点击事件（用于激活开发者模式）
+ * @param {Function} callback 激活时的回调函数
+ */
+function handleTap(callback) {
+  const now = Date.now();
+
+  // 如果距离上次点击超过阈值，重置计数
+  if (now - lastTapTime > TAP_THRESHOLD) {
+    tapCount = 0;
+  }
+
+  tapCount++;
+  lastTapTime = now;
+
+  console.log(`[DevMode] 点击 ${tapCount}/${REQUIRED_TAPS}`);
+
+  // 达到所需点击次数
+  if (tapCount >= REQUIRED_TAPS) {
+    activateDevMode(callback);
+    tapCount = 0;
+  }
+}
+
+/**
+ * 激活开发者模式
+ * @param {Function} callback 激活时的回调函数
+ */
+function activateDevMode(callback) {
+  devModeActive = true;
+  console.log('[DevMode] ✅ 开发者模式已激活！');
+  
+  wx.showToast({
+    title: '🔧 开发者模式已激活',
+    icon: 'success',
+    duration: 2000
+  });
+
+  if (typeof callback === 'function') {
+    callback();
+  }
+}
+
+/**
+ * 检查开发者模式是否激活
+ */
+function isDevModeActive() {
+  return devModeActive;
+}
+
+/**
+ * 禁用开发者模式
+ */
+function disableDevMode() {
+  devModeActive = false;
+  tapCount = 0;
+  console.log('[DevMode] 开发者模式已禁用');
+}
+
+/**
+ * 获取开发者模式状态
+ */
+function getDevModeStatus() {
+  return {
+    active: devModeActive,
+    isDev: __DEV__ || process.env.NODE_ENV === 'development'
+  };
+}
+
+module.exports = {
+  initDevMode,
+  handleTap,
+  activateDevMode,
+  isDevModeActive,
+  disableDevMode,
+  getDevModeStatus
+};

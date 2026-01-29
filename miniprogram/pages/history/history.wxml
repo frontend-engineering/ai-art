@@ -1,0 +1,90 @@
+<view class="history-page">
+  <!-- 标签页 -->
+  <view class="tabs-container">
+    <scroll-view class="tabs-scroll" scroll-x>
+      <view class="tabs">
+        <view 
+          wx:for="{{tabs}}" 
+          wx:key="id"
+          class="tab-item {{activeTab === item.id ? 'active' : ''}}"
+          data-id="{{item.id}}"
+          bindtap="onTabChange"
+        >
+          {{item.label}}
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading && items.length === 0}}" class="loading-container">
+    <view class="loading-spinner"></view>
+    <text class="loading-text">加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view wx:if="{{isEmpty && !loading}}" class="empty-container">
+    <view class="empty-icon">📋</view>
+    <text class="empty-text">暂无历史记录</text>
+  </view>
+
+  <!-- 历史记录列表 -->
+  <scroll-view class="items-container" scroll-y>
+    <view wx:for="{{items}}" wx:key="id" class="history-item">
+      <!-- 模式标签 -->
+      <view class="item-header">
+        <view class="mode-badge {{item.mode}}">{{item.modeLabel}}</view>
+        <text class="item-time">{{item.createdAtFormatted}}</text>
+      </view>
+
+      <!-- 原始图片 -->
+      <view class="original-images">
+        <view 
+          wx:for="{{item.originalImages}}" 
+          wx:key="*this"
+          class="image-thumbnail"
+          data-image="{{item}}"
+          bindtap="onPreviewImage"
+        >
+          <image 
+            src="{{item}}" 
+            mode="aspectFill"
+            class="thumbnail-img"
+          />
+        </view>
+      </view>
+
+      <!-- 箭头 -->
+      <view class="arrow-container">
+        <text class="arrow">→</text>
+      </view>
+
+      <!-- 生成结果 -->
+      <view class="generated-image">
+        <image 
+          src="{{item.generatedImage}}" 
+          mode="aspectFill"
+          class="result-img"
+          data-image="{{item.generatedImage}}"
+          bindtap="onPreviewImage"
+        />
+      </view>
+
+      <!-- 操作按钮 -->
+      <view class="item-actions">
+        <button class="action-btn save-btn">保存</button>
+        <button class="action-btn delete-btn" data-id="{{item.id}}" bindtap="onDeleteItem">删除</button>
+      </view>
+    </view>
+
+    <!-- 加载更多提示 -->
+    <view wx:if="{{!hasMore && items.length > 0}}" class="load-more-tip">
+      <text>已加载全部</text>
+    </view>
+  </scroll-view>
+
+  <!-- 图片预览弹窗 -->
+  <view wx:if="{{previewVisible}}" class="preview-modal" bindtap="onClosePreview">
+    <image src="{{previewImage}}" mode="aspectFit" class="preview-image" />
+  </view>
+</view>

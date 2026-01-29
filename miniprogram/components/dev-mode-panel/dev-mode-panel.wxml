@@ -1,0 +1,79 @@
+<!--
+  开发者模式面板
+  用于调试和测试，允许随意修改使用次数
+-->
+<view class="dev-mode-overlay" wx:if="{{visible}}" bindtap="close">
+  <view class="dev-mode-panel" catchtap>
+    <!-- 标题 -->
+    <view class="panel-header">
+      <text class="panel-title">🔧 开发者模式</text>
+      <view class="close-btn" bindtap="close">✕</view>
+    </view>
+
+    <!-- 当前状态 -->
+    <view class="status-section">
+      <text class="status-label">当前使用次数:</text>
+      <text class="status-value">{{usageCount}}</text>
+    </view>
+
+    <!-- 快速设置按钮 -->
+    <view class="quick-buttons">
+      <text class="section-title">快速设置:</text>
+      <view class="button-group">
+        <button class="quick-btn" data-count="0" bindtap="quickSet">0次</button>
+        <button class="quick-btn" data-count="1" bindtap="quickSet">1次</button>
+        <button class="quick-btn" data-count="3" bindtap="quickSet">3次</button>
+        <button class="quick-btn" data-count="5" bindtap="quickSet">5次</button>
+        <button class="quick-btn" data-count="10" bindtap="quickSet">10次</button>
+        <button class="quick-btn" data-count="99" bindtap="quickSet">99次</button>
+      </view>
+    </view>
+
+    <!-- 自定义输入 -->
+    <view class="input-section">
+      <text class="section-title">自定义设置:</text>
+      <view class="input-group">
+        <input
+          class="input-field"
+          type="number"
+          placeholder="输入数字"
+          value="{{inputValue}}"
+          bindinput="onInput"
+          disabled="{{loading}}"
+        />
+      </view>
+
+      <view class="action-buttons">
+        <button
+          class="action-btn set-btn"
+          bindtap="setUsageCount"
+          disabled="{{loading}}"
+        >
+          {{loading ? '处理中...' : '设置次数'}}
+        </button>
+        <button
+          class="action-btn add-btn"
+          bindtap="addUsageCount"
+          disabled="{{loading}}"
+        >
+          {{loading ? '处理中...' : '增加次数'}}
+        </button>
+      </view>
+    </view>
+
+    <!-- 消息提示 -->
+    <view class="message-section" wx:if="{{message}}">
+      <view class="message {{messageType}}">
+        {{message}}
+      </view>
+    </view>
+
+    <!-- 说明 -->
+    <view class="tips-section">
+      <text class="tips-title">💡 说明:</text>
+      <text class="tips-text">• 此功能仅在开发环境下可用</text>
+      <text class="tips-text">• 用于快速测试和调试</text>
+      <text class="tips-text">• 生产环境中不会显示此面板</text>
+    </view>
+  </view>
+</view>

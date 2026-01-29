@@ -3,9 +3,14 @@
  * 显示邀请码、统计信息和邀请记录
  */
 
+const { initNavigation } = require('../../utils/navigation-helper');
+
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     inviteCode: '',
     stats: {
       total_invites: 0,
@@ -21,6 +26,9 @@ Page({
 
   async onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

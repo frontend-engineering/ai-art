@@ -38,7 +38,7 @@ Component({
     selectedPackage: 'free',
     // 套餐列表 - 从 cloudbase-payment 模块获取
     packages: [],
-    allPackages: Object.values(cloudbasePayment.PACKAGES),
+    allPackages: Object.values(cloudbasePayment.FALLBACK_PACKAGES),
     // 支付状态
     isPaying: false,
     paymentStatus: 'idle', // idle, processing, success, failed
@@ -49,8 +49,15 @@ Component({
   },
 
   observers: {
-    'visible, currentPaymentStatus': function(visible, currentPaymentStatus) {
+    'visible': function(visible) {
       if (visible) {
+        console.log('[PaymentModal] visible changed to true, currentPaymentStatus:', this.data.currentPaymentStatus);
+        this.filterPackages(this.data.currentPaymentStatus);
+      }
+    },
+    'currentPaymentStatus': function(currentPaymentStatus) {
+      if (this.data.visible) {
+        console.log('[PaymentModal] currentPaymentStatus changed to:', currentPaymentStatus);
         this.filterPackages(currentPaymentStatus);
       }
     }
@@ -59,8 +66,12 @@ Component({
   methods: {
     // 根据当前付费状态过滤可选套餐
     filterPackages(currentStatus) {
+      console.log('[PaymentModal] filterPackages called with currentStatus:', currentStatus);
+      
       const currentLevel = PACKAGE_LEVEL[currentStatus] || 0;
-      const allPackages = Object.values(cloudbasePayment.PACKAGES);
+      const allPackages = Object.values(cloudbasePayment.FALLBACK_PACKAGES);
+      
+      console.log('[PaymentModal] currentLevel:', currentLevel, 'allPackages count:', allPackages.length);
       
       // 只显示比当前等级更高或相等的套餐
       const filteredPackages = allPackages.filter(pkg => {
@@ -68,8 +79,12 @@ Component({
         return pkgLevel >= currentLevel;
       });
       
+      console.log('[PaymentModal] filteredPackages count:', filteredPackages.length);
+      
       // 检查是否免费次数已用尽（当前状态为free且打开支付弹窗）
       const isFreeExhausted = currentStatus === 'free';
+      
+      console.log('[PaymentModal] isFreeExhausted:', isFreeExhausted);
       
       // 默认选中第一个付费套餐（如果免费次数已用尽）或第一个可用套餐
       let defaultSelected = 'free';
@@ -82,6 +97,8 @@ Component({
       } else if (filteredPackages.length > 0) {
         defaultSelected = filteredPackages[0].id;
       }
+      
+      console.log('[PaymentModal] defaultSelected:', defaultSelected);
       
       this.setData({
         packages: filteredPackages,
@@ -96,8 +113,11 @@ Component({
     selectPackage(e) {
       const { id } = e.currentTarget.dataset;
       
+      console.log('[PaymentModal] selectPackage:', id, 'isFreeExhausted:', this.data.isFreeExhausted);
+      
       // 如果免费次数已用尽，禁止选择免费版
       if (this.data.isFreeExhausted && id === 'free') {
+        console.log('[PaymentModal] 禁止选择免费版');
         return;
       }
       
@@ -109,13 +129,17 @@ Component({
     
     // 处理支付
     async handlePay() {
+      console.log('[PaymentModal] handlePay called, isPaying:', this.data.isPaying);
       if (this.data.isPaying) return;
       
       const app = getApp();
       const { selectedPackage } = this.data;
       
+      console.log('[PaymentModal] selectedPackage:', selectedPackage);
+      
       // 免费版直接完成
       if (selectedPackage === 'free') {
+        console.log('[PaymentModal] 免费版，直接完成');
         this.setData({ paymentStatus: 'success' });
         setTimeout(() => {
           this.triggerEvent('complete', { packageType: 'free' });
@@ -207,6 +231,7 @@ Component({
     
     // 关闭弹窗
     handleClose() {
+      console.log('[PaymentModal] handleClose called, isPaying:', this.data.isPaying);
       if (this.data.isPaying) return;
       this.triggerEvent('close');
     },

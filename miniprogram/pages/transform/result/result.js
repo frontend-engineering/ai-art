@@ -13,11 +13,14 @@ const { getShareAppMessage, getShareTimeline, savePosterToAlbum } = require('../
 const { saveHistory } = require('../../../utils/storage');
 const { videoAPI } = require('../../../utils/api');
 const cloudbasePayment = require('../../../utils/cloudbase-payment');
-const { checkAndShowModal } = require('../../../utils/usageModal');
+const { initNavigation } = require('../../../utils/navigation-helper');
 
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     selectedImage: '',
     imageLoaded: false,
     showShareModal: false,
@@ -48,6 +51,8 @@ Page({
   onLoad(options) {
     const app = getApp();
     const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+    
+    initNavigation(this);
     
     this.setData({
       isElderMode: app.globalData.isElderMode,
@@ -83,9 +88,6 @@ Page({
     console.log('[TransformResult] 加载图片:', imageUrl);
     this.setData({ selectedImage: imageUrl });
     
-    // 保存到历史记录
-    this.saveToHistory(imageUrl);
-    
     // 如果有 Live Photo，自动播放5秒
     if (options.livePhotoUrl) {
       this.setData({ 
@@ -94,22 +96,33 @@ Page({
       });
       this.autoPlayLivePhoto();
     }
+    
+    // 在 onLoad 中立即加载使用次数（确保获取最新值）
+    this.loadUsageCount();
   },
 
   async onShow() {
     const app = getApp();
     const paymentStatus = wx.getStorageSync('paymentStatus') || 'free';
+    
+    console.log('[TransformResult] onShow 触发');
+    
     this.setData({
       isElderMode: app.globalData.isElderMode,
       isPremiumUser: paymentStatus === 'premium' || paymentStatus === 'basic',
       paymentStatus: paymentStatus
     });
     
-    // 加载使用次数
-    await this.loadUsageCount();
+    // 在 onShow 中刷新使用次数（用户可能从其他页面返回）
+    const usageData = await this.loadUsageCount();
     
-    // 检查并显示使用次数提醒模态框
-    this.checkUsageModal();
+    console.log('[TransformResult] onShow - 使用次数已刷新:', {
+      usageCount: this.data.usageCount,
+      paymentStatus: this.data.paymentStatus
+    });
+    
+    // 检查并显示使用次数提醒模态框（使用已加载的数据）
+    this.checkUsageModal(usageData);
   },
 
   /**
@@ -121,15 +134,45 @@ Page({
       const result = await app.updateUsageCount();
       
       if (result) {
+        // 如果返回的是默认值 3，说明 API 调用失败
+        // 此时应该使用全局状态中的值，而不是默认值
+        let usageCount = result.usageCount;
+        
+        // 如果返回的是默认值 3 且全局状态中有不同的值，使用全局值
+        if (result.usageCount === 3 && app.globalData.usageCount !== 3) {
+          usageCount = app.globalData.usageCount;
+          console.log('[TransformResult] API 返回默认值，使用全局状态:', usageCount);
+        }
+        
         this.setData({
-          usageCount: result.usageCount,
+          usageCount: usageCount,
           userType: result.userType,
           paymentStatus: result.paymentStatus || 'free'
         });
+        
+        console.log('[TransformResult] 使用次数已加载:', {
+          usageCount: usageCount,
+          userType: result.userType,
+          paymentStatus: result.paymentStatus
+        });
+        
+        return {
+          ...result,
+          usageCount: usageCount
+        };
       }
     } catch (err) {
       console.error('[TransformResult] 加载使用次数失败:', err);
+      // 失败时使用全局状态中的值
+      const app = getApp();
+      this.setData({
+        usageCount: app.globalData.usageCount,
+        userType: app.globalData.userType,
+        paymentStatus: wx.getStorageSync('paymentStatus') || 'free'
+      });
     }
+    
+    return null;
   },
 
   onUnload() {
@@ -154,17 +197,31 @@ Page({
 
   /**
    * 检查并显示使用次数提醒模态框
+   * @param {Object} usageData - 已加载的使用次数数据
    */
-  async checkUsageModal() {
-    const userId = wx.getStorageSync('userId');
-    if (!userId) return;
+  checkUsageModal(usageData) {
+    if (!usageData) {
+      console.log('[TransformResult] 使用次数数据为空，跳过模态框检查');
+      return;
+    }
     
-    const modalConfig = await checkAndShowModal(userId, 'result');
-    if (modalConfig) {
+    const { usageCount, userType, paymentStatus } = usageData;
+    const usageModal = require('../../../utils/usageModal');
+    
+    // 使用本地数据检查是否需要显示模态框，不再调用API
+    const modalCheck = usageModal.checkModalOnPageLoad(usageCount, userType, 'result', paymentStatus || 'free');
+    
+    console.log('[TransformResult] 模态框检查结果:', {
+      show: modalCheck.show,
+      modalType: modalCheck.modalType,
+      usageCount: usageCount
+    });
+    
+    if (modalCheck.show) {
       this.setData({
         showUsageModal: true,
-        usageModalType: modalConfig.modalType,
-        usageCount: modalConfig.usageCount
+        usageModalType: modalCheck.modalType,
+        usageCount: usageCount
       });
     }
   },
@@ -195,26 +252,6 @@ Page({
       showUsageModal: false,
       showPaymentModal: true 
     });
-  },
-
-  /**
-   * 保存到历史记录
-   */
-  saveToHistory(imageUrl) {
-    const app = getApp();
-    const transformData = app.globalData.transformData || {};
-    
-    const historyItem = {
-      id: transformData.taskId || Date.now().toString(),
-      originalImages: transformData.uploadedImages || [],
-      generatedImage: imageUrl,
-      createdAt: new Date().toISOString(),
-      isPaid: false,
-      mode: 'transform'
-    };
-    
-    saveHistory(historyItem);
-    console.log('[TransformResult] 已保存到历史记录');
   },
 
   /**
@@ -479,15 +516,29 @@ Page({
    */
   async handleSaveImage() {
     const { selectedImage, isSaving, paymentStatus } = this.data;
-    if (!selectedImage || isSaving) return;
+    
+    console.log('[TransformResult] handleSaveImage 被调用:', {
+      selectedImage: !!selectedImage,
+      isSaving,
+      paymentStatus,
+      showPaymentModal: this.data.showPaymentModal
+    });
+    
+    if (!selectedImage || isSaving) {
+      console.log('[TransformResult] 返回：selectedImage=', !!selectedImage, 'isSaving=', isSaving);
+      return;
+    }
     
     // 未付费用户显示支付弹窗
     if (paymentStatus === 'free') {
+      console.log('[TransformResult] 用户未付费，显示支付弹窗，设置 showPaymentModal=true');
       this.setData({ showPaymentModal: true });
+      console.log('[TransformResult] 设置后 showPaymentModal:', this.data.showPaymentModal);
       return;
     }
     
     // 已付费，直接保存
+    console.log('[TransformResult] 用户已付费，开始保存');
     await this.doSaveImage();
   },
 

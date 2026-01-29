@@ -9,6 +9,7 @@
  */
 
 const { generationAPI } = require('../../../utils/api');
+const { initNavigation } = require('../../../utils/navigation-helper');
 
 // 时空拼图模板配置
 const PUZZLE_TEMPLATES = [
@@ -79,6 +80,9 @@ const PUZZLE_CATEGORIES = [
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     templates: PUZZLE_TEMPLATES,
     categories: PUZZLE_CATEGORIES,
     selectedCategory: 'all',
@@ -92,6 +96,9 @@ Page({
 
   onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });

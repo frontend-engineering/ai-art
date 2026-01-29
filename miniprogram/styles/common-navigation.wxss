@@ -1,46 +1,38 @@
 /**
  * 通用导航栏样式
- * 包含模式副标题栏和主导航栏
+ * 使用 JS 动态计算的高度，不依赖 CSS env() 变量
  */
 
-/* 页面容器 - 确保灵动岛区域背景色一致 */
+/* 页面容器 */
 .page-with-nav {
   position: relative;
   min-height: 100vh;
   width: 100%;
 }
 
-/* 灵动岛区域背景填充 */
-.page-with-nav::before {
-  content: '';
+/* 内容容器 - 为导航栏留出空间 */
+.nav-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* 顶部导航栏 */
+.nav-bar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: env(safe-area-inset-top);
-  background: #d4302b;
-  z-index: 99;
-  pointer-events: none;
-}
-
-/* 顶部导航栏 - 有返回按钮版本 */
-.nav-bar {
-  position: sticky;
-  top: 0;
-  z-index: 100;
+  z-index: 1000;
   width: 100%;
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding-top: calc(env(safe-area-inset-top) + 24rpx);
-  padding-bottom: 24rpx;
-  padding-left: 32rpx;
-  padding-right: 32rpx;
   background: #d4302b;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.15);
   box-sizing: border-box;
-  position: relative;
 }
 
 .nav-left {
@@ -54,8 +46,8 @@
 }
 
 .back-btn {
-  width: 96rpx;
-  height: 96rpx;
+  width: 72rpx;
+  height: 72rpx;
   background: transparent;
   border-radius: 50%;
   display: flex;
@@ -65,56 +57,34 @@
 }
 
 .back-icon {
-  font-size: 80rpx;
+  font-size: 64rpx;
   color: #FFD700;
   font-weight: bold;
   line-height: 1;
-  margin-right: 4rpx;
 }
 
 .nav-title {
-  font-size: 48rpx;
+  font-size: 36rpx;
   font-weight: bold;
   color: #FFD700;
   flex: 1;
   text-align: center;
+  padding: 0 16rpx;
 }
 
 .nav-right {
-  width: 64rpx;
+  width: 72rpx;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
 }
 
-.nav-placeholder {
-  width: 64rpx;
-}
-
-/* elder-mode-toggle 固定位置样式 - 在系统返回键下方 */
+/* elder-mode-toggle 固定位置样式 */
 .elder-mode-toggle-fixed {
   position: fixed;
-  top: calc(env(safe-area-inset-top) + 100rpx);
   left: 32rpx;
-  z-index: 999;
-}
-
-/* 有导航栏的页面 - 大小字按钮在导航栏下方 */
-.page-with-nav .elder-mode-toggle-fixed {
-  position: fixed;
-  top: calc(env(safe-area-inset-top) + 144rpx);
-  left: 32rpx;
-  z-index: 999;
-}
-
-/* 大字模式下的位置调整 */
-.elder-mode .elder-mode-toggle-fixed {
-  top: calc(env(safe-area-inset-top) + 120rpx);
-}
-
-/* 有导航栏的页面 - 大字模式 */
-.page-with-nav.elder-mode .elder-mode-toggle-fixed {
-  top: calc(env(safe-area-inset-top) + 168rpx);
-  left: 32rpx;
-  z-index: 999;
+  z-index: 9999;
 }
 
 /* ========================================
@@ -122,58 +92,62 @@
    ======================================== */
 
 .elder-mode .back-btn {
-  width: 120rpx;
-  height: 120rpx;
+  width: 88rpx;
+  height: 88rpx;
 }
 
 .elder-mode .back-icon {
-  font-size: 100rpx;
+  font-size: 80rpx;
 }
 
 .elder-mode .nav-title {
-  font-size: 56rpx;
+  font-size: 42rpx;
 }
 
 /* ========================================
    富贵变身模式 (Transform) 导航栏覆盖
    ======================================== */
 
-/* Transform 模式页面安全区域背景色 */
-.transform-launch-page.page-with-nav::before,
-.template-page.page-with-nav::before,
-.result-page.page-with-nav::before,
-.result-selector-page.page-with-nav::before,
-.upload-page.page-with-nav::before,
-.history-page.page-with-nav::before {
+.transform-launch-page .nav-bar {
   background: #D4AF37;
 }
 
-/* Transform 模式导航栏背景色 */
-.transform-launch-page .nav-bar,
-.template-page .nav-bar,
-.result-page .nav-bar,
-.result-selector-page .nav-bar,
-.upload-page .nav-bar,
-.history-page .nav-bar {
-  background: #D4AF37;
-}
-
-/* Transform 模式返回按钮颜色 */
-.transform-launch-page .back-icon,
-.template-page .back-icon,
-.result-page .back-icon,
-.result-selector-page .back-icon,
-.upload-page .back-icon,
-.history-page .back-icon {
+.transform-launch-page .back-icon {
   color: #DC143C;
 }
 
-/* Transform 模式标题颜色 */
-.transform-launch-page .nav-title,
-.template-page .nav-title,
-.result-page .nav-title,
-.result-selector-page .nav-title,
-.upload-page .nav-title,
-.history-page .nav-title {
+.transform-launch-page .nav-title {
   color: #8B4513;
+}
+
+/* ========================================
+   邀请页面导航栏覆盖
+   ======================================== */
+
+.invite-page .nav-bar {
+  background: #D4AF37;
+}
+
+.invite-page .back-icon {
+  color: #DC143C;
+}
+
+.invite-page .nav-title {
+  color: #8B4513;
+}
+
+/* ========================================
+   贺卡编辑页面导航栏覆盖
+   ======================================== */
+
+.card-editor-page .nav-bar {
+  background: #8B0000;
+}
+
+.card-editor-page .back-icon {
+  color: #FFD700;
+}
+
+.card-editor-page .nav-title {
+  color: #FFD700;
 }

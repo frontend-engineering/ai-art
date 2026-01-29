@@ -1,0 +1,6 @@
+{
+  "navigationStyle": "custom",
+  "usingComponents": {
+    "dev-mode-panel": "/components/dev-mode-panel/dev-mode-panel"
+  }
+}

@@ -52,11 +52,11 @@ router.get('/check/:userId', async (req, res) => {
 /**
  * POST /api/usage/decrement
  * 扣减使用次数
- * Body: { userId: string, generationId: string }
+ * Body: { userId: string, generationId: string, mode?: string }
  */
 router.post('/decrement', async (req, res) => {
   try {
-    const { userId, generationId } = req.body;
+    const { userId, generationId, mode = 'puzzle' } = req.body;
 
     // 验证参数
     if (!userId) {
@@ -75,11 +75,20 @@ router.post('/decrement', async (req, res) => {
       });
     }
 
-    const result = await usageService.decrementUsageCount(userId, generationId);
+    const validModes = ['puzzle', 'transform'];
+    if (!validModes.includes(mode)) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_MODE',
+        message: `模式必须是以下之一: ${validModes.join(', ')}`
+      });
+    }
+
+    const result = await usageService.decrementUsageCount(userId, generationId, mode);
 
     res.json({
       success: true,
-      remaining_count: result.remaining_count,
+      data: result.remaining,
       message: '使用次数扣减成功'
     });
   } catch (error) {
@@ -131,11 +140,11 @@ router.post('/decrement', async (req, res) => {
 /**
  * POST /api/usage/restore
  * 恢复使用次数（生成失败时）
- * Body: { userId: string, generationId: string }
+ * Body: { userId: string, generationId: string, mode?: string }
  */
 router.post('/restore', async (req, res) => {
   try {
-    const { userId, generationId } = req.body;
+    const { userId, generationId, mode = 'puzzle' } = req.body;
 
     // 验证参数
     if (!userId) {
@@ -154,11 +163,11 @@ router.post('/restore', async (req, res) => {
       });
     }
 
-    const result = await usageService.restoreUsageCount(userId, generationId);
+    const result = await usageService.restoreUsageCount(userId, generationId, mode);
 
     res.json({
       success: true,
-      remaining_count: result.remaining_count,
+      data: result.remaining,
       message: '使用次数恢复成功'
     });
   } catch (error) {
@@ -224,6 +233,56 @@ router.get('/history/:userId', async (req, res) => {
       success: false,
       error: 'INTERNAL_ERROR',
       message: '获取使用历史失败',
+      details: error.message
+    });
+  }
+});
+
+/**
+ * GET /api/history/:userId
+ * 获取生成历史（按模式筛选）
+ * Query: { mode?: 'puzzle' | 'transform', page?: number, pageSize?: number }
+ */
+router.get('/history/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { mode = null, page = 1, pageSize = 20 } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'USER_ID_REQUIRED',
+        message: '用户ID不能为空'
+      });
+    }
+
+    // 验证 mode 参数
+    if (mode && !['puzzle', 'transform'].includes(mode)) {
+      return res.status(400).json({
+        success: false,
+        error: 'INVALID_MODE',
+        message: "模式必须是 'puzzle' 或 'transform'"
+      });
+    }
+
+    const result = await usageService.getHistoryByMode(
+      userId,
+      mode,
+      parseInt(page),
+      parseInt(pageSize)
+    );
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('获取生成历史失败:', error);
+
+    res.status(500).json({
+      success: false,
+      error: 'INTERNAL_ERROR',
+      message: '获取生成历史失败',
       details: error.message
     });
   }

@@ -9,12 +9,20 @@ const { v4: uuidv4 } = require('uuid');
 /**
  * 检查用户使用次数
  * @param {string} userId - 用户ID
- * @returns {Promise<Object>} { usage_count, usage_limit, can_generate, user_type }
+ * @param {string} mode - 生成模式 ('puzzle' | 'transform')，可选
+ * @returns {Promise<Object>} 返回详细的使用次数信息（支持模式隔离）
  */
-async function checkUsageCount(userId) {
+async function checkUsageCount(userId, mode = null) {
   try {
     const sql = `
-      SELECT usage_count, usage_limit, has_ever_paid
+      SELECT 
+        usage_count,
+        usage_count_puzzle,
+        usage_count_transform,
+        usage_count_paid,
+        usage_limit,
+        has_ever_paid,
+        payment_status
       FROM users
       WHERE id = ?
     `;
@@ -26,16 +34,39 @@ async function checkUsageCount(userId) {
     }
     
     const user = rows[0];
-    const usageCount = user.usage_count || 0;
-    const usageLimit = user.usage_limit || 3;
-    const hasEverPaid = user.has_ever_paid || false;
     
-    return {
-      usage_count: usageCount,
-      usage_limit: usageLimit,
-      can_generate: usageCount > 0,
-      user_type: hasEverPaid ? 'paid' : 'free'
+    // 新的返回结构（支持模式隔离）
+    const result = {
+      puzzle: {
+        free_count: user.usage_count_puzzle || 3,
+        remaining: user.usage_count_puzzle || 3
+      },
+      transform: {
+        free_count: user.usage_count_transform || 3,
+        remaining: user.usage_count_transform || 3
+      },
+      paid: {
+        count: user.usage_count_paid || 0,
+        remaining: user.usage_count_paid || 0,
+        package_type: user.payment_status || 'free'
+      },
+      // 向后兼容字段
+      usage_count: (user.usage_count_puzzle || 0) + (user.usage_count_transform || 0) + (user.usage_count_paid || 0),
+      usage_limit: user.usage_limit || 3,
+      can_generate: (user.usage_count_puzzle || 0) > 0 || (user.usage_count_transform || 0) > 0 || (user.usage_count_paid || 0) > 0,
+      user_type: user.has_ever_paid ? 'paid' : 'free'
     };
+    
+    // 如果指定了 mode，检查该模式是否可以生成
+    if (mode) {
+      if (mode === 'puzzle') {
+        result.can_generate_mode = result.puzzle.remaining > 0 || result.paid.remaining > 0;
+      } else if (mode === 'transform') {
+        result.can_generate_mode = result.transform.remaining > 0 || result.paid.remaining > 0;
+      }
+    }
+    
+    return result;
   } catch (error) {
     console.error('检查用户使用次数失败:', error);
     throw new Error(`检查用户使用次数失败: ${error.message}`);
@@ -100,10 +131,11 @@ async function getUsageHistory(userId, page = 1, pageSize = 20) {
  * 扣减使用次数（原子操作，含并发控制）
  * @param {string} userId - 用户ID
  * @param {string} generationId - 生成记录ID
- * @returns {Promise<Object>} { success, remaining_count }
+ * @param {string} mode - 生成模式 ('puzzle' | 'transform')，可选，默认 'puzzle'
+ * @returns {Promise<Object>} { success, remaining }
  * @throws {Error} 如果usage_count不足
  */
-async function decrementUsageCount(userId, generationId) {
+async function decrementUsageCount(userId, generationId, mode = 'puzzle') {
   const pool = require('../db/connection').pool;
   const connection = await pool.getConnection();
   
@@ -111,44 +143,89 @@ async function decrementUsageCount(userId, generationId) {
     await connection.beginTransaction();
     
     // 使用 SELECT ... FOR UPDATE 锁定行，防止并发问题
-    const [rows] = await connection.execute(
-      'SELECT usage_count FROM users WHERE id = ? FOR UPDATE',
-      [userId]
-    );
+    const selectSql = `
+      SELECT 
+        usage_count,
+        usage_count_puzzle,
+        usage_count_transform,
+        usage_count_paid,
+        payment_status
+      FROM users 
+      WHERE id = ? 
+      FOR UPDATE
+    `;
+    
+    const [rows] = await connection.execute(selectSql, [userId]);
     
     if (rows.length === 0) {
       throw new Error('USER_NOT_FOUND');
     }
     
-    const currentCount = rows[0].usage_count || 0;
+    const user = rows[0];
+    const modeField = `usage_count_${mode}`;
+    const currentModeCount = user[modeField] || 0;
+    const currentPaidCount = user.usage_count_paid || 0;
     
-    // 验证 usage_count > 0
-    if (currentCount <= 0) {
+    // 检查是否有可用次数（优先使用模式次数，再使用付费次数）
+    let usedMode = mode;
+    if (currentModeCount > 0) {
+      // 使用模式次数
+      await connection.execute(
+        `UPDATE users SET ${modeField} = ${modeField} - 1 WHERE id = ?`,
+        [userId]
+      );
+    } else if (currentPaidCount > 0) {
+      // 使用付费次数
+      usedMode = 'paid';
+      await connection.execute(
+        'UPDATE users SET usage_count_paid = usage_count_paid - 1 WHERE id = ?',
+        [userId]
+      );
+    } else {
+      // 无可用次数
       throw new Error('INSUFFICIENT_USAGE');
     }
     
-    // 扣减使用次数
-    await connection.execute(
-      'UPDATE users SET usage_count = usage_count - 1 WHERE id = ?',
+    // 获取更新后的值
+    const [updatedRows] = await connection.execute(
+      `SELECT usage_count_puzzle, usage_count_transform, usage_count_paid FROM users WHERE id = ?`,
       [userId]
     );
     
-    const newCount = currentCount - 1;
+    const updatedUser = updatedRows[0];
     
     // 插入 usage_logs 记录
-    const logId = uuidv4();
-    await connection.execute(
-      `INSERT INTO usage_logs (id, user_id, action_type, amount, remaining_count, reason, reference_id, created_at)
-       VALUES (?, ?, 'decrement', -1, ?, 'generation', ?, NOW())`,
-      [logId, userId, newCount, generationId]
-    );
+    const logId = require('uuid').v4();
+    const logSql = `
+      INSERT INTO usage_logs 
+      (id, user_id, action_type, amount, remaining_count, reason, reference_id, mode, created_at)
+      VALUES (?, ?, 'decrement', -1, ?, 'generation', ?, ?, NOW())
+    `;
+    
+    const remainingCount = (updatedUser.usage_count_puzzle || 0) + 
+                          (updatedUser.usage_count_transform || 0) + 
+                          (updatedUser.usage_count_paid || 0);
+    
+    await connection.execute(logSql, [
+      logId,
+      userId,
+      remainingCount,
+      generationId,
+      usedMode
+    ]);
     
     // 提交事务
     await connection.commit();
     
     return {
       success: true,
-      remaining_count: newCount
+      remaining: {
+        puzzle: updatedUser.usage_count_puzzle || 0,
+        transform: updatedUser.usage_count_transform || 0,
+        paid: updatedUser.usage_count_paid || 0,
+        // 向后兼容
+        usage_count: remainingCount
+      }
     };
   } catch (error) {
     // 回滚事务
@@ -172,49 +249,92 @@ async function decrementUsageCount(userId, generationId) {
  * 恢复使用次数（生成失败时回滚扣减）
  * @param {string} userId - 用户ID
  * @param {string} generationId - 生成记录ID
- * @returns {Promise<Object>} { success, remaining_count }
+ * @param {string} mode - 生成模式 ('puzzle' | 'transform')，可选，默认 'puzzle'
+ * @returns {Promise<Object>} { success, remaining }
  */
-async function restoreUsageCount(userId, generationId) {
+async function restoreUsageCount(userId, generationId, mode = 'puzzle') {
   const pool = require('../db/connection').pool;
   const connection = await pool.getConnection();
   
   try {
     await connection.beginTransaction();
     
+    // 查询最后一条该 generationId 的 decrement 日志，确定使用的是哪种次数
+    const logSql = `
+      SELECT mode FROM usage_logs 
+      WHERE user_id = ? AND reference_id = ? AND action_type = 'decrement'
+      ORDER BY created_at DESC LIMIT 1
+    `;
+    
+    const [logRows] = await connection.execute(logSql, [userId, generationId]);
+    const usedMode = logRows.length > 0 ? logRows[0].mode : mode;
+    
     // 使用 SELECT ... FOR UPDATE 锁定行，防止并发问题
-    const [rows] = await connection.execute(
-      'SELECT usage_count FROM users WHERE id = ? FOR UPDATE',
-      [userId]
-    );
+    const selectSql = `
+      SELECT 
+        usage_count_puzzle,
+        usage_count_transform,
+        usage_count_paid
+      FROM users 
+      WHERE id = ? 
+      FOR UPDATE
+    `;
+    
+    const [rows] = await connection.execute(selectSql, [userId]);
     
     if (rows.length === 0) {
       throw new Error('USER_NOT_FOUND');
     }
     
-    const currentCount = rows[0].usage_count || 0;
+    const user = rows[0];
+    const modeField = `usage_count_${usedMode}`;
     
     // 恢复使用次数（增加1）
     await connection.execute(
-      'UPDATE users SET usage_count = usage_count + 1 WHERE id = ?',
+      `UPDATE users SET ${modeField} = ${modeField} + 1 WHERE id = ?`,
       [userId]
     );
     
-    const newCount = currentCount + 1;
+    // 获取更新后的值
+    const [updatedRows] = await connection.execute(
+      `SELECT usage_count_puzzle, usage_count_transform, usage_count_paid FROM users WHERE id = ?`,
+      [userId]
+    );
+    
+    const updatedUser = updatedRows[0];
     
     // 插入 usage_logs 记录（action_type='restore'）
-    const logId = uuidv4();
-    await connection.execute(
-      `INSERT INTO usage_logs (id, user_id, action_type, amount, remaining_count, reason, reference_id, created_at)
-       VALUES (?, ?, 'restore', 1, ?, 'restore', ?, NOW())`,
-      [logId, userId, newCount, generationId]
-    );
+    const logId = require('uuid').v4();
+    const insertLogSql = `
+      INSERT INTO usage_logs 
+      (id, user_id, action_type, amount, remaining_count, reason, reference_id, mode, created_at)
+      VALUES (?, ?, 'restore', 1, ?, 'restore', ?, ?, NOW())
+    `;
+    
+    const remainingCount = (updatedUser.usage_count_puzzle || 0) + 
+                          (updatedUser.usage_count_transform || 0) + 
+                          (updatedUser.usage_count_paid || 0);
+    
+    await connection.execute(insertLogSql, [
+      logId,
+      userId,
+      remainingCount,
+      generationId,
+      usedMode
+    ]);
     
     // 提交事务
     await connection.commit();
     
     return {
       success: true,
-      remaining_count: newCount
+      remaining: {
+        puzzle: updatedUser.usage_count_puzzle || 0,
+        transform: updatedUser.usage_count_transform || 0,
+        paid: updatedUser.usage_count_paid || 0,
+        // 向后兼容
+        usage_count: remainingCount
+      }
     };
   } catch (error) {
     // 回滚事务
@@ -238,9 +358,10 @@ async function restoreUsageCount(userId, generationId) {
  * @param {number} amount - 增加数量
  * @param {string} reason - 原因 ('payment', 'invite_reward', 'admin_grant')
  * @param {string} referenceId - 关联ID（订单ID或邀请记录ID）
+ * @param {string} mode - 模式 ('puzzle', 'transform', 'paid')，可选，默认 'paid'
  * @returns {Promise<Object>} { success, new_count }
  */
-async function addUsageCount(userId, amount, reason, referenceId = null) {
+async function addUsageCount(userId, amount, reason, referenceId = null, mode = 'paid') {
   const pool = require('../db/connection').pool;
   const connection = await pool.getConnection();
   
@@ -259,11 +380,17 @@ async function addUsageCount(userId, amount, reason, referenceId = null) {
       throw new Error(`原因必须是以下之一: ${validReasons.join(', ')}`);
     }
     
+    const validModes = ['puzzle', 'transform', 'paid'];
+    if (!validModes.includes(mode)) {
+      throw new Error(`模式必须是以下之一: ${validModes.join(', ')}`);
+    }
+    
     await connection.beginTransaction();
     
     // 使用 SELECT ... FOR UPDATE 锁定行，防止并发问题
+    const modeField = `usage_count_${mode}`;
     const [rows] = await connection.execute(
-      'SELECT usage_count FROM users WHERE id = ? FOR UPDATE',
+      `SELECT ${modeField} FROM users WHERE id = ? FOR UPDATE`,
       [userId]
     );
     
@@ -271,11 +398,11 @@ async function addUsageCount(userId, amount, reason, referenceId = null) {
       throw new Error('USER_NOT_FOUND');
     }
     
-    const currentCount = rows[0].usage_count || 0;
+    const currentCount = rows[0][modeField] || 0;
     
     // 增加使用次数
     await connection.execute(
-      'UPDATE users SET usage_count = usage_count + ? WHERE id = ?',
+      `UPDATE users SET ${modeField} = ${modeField} + ? WHERE id = ?`,
       [amount, userId]
     );
     
@@ -284,9 +411,9 @@ async function addUsageCount(userId, amount, reason, referenceId = null) {
     // 插入 usage_logs 记录
     const logId = uuidv4();
     await connection.execute(
-      `INSERT INTO usage_logs (id, user_id, action_type, amount, remaining_count, reason, reference_id, created_at)
-       VALUES (?, ?, 'increment', ?, ?, ?, ?, NOW())`,
-      [logId, userId, amount, newCount, reason, referenceId]
+      `INSERT INTO usage_logs (id, user_id, action_type, amount, remaining_count, reason, reference_id, mode, created_at)
+       VALUES (?, ?, 'increment', ?, ?, ?, ?, ?, NOW())`,
+      [logId, userId, amount, newCount, reason, referenceId, mode]
     );
     
     // 提交事务
@@ -312,10 +439,69 @@ async function addUsageCount(userId, amount, reason, referenceId = null) {
   }
 }
 
+/**
+ * 获取指定模式的历史记录
+ * @param {string} userId - 用户ID
+ * @param {string} mode - 生成模式 ('puzzle' | 'transform' | null)，null 表示全部
+ * @param {number} page - 页码（从1开始）
+ * @param {number} pageSize - 每页数量
+ * @returns {Promise<Object>} { items, total, page, pageSize }
+ */
+async function getHistoryByMode(userId, mode = null, page = 1, pageSize = 20) {
+  try {
+    // 验证分页参数
+    const validPage = Math.max(1, parseInt(page) || 1);
+    const validPageSize = Math.min(100, Math.max(1, parseInt(pageSize) || 20));
+    const offset = (validPage - 1) * validPageSize;
+    
+    // 构建查询条件
+    let countSql = 'SELECT COUNT(*) as total FROM generation_history WHERE user_id = ?';
+    let itemsSql = `
+      SELECT 
+        id,
+        mode,
+        original_images,
+        generated_image,
+        template_id,
+        created_at
+      FROM generation_history
+      WHERE user_id = ?
+    `;
+    
+    const params = [userId];
+    
+    // 如果指定了 mode，添加过滤条件
+    if (mode && ['puzzle', 'transform'].includes(mode)) {
+      countSql += ' AND mode = ?';
+      itemsSql += ' AND mode = ?';
+      params.push(mode);
+    }
+    
+    // 查询总数
+    const countRows = await query(countSql, params);
+    const total = countRows[0]?.total || 0;
+    
+    // 查询历史记录
+    itemsSql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    const items = await query(itemsSql, [...params, validPageSize, offset]);
+    
+    return {
+      items: items || [],
+      total,
+      page: validPage,
+      pageSize: validPageSize
+    };
+  } catch (error) {
+    console.error('获取模式历史记录失败:', error);
+    throw new Error(`获取模式历史记录失败: ${error.message}`);
+  }
+}
+
 module.exports = {
   checkUsageCount,
   getUsageHistory,
   decrementUsageCount,
   restoreUsageCount,
-  addUsageCount
+  addUsageCount,
+  getHistoryByMode
 };

@@ -16,6 +16,7 @@ const adminRoutes = require('./adminRoutes');
 const wechatRoutes = require('./wechatRoutes');
 const usageRoutes = require('./usageRoutes');
 const inviteRoutes = require('./inviteRoutes');
+const devRoutes = require('./devRoutes');
 // 临时注释：缺少 bcrypt 依赖，以下路由需要 adminAuth 中间件
 // const adminAuthRoutes = require('./adminAuthRoutes');
 // const priceConfigRoutes = require('./priceConfigRoutes');
@@ -71,6 +72,9 @@ function registerRoutes(app) {
   // 邀请系统
   app.use('/api/invite', inviteRoutes);
   
+  // 开发者模式
+  app.use('/api/dev', devRoutes);
+  
   // 临时禁用：以下管理后台路由需要 bcrypt 依赖
   // 管理后台认证接口
   // app.use('/admin-api/auth', adminAuthRoutes);
@@ -105,5 +109,6 @@ module.exports = {
   adminRoutes,
   wechatRoutes,
   usageRoutes,
-  inviteRoutes
+  inviteRoutes,
+  devRoutes
 };

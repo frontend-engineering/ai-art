@@ -1,0 +1,168 @@
+/* 开发者模式测试页面样式 */
+
+.dev-test-page {
+  width: 100%;
+  height: 100vh;
+  background-color: #f5f5f5;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 导航栏 */
+.nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 0 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+}
+
+.back-btn {
+  padding: 8px;
+  font-size: 24px;
+}
+
+.back-icon {
+  color: #fff;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #fff;
+  flex: 1;
+  text-align: center;
+}
+
+.nav-right {
+  padding: 8px 12px;
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tap-hint {
+  font-size: 12px;
+  color: #fff;
+}
+
+/* 内容区域 */
+.content {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* 卡片 */
+.card {
+  background-color: #fff;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  display: block;
+  font-size: 16px;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+/* 状态项 */
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.status-item .label {
+  color: #666;
+}
+
+.status-item .value {
+  font-weight: bold;
+  color: #333;
+}
+
+.status-item .value.active {
+  color: #50c878;
+}
+
+.status-item .value.inactive {
+  color: #ff6b6b;
+}
+
+/* 说明文本 */
+.instruction {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.instruction-item {
+  display: block;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  padding-left: 12px;
+}
+
+/* 操作按钮 */
+.action-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: bold;
+  margin-top: 8px;
+}
+
+.action-btn:active {
+  background-color: #5568d3;
+  transform: scale(0.98);
+}
+
+.disabled-hint {
+  display: block;
+  padding: 12px;
+  background-color: #f0f0f0;
+  color: #999;
+  border-radius: 6px;
+  text-align: center;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+/* 技术信息 */
+.tech-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item {
+  display: block;
+  font-size: 12px;
+  color: #999;
+  font-family: monospace;
+  padding: 6px 8px;
+  background-color: #f9f9f9;
+  border-radius: 4px;
+  border-left: 2px solid #667eea;
+}

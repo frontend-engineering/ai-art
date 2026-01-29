@@ -9,6 +9,7 @@
 
 const { generationAPI } = require('../../../utils/api');
 const { getAssetUrl } = require('../../../utils/oss-assets');
+const { initNavigation } = require('../../../utils/navigation-helper');
 
 // 富贵变身模板配置
 const TRANSFORM_TEMPLATES = [
@@ -88,6 +89,9 @@ const TRANSFORM_CATEGORIES = [
 Page({
   data: {
     isElderMode: false,
+    statusBarHeight: 0,
+    navBarHeight: 44,
+    menuRight: 0,
     templates: TRANSFORM_TEMPLATES,
     categories: TRANSFORM_CATEGORIES,
     selectedCategory: 'all',
@@ -101,6 +105,9 @@ Page({
 
   onLoad() {
     const app = getApp();
+    
+    initNavigation(this);
+    
     this.setData({
       isElderMode: app.globalData.isElderMode
     });
