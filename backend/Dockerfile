@@ -31,14 +31,14 @@ RUN pip3 install --no-cache-dir --break-system-packages \
 # 定义工作目录
 WORKDIR /app
 
-# 安装 pnpm
-RUN npm install -g pnpm@latest
+# 安装 pnpm (指定版本以确保兼容性)
+RUN npm install -g pnpm@8.15.3
 
 # 复制依赖文件
 COPY package.json pnpm-lock.yaml ./
 
-# 安装生产依赖
-RUN pnpm install --prod --frozen-lockfile && \
+# 安装生产依赖 (移除 --frozen-lockfile 以允许 lockfile 更新)
+RUN pnpm install --prod && \
     pnpm store prune
 
 # 复制应用代码
