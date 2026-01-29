@@ -1,7 +1,7 @@
 /**
  * 小程序静态资源 OSS URL 映射
  * 自动生成，请勿手动修改
- * 生成时间: 2026-01-29T09:51:59.502Z
+ * 生成时间: 2026-01-29T10:19:43.550Z
  */
 
 const OSS_ASSETS = {
@@ -13,7 +13,8 @@ const OSS_ASSETS = {
   "lantern.png": "https://wms.webinfra.cloud/miniprogram-assets/lantern.png",
   "preview-after.jpg": "https://wms.webinfra.cloud/miniprogram-assets/preview-after.jpg",
   "preview-before.jpg": "https://wms.webinfra.cloud/miniprogram-assets/preview-before.jpg",
-  "wealth-icon.png": "https://wms.webinfra.cloud/miniprogram-assets/wealth-icon.png"
+  "wealth-icon.png": "https://wms.webinfra.cloud/miniprogram-assets/wealth-icon.png",
+  "camera-upload.png": "https://wms.webinfra.cloud/miniprogram-assets/camera-upload.png"
 };
 
 /**
