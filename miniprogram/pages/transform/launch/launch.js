@@ -31,8 +31,8 @@ Page({
     },
     // OSS 资源
     wealthIconUrl: getAssetUrl('wealth-icon.png'),
-    previewBeforeUrl: getAssetUrl('preview-before.png'),
-    previewAfterUrl: getAssetUrl('preview-after.png'),
+    previewBeforeUrl: getAssetUrl('preview-before.jpg'),
+    previewAfterUrl: getAssetUrl('preview-after.jpg'),
     commonBgUrl: getAssetUrl('common-bg.jpg'),
     // 使用次数相关
     usageCount: 0,

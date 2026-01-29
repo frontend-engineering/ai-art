@@ -175,28 +175,42 @@ pnpm run dev
 
 所有大文件已成功迁移到 OSS 云存储，主包体积大幅减少：
 
-**已迁移文件**：
-- `wealth-icon.png` - 5.3MB → OSS
-- `lantern.mp4` - 4.1MB → OSS
-- `camera-upload.png` - 881KB → OSS
-- `preview-before.png` - 439KB → OSS
-- `preview-after.png` - 326KB → OSS
+**已迁移文件（共 12.44 MB）**：
+- `wealth-icon.png` - 7.00 MB → OSS
+- `bg-corners/top-left.png` - 1.29 MB → OSS
+- `bg-corners/top-right.png` - 1.55 MB → OSS
+- `bg-corners/bottom-left.png` - 1006 KB → OSS
+- `bg-corners/bottom-right.png` - 672 KB → OSS
+- `common-bg.jpg` - 540 KB → OSS
+- `preview-before.jpg` - 206 KB → OSS
+- `preview-after.jpg` - 202 KB → OSS
+- `lantern.png` - 37 KB → OSS
 
 **OSS 地址**：`https://wms.webinfra.cloud/miniprogram-assets/`
 
-**已更新页面**：
-- ✅ Transform Launch - wealth-icon.png, preview-before.png, preview-after.png
-- ✅ Transform Upload - camera-upload.png
-- ✅ Transform Generating - lantern.png
-- ✅ Puzzle Upload - camera-upload.png
-- ✅ Puzzle Generating - lantern.mp4
+**本地文件清理**：
+- ✅ `miniprogram/assets/` 目录已删除（所有文件从 OSS 加载）
+- ✅ 主包体积减少 12.44 MB
+
+**已更新页面和组件**：
+- ✅ Corner Background 组件 - 四角装饰图片
 - ✅ Loading 组件 - lantern.png
 - ✅ Four Grid Selector 组件 - lantern.png
-
-**本地保留**：
-- `lantern.png` - 36.7KB（小文件，保留本地）
+- ✅ Transform Launch - wealth-icon.png, preview-before.jpg, preview-after.jpg, common-bg.jpg
+- ✅ Transform Upload - common-bg.jpg
+- ✅ Transform History - common-bg.jpg
+- ✅ Transform Generating - common-bg.jpg
+- ✅ Puzzle Launch - common-bg.jpg
+- ✅ Puzzle Upload - common-bg.jpg
+- ✅ Puzzle History - common-bg.jpg
+- ✅ Puzzle Generating - common-bg.jpg
+- ✅ Launch (主页) - common-bg.jpg
 
 ### 重新上传资源（如需要）
+
+如需添加新的资源文件：
+1. 将图片放入 `miniprogram/assets/` 目录
+2. 运行上传命令：
 
 ```bash
 # 上传新资源到 OSS
@@ -204,4 +218,6 @@ pnpm run upload:miniprogram-assets
 ```
 
 上传脚本会自动更新 `miniprogram/utils/oss-assets.js` 配置文件。
+
+**注意**：上传后可以删除 `miniprogram/assets/` 中的本地文件以减少包体积，所有资源将从 OSS 加载。
 

@@ -43,7 +43,7 @@
     <!-- 模式图标和名称 -->
     <view class="mode-section animate-scale-in">
       <view class="mode-icon-wrapper">
-        <text class="mode-icon-emoji">👑</text>
+        <image class="mode-icon-image" src="{{wealthIconUrl}}" mode="aspectFill" />
       </view>
       <text class="mode-name">{{modeConfig.name}}</text>
       <text class="mode-slogan">{{modeConfig.slogan}}</text>
@@ -54,6 +54,7 @@
       <view class="preview-card">
         <view class="preview-before">
           <view class="preview-placeholder">
+            <image class="preview-image" src="{{previewBeforeUrl}}" mode="aspectFill" />
             <text class="preview-label">普通背景</text>
           </view>
         </view>
@@ -62,6 +63,7 @@
         </view>
         <view class="preview-after">
           <view class="preview-placeholder gold">
+            <image class="preview-image" src="{{previewAfterUrl}}" mode="aspectFill" />
             <text class="preview-label">豪门背景</text>
           </view>
         </view>

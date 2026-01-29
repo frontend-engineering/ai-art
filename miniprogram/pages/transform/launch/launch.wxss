@@ -208,10 +208,11 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8rpx;
+  gap: 12rpx;
   border: 3rpx dashed #9CA3AF;
   overflow: hidden;
   position: relative;
+  padding: 20rpx;
 }
 
 .preview-placeholder.gold {
@@ -230,14 +231,19 @@
 }
 
 .preview-label {
-  font-size: 28rpx;
-  color: #8B4513;
-  font-weight: 500;
+  font-size: 24rpx;
+  color: #6B4423;
+  font-weight: 600;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
+  z-index: 1;
+  position: relative;
+}
+
+.preview-icon {
+  font-size: 64rpx;
+  line-height: 1;
+  z-index: 1;
+  position: relative;
 }
 
 .placeholder-icon {
