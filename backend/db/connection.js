@@ -241,10 +241,48 @@ async function handleUpdate(db, sql, getParam) {
   
   const setParts = setMatch[1].split(',');
   const updateData = {};
+  const expressions = []; // 存储表达式（如 field = field + 1）
+  
+  console.log('[CloudBase RDB] 解析 SET 子句:', setParts);
+  
   setParts.forEach(part => {
-    const [field] = part.split('=').map(s => s.trim());
-    if (field && !part.includes('CURRENT_TIMESTAMP') && part.includes('?')) {
+    const trimmedPart = part.trim();
+    
+    console.log('[CloudBase RDB] 处理部分:', trimmedPart);
+    
+    // 跳过 CURRENT_TIMESTAMP
+    if (trimmedPart.includes('CURRENT_TIMESTAMP')) {
+      console.log('[CloudBase RDB] 跳过 CURRENT_TIMESTAMP');
+      return;
+    }
+    
+    // 检查是否是表达式（如 usage_count = usage_count - 1）
+    // 改进的正则表达式，支持空格和数字
+    const exprMatch = trimmedPart.match(/^(\w+)\s*=\s*(\w+)\s*([+\-*/])\s*(\d+|[\?])$/);
+    if (exprMatch) {
+      const [, leftField, rightField, operator, rightValue] = exprMatch;
+      
+      console.log('[CloudBase RDB] 匹配到表达式:', { leftField, rightField, operator, rightValue });
+      
+      // 如果是自增/自减表达式（如 usage_count = usage_count - 1）
+      if (leftField === rightField) {
+        const value = rightValue === '?' ? getParam() : parseInt(rightValue);
+        expressions.push({
+          field: leftField,
+          operator,
+          value
+        });
+        console.log('[CloudBase RDB] 添加表达式:', { field: leftField, operator, value });
+        return;
+      }
+    }
+    
+    // 普通赋值（field = ?）
+    const assignMatch = trimmedPart.match(/^(\w+)\s*=\s*\?$/);
+    if (assignMatch) {
+      const field = assignMatch[1];
       updateData[field] = getParam();
+      console.log('[CloudBase RDB] 添加普通赋值:', field);
     }
   });
   
@@ -254,8 +292,63 @@ async function handleUpdate(db, sql, getParam) {
   const whereField = whereMatch[1];
   const whereValue = getParam();
   
-  console.log('[CloudBase RDB] UPDATE:', tableName, updateData, 'WHERE', whereField, '=', whereValue);
+  console.log('[CloudBase RDB] UPDATE:', tableName, 'updateData:', updateData, 'expressions:', expressions, 'WHERE', whereField, '=', whereValue);
   
+  // CloudBase RDB 不支持表达式更新，需要先查询再更新
+  if (expressions.length > 0) {
+    console.log('[CloudBase RDB] 检测到表达式，先查询当前值');
+    
+    // 先查询当前值
+    const { data: currentData, error: selectError } = await db.from(tableName).select().eq(whereField, whereValue);
+    
+    if (selectError) {
+      console.error('[CloudBase RDB] 查询当前值失败:', selectError);
+      throw new Error('查询当前值失败: ' + selectError.message);
+    }
+    
+    if (!currentData || currentData.length === 0) {
+      console.error('[CloudBase RDB] 未找到记录');
+      throw new Error('未找到要更新的记录');
+    }
+    
+    const currentRow = currentData[0];
+    console.log('[CloudBase RDB] 当前值:', currentRow);
+    
+    // 计算新值
+    expressions.forEach(expr => {
+      const currentValue = currentRow[expr.field] || 0;
+      let newValue;
+      
+      switch (expr.operator) {
+        case '+':
+          newValue = currentValue + expr.value;
+          break;
+        case '-':
+          newValue = currentValue - expr.value;
+          break;
+        case '*':
+          newValue = currentValue * expr.value;
+          break;
+        case '/':
+          newValue = currentValue / expr.value;
+          break;
+        default:
+          newValue = currentValue;
+      }
+      
+      console.log('[CloudBase RDB] 计算:', expr.field, '=', currentValue, expr.operator, expr.value, '->', newValue);
+      updateData[expr.field] = newValue;
+    });
+  }
+  
+  console.log('[CloudBase RDB] 最终 updateData:', updateData);
+  
+  // 检查 updateData 是否为空
+  if (Object.keys(updateData).length === 0) {
+    throw new Error('UPDATE 操作没有要更新的字段');
+  }
+  
+  // 执行更新
   const { data, error } = await db.from(tableName).update(updateData).eq(whereField, whereValue);
   
   if (error) {
