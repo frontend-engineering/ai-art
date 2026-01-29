@@ -3,6 +3,8 @@
  * 用于调试和测试，允许随意修改使用次数
  */
 
+const { post } = require('../../utils/cloudbase-request');
+
 Component({
   properties: {
     visible: {
@@ -90,23 +92,11 @@ Component({
           return;
         }
 
-        const url = `http://localhost:3001/api/dev/usage/${action}`;
-        const data = { userId, ...params };
-
-        const response = await new Promise((resolve, reject) => {
-          wx.request({
-            url,
-            method: 'POST',
-            data,
-            success: (res) => {
-              if (res.statusCode === 200 && res.data.success) {
-                resolve(res.data);
-              } else {
-                reject(new Error(res.data?.message || '请求失败'));
-              }
-            },
-            fail: (err) => reject(err)
-          });
+        const response = await post(`/api/dev/usage/${action}`, {
+          userId,
+          ...params
+        }, {
+          showError: false
         });
 
         this.showMessage(
@@ -123,7 +113,7 @@ Component({
         this.setData({ inputValue: '' });
       } catch (error) {
         console.error('开发者API调用失败:', error);
-        this.showMessage(`❌ ${error.message}`, 'error');
+        this.showMessage(`❌ ${error.message || '设置失败'}`, 'error');
       } finally {
         this.setData({ loading: false });
       }

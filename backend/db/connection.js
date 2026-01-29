@@ -7,6 +7,9 @@
 
 require('dotenv').config();
 
+// 判断是否使用远程数据库（优先级最高）
+const useRemoteDatabase = process.env.USE_REMOTE_DB === 'true' || !!process.env.REMOTE_DB_HOST;
+
 // 判断是否在云托管环境中
 const hasCloudBaseConfig = !!(
   process.env.CLOUDBASE_ENV && 
@@ -18,11 +21,13 @@ const CLOUDBASE_ENV_ID = process.env.CLOUDBASE_ENV || 'prod-9gxl9eb37627e2';
 
 // 启动时打印环境信息
 console.log('🔍 数据库环境检测:', {
+  useRemoteDatabase,
   hasCloudBaseConfig,
   CLOUDBASE_ENV: process.env.CLOUDBASE_ENV || '未配置',
   TENCENTCLOUD_SECRETID: process.env.TENCENTCLOUD_SECRETID ? '已配置' : '未配置',
   TENCENTCLOUD_SECRETKEY: process.env.TENCENTCLOUD_SECRETKEY ? '已配置' : '未配置',
   DATABASE_URL: process.env.DATABASE_URL ? '已配置' : '未配置',
+  REMOTE_DB_HOST: process.env.REMOTE_DB_HOST || '未配置',
   DB_HOST: process.env.DB_HOST || '未配置'
 });
 
@@ -61,11 +66,36 @@ function initMysqlPool() {
   
   const mysql = require('mysql2/promise');
   
+  // 优先使用 DATABASE_URL
   if (process.env.DATABASE_URL) {
     console.log('📡 使用 DATABASE_URL 连接数据库');
     mysqlPool = mysql.createPool(process.env.DATABASE_URL);
-  } else {
-    console.log('📡 使用分离配置连接数据库（本地开发模式）');
+  } 
+  // 其次使用远程数据库配置
+  else if (useRemoteDatabase && process.env.REMOTE_DB_HOST) {
+    console.log('📡 使用远程数据库配置连接');
+    mysqlPool = mysql.createPool({
+      host: process.env.REMOTE_DB_HOST,
+      port: parseInt(process.env.REMOTE_DB_PORT) || 3306,
+      user: process.env.REMOTE_DB_USER || 'root',
+      password: process.env.REMOTE_DB_PASSWORD || '',
+      database: process.env.REMOTE_DB_NAME || process.env.DB_NAME || 'ai_family_photo',
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+      enableKeepAlive: true,
+      keepAliveInitialDelay: 0,
+      // 远程数据库连接超时设置
+      connectTimeout: 10000,
+      // SSL 配置（如果远程数据库需要）
+      ssl: process.env.REMOTE_DB_SSL === 'true' ? {
+        rejectUnauthorized: process.env.REMOTE_DB_SSL_REJECT_UNAUTHORIZED !== 'false'
+      } : undefined
+    });
+  } 
+  // 最后使用本地数据库配置
+  else {
+    console.log('📡 使用本地数据库配置（开发模式）');
     mysqlPool = mysql.createPool({
       host: process.env.DB_HOST || 'localhost',
       port: parseInt(process.env.DB_PORT) || 3306,
@@ -88,19 +118,23 @@ function initMysqlPool() {
  */
 async function testConnection() {
   try {
-    if (hasCloudBaseConfig) {
+    // 优先测试远程数据库或本地数据库（直连模式）
+    if (useRemoteDatabase || !hasCloudBaseConfig) {
+      const pool = initMysqlPool();
+      const connection = await pool.getConnection();
+      const dbType = useRemoteDatabase ? '远程数据库' : '本地数据库';
+      console.log(`✅ ${dbType} 连接成功`);
+      connection.release();
+      return true;
+    } 
+    // CloudBase 模式
+    else {
       const app = initCloudBase();
       const db = app.rdb();
       // 简单查询测试
       const { data, error } = await db.from('users').select('id');
       if (error) throw error;
       console.log('✅ CloudBase MySQL 连接成功');
-      return true;
-    } else {
-      const pool = initMysqlPool();
-      const connection = await pool.getConnection();
-      console.log('✅ MySQL 直连成功');
-      connection.release();
       return true;
     }
   } catch (error) {
@@ -110,19 +144,22 @@ async function testConnection() {
 }
 
 /**
- * 执行查询（兼容两种模式）
+ * 执行查询（兼容三种模式：远程数据库、CloudBase、本地数据库）
  */
 async function query(sql, params = []) {
   try {
-    if (hasCloudBaseConfig) {
+    // 优先使用远程数据库或本地数据库（直连模式）
+    if (useRemoteDatabase || !hasCloudBaseConfig) {
+      const pool = initMysqlPool();
+      const [rows] = await pool.execute(sql, params);
+      return rows;
+    } 
+    // CloudBase 模式
+    else {
       const app = initCloudBase();
       const db = app.rdb();
       const result = await executeCloudBaseQuery(db, sql, params);
       return result;
-    } else {
-      const pool = initMysqlPool();
-      const [rows] = await pool.execute(sql, params);
-      return rows;
     }
   } catch (error) {
     console.error('数据库查询失败:', error);
@@ -390,11 +427,13 @@ async function handleDelete(db, sql, getParam) {
  * 执行事务
  */
 async function transaction(callback) {
-  if (hasCloudBaseConfig) {
+  // CloudBase 模式不支持事务
+  if (!useRemoteDatabase && hasCloudBaseConfig) {
     console.warn('CloudBase 模式暂不支持事务，将直接执行');
     return await callback({ execute: async (sql, params) => [await query(sql, params)] });
   }
   
+  // 远程数据库或本地数据库支持事务
   const pool = initMysqlPool();
   const connection = await pool.getConnection();
   
@@ -428,46 +467,48 @@ async function closePool() {
 
 module.exports = {
   get pool() {
-    // 在 CloudBase 模式下返回一个模拟的 pool 对象
-    if (hasCloudBaseConfig) {
-      return {
-        getConnection: async () => {
-          // 返回一个模拟的 connection 对象，使用 query 函数
-          return {
-            execute: async (sql, params) => {
-              const result = await query(sql, params);
-              // mysql2 返回 [rows, fields]，我们模拟这个格式
-              return [result, []];
-            },
-            query: async (sql, params) => {
-              const result = await query(sql, params);
-              return [result, []];
-            },
-            beginTransaction: async () => {
-              console.warn('[CloudBase] 事务不支持，跳过 beginTransaction');
-            },
-            commit: async () => {
-              console.warn('[CloudBase] 事务不支持，跳过 commit');
-            },
-            rollback: async () => {
-              console.warn('[CloudBase] 事务不支持，跳过 rollback');
-            },
-            release: () => {
-              // CloudBase 模式不需要释放连接
-            }
-          };
-        },
-        end: async () => {
-          // CloudBase 模式不需要关闭连接池
-        }
-      };
+    // 优先使用远程数据库或本地数据库（直连模式）
+    if (useRemoteDatabase || !hasCloudBaseConfig) {
+      return initMysqlPool();
     }
-    return initMysqlPool();
+    // 在 CloudBase 模式下返回一个模拟的 pool 对象
+    return {
+      getConnection: async () => {
+        // 返回一个模拟的 connection 对象，使用 query 函数
+        return {
+          execute: async (sql, params) => {
+            const result = await query(sql, params);
+            // mysql2 返回 [rows, fields]，我们模拟这个格式
+            return [result, []];
+          },
+          query: async (sql, params) => {
+            const result = await query(sql, params);
+            return [result, []];
+          },
+          beginTransaction: async () => {
+            console.warn('[CloudBase] 事务不支持，跳过 beginTransaction');
+          },
+          commit: async () => {
+            console.warn('[CloudBase] 事务不支持，跳过 commit');
+          },
+          rollback: async () => {
+            console.warn('[CloudBase] 事务不支持，跳过 rollback');
+          },
+          release: () => {
+            // CloudBase 模式不需要释放连接
+          }
+        };
+      },
+      end: async () => {
+        // CloudBase 模式不需要关闭连接池
+      }
+    };
   },
   query,
   transaction,
   testConnection,
   closePool,
   hasCloudBaseConfig,
+  useRemoteDatabase,
   CLOUDBASE_ENV_ID
 };

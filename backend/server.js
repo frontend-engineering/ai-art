@@ -23,8 +23,8 @@ const { executeArtPhotoTask } = require('./services/artPhotoWorker');
 const { generateArtPhotoInternal } = require('./services/volcengineService');
 
 const app = express();
-// 使用 3001 端口
-const PORT = process.env.PORT || 3001;
+// 从环境变量读取端口，默认 3002
+const PORT = process.env.PORT || 3002;
 
 // 中间件
 app.use(cors());
