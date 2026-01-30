@@ -14,8 +14,9 @@ const REQUIRED_TAPS = 5; // 需要的点击次数
  * 通过快速点击状态栏5次来激活
  */
 function initDevMode() {
-  // 检查环境变量
-  const isDev = __DEV__ || process.env.NODE_ENV === 'development';
+  // 检查环境变量（小程序环境中 __DEV__ 可能未定义）
+  const isDev = (typeof __DEV__ !== 'undefined' && __DEV__) || 
+                (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
   
   if (!isDev) {
     console.log('[DevMode] 非开发环境，开发者模式不可用');
@@ -88,9 +89,12 @@ function disableDevMode() {
  * 获取开发者模式状态
  */
 function getDevModeStatus() {
+  const isDev = (typeof __DEV__ !== 'undefined' && __DEV__) || 
+                (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'development');
+  
   return {
     active: devModeActive,
-    isDev: __DEV__ || process.env.NODE_ENV === 'development'
+    isDev: isDev
   };
 }
 
